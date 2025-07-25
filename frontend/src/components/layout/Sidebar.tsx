@@ -27,8 +27,9 @@ export function Sidebar() {
     <aside className="hidden md:flex flex-col w-64 min-h-screen bg-white border-r border-gray-200 py-8 px-4">
       <nav className="flex flex-col gap-1 mb-2">
         {navItems.map((item) => {
-          // Solo resaltar el item activo basado en la ruta exacta
-          const isActive = pathname === item.href;
+          // Detectar si la ruta actual coincide con el item
+          const isActive = pathname === item.href || 
+                          (item.href === "/projects" && pathname.startsWith("/projects"));
           
           return (
             <Link
@@ -36,7 +37,7 @@ export function Sidebar() {
               href={item.href}
               className={cn(
                 "flex items-center gap-3 px-4 py-2 rounded-lg font-medium text-gray-700 hover:bg-green-50 transition",
-                isActive && "bg-green-100 text-green-700 font-bold",
+                isActive && "bg-green-500 text-white font-bold",
               )}
             >
               <span className="text-xl">{item.icon}</span>
