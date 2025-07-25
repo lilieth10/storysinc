@@ -8,14 +8,14 @@ export class DashboardController {
   getMetrics() {
     return {
       subscriptions: {
-        categories: ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN'],
-        Gratis: [200000, 250000, 300000, 350000, 400000, 450000],
-        Basico: [80000, 90000, 100000, 110000, 120000, 130000],
-        Pro: [40000, 45000, 50000, 55000, 60000, 65000],
-        Empresa: [10000, 12000, 14000, 16000, 18000, 20000],
+        categories: ['ENG', 'FEB', 'MAR', 'APR', 'MAY', 'JUN'],
+        Gratis: [5000, 8000, 12000, 15000, 18000, 22000],
+        Basico: [3000, 5000, 8000, 10000, 12000, 15000],
+        Pro: [2000, 3000, 5000, 7000, 9000, 12000],
+        Empresa: [1000, 1500, 2500, 3500, 4500, 6000],
       },
-      resources: {
-        labels: ['CPU', 'GPU', 'RAM'],
+      summary: {
+        labels: ['Plan Básico', 'Plan Pro', 'Plan Empresa'],
         values: [50, 30, 20],
       },
     };

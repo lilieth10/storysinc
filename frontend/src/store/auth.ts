@@ -11,6 +11,8 @@ export interface User {
   phone?: string;
   birthdate?: string;
   address?: string;
+  gender?: string;
+  identityNumber?: string;
   avatar?: string;
   createdAt?: string;
   updatedAt?: string;

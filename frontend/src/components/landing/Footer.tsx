@@ -4,14 +4,14 @@ import Image from "next/image";
 export function Footer() {
   return (
     <footer className="bg-[#E9F9EC] text-gray-900 font-['Roboto'] pt-4 pb-2">
-      <div className="max-w-5xl mx-auto flex flex-row items-start justify-between px-4">
+      <div className="max-w-7xl mx-auto flex flex-row items-start justify-between px-6">
         {/* Logo alineado a la izquierda */}
         <div className="flex flex-col items-start justify-start min-w-[140px]">
           <Image
             src="/proogia.png"
             alt="Proogia"
-            width={80}
-            height={80}
+            width={150}
+            height={150}
             className="mb-2"
             priority
           />

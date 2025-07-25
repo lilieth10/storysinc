@@ -15,6 +15,8 @@ export interface User {
   phone?: string;
   birthdate?: string;
   address?: string;
+  gender?: string;
+  identityNumber?: string;
   avatar?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -373,6 +375,11 @@ export interface RegisterForm {
   password: string;
   confirmPassword: string;
   fullName: string;
+  phone?: string;
+  birthdate?: string;
+  address?: string;
+  gender?: string;
+  identityNumber?: string;
   agreeToTerms: boolean;
 }
 
