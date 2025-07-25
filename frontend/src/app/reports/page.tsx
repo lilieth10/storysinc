@@ -9,6 +9,7 @@ import { ReportModal } from "@/components/ui/report-modal";
 import toast from "react-hot-toast";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { Trash2 } from "lucide-react";
 
 // Importar ApexCharts dinámicamente para evitar errores de SSR
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
@@ -126,6 +127,56 @@ export default function ReportsPage() {
     } catch (error) {
       console.error("Error downloading report:", error);
       toast.error("Error al descargar el reporte");
+    }
+  };
+
+  const handleDeleteReport = async (reportId: number) => {
+    // Confirmación elegante con toast
+    const confirmed = await new Promise((resolve) => {
+      toast((t) => (
+        <div className="flex flex-col gap-3">
+          <div className="font-medium text-gray-900">
+            ¿Eliminar reporte?
+          </div>
+          <div className="text-sm text-gray-600">
+            Esta acción no se puede deshacer
+          </div>
+          <div className="flex gap-2 mt-2">
+            <button
+              onClick={() => {
+                toast.dismiss(t.id);
+                resolve(false);
+              }}
+              className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={() => {
+                toast.dismiss(t.id);
+                resolve(true);
+              }}
+              className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
+            >
+              Eliminar
+            </button>
+          </div>
+        </div>
+      ), {
+        duration: 10000,
+        position: 'top-center',
+      });
+    });
+    
+    if (!confirmed) return;
+
+    try {
+      await api.delete(`/reports/${reportId}`);
+      toast.success("Reporte eliminado exitosamente");
+      await loadReportsData(); // Recargar datos
+    } catch (error) {
+      console.error("Error deleting report:", error);
+      toast.error("Error al eliminar el reporte");
     }
   };
 
@@ -321,6 +372,14 @@ export default function ReportsPage() {
                             className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200"
                           >
                             Descargar
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteReport(report.id)}
+                            className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200 flex items-center gap-1"
+                            title="Eliminar reporte"
+                          >
+                            <Trash2 size={12} />
+                            Eliminar
                           </button>
                         </div>
                     </div>
