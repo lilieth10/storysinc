@@ -114,14 +114,14 @@ export default function ProfilePage() {
                 />
                 <input
                   name="fullName"
-                  value={form.fullName || ""}
+                  value={form.fullName ?? ""}
                   onChange={handleChange}
                   placeholder="Nombre completo"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 />
                 <input
                   name="email"
-                  value={form.email || ""}
+                  value={form.email ?? ""}
                   onChange={handleChange}
                   placeholder="Correo electrónico"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
@@ -129,7 +129,7 @@ export default function ProfilePage() {
                 <input
                   name="password"
                   type="password"
-                  value={form.password || ""}
+                  value={form.password ?? ""}
                   onChange={handleChange}
                   placeholder="Contraseña"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
@@ -137,14 +137,14 @@ export default function ProfilePage() {
                 <input
                   name="confirmPassword"
                   type="password"
-                  value={form.confirmPassword || ""}
+                  value={form.confirmPassword ?? ""}
                   onChange={handleChange}
                   placeholder="Repetir contraseña"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 />
                 <input
                   name="phone"
-                  value={form.phone || ""}
+                  value={form.phone ?? ""}
                   onChange={handleChange}
                   placeholder="No. de teléfono"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
@@ -159,7 +159,7 @@ export default function ProfilePage() {
                 />
                 <textarea
                   name="address"
-                  value={form.address || ""}
+                  value={form.address ?? ""}
                   onChange={handleChange}
                   placeholder="Dirección"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md resize-none"

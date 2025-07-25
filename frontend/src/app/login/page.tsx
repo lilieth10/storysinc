@@ -1,6 +1,7 @@
 "use client";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
+import { PasswordInput } from "@/components/ui/password-input";
 import { useAuth } from "@/store/auth";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -9,10 +10,18 @@ import toast from "react-hot-toast";
 export default function LoginPage() {
   const { login, loading, error } = useAuth();
   const router = useRouter();
-  const [form, setForm] = useState({ email: "", password: "" });
+  const [form, setForm] = useState({ 
+    email: "", 
+    password: "", 
+    rememberMe: false 
+  });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value, type, checked } = e.target;
+    setForm({ 
+      ...form, 
+      [name]: type === 'checkbox' ? checked : value 
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -48,15 +57,25 @@ export default function LoginPage() {
             required
             className="w-full px-3 py-2 border border-gray-300 rounded-md"
           />
-          <input
+          <PasswordInput
             name="password"
-            type="password"
             placeholder="Contraseña"
             value={form.password}
             onChange={handleChange}
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md"
           />
+          <div className="flex items-center justify-between">
+            <label className="flex items-center text-sm text-gray-600">
+              <input
+                type="checkbox"
+                name="rememberMe"
+                checked={form.rememberMe}
+                onChange={handleChange}
+                className="mr-2 h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+              />
+              Recordarme
+            </label>
+          </div>
           <Button type="submit" className="w-full mt-2" disabled={loading}>
             Iniciar sesión
           </Button>

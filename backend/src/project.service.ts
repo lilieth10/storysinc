@@ -90,7 +90,7 @@ export class ProjectService {
     });
   }
 
-  async updateProject(id: number, data: Partial<Prisma.ProjectUpdateInput>) {
+  async updateProject(id: number, data: any) {
     return this.prisma.project.update({
       where: { id },
       data,

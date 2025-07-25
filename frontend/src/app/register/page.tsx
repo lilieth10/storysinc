@@ -1,6 +1,7 @@
 "use client";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
+import { PasswordInput } from "@/components/ui/password-input";
 import { useAuth, User } from "@/store/auth";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -10,27 +11,50 @@ export default function RegisterPage() {
   const { register, loading, error } = useAuth();
   const router = useRouter();
   const [form, setForm] = useState<
-    Omit<User, "id" | "createdAt" | "avatar"> & { password: string }
+    Omit<User, "id" | "createdAt" | "avatar"> & { 
+      password: string;
+      confirmPassword: string;
+      gender: string;
+      identityNumber: string;
+    }
   >({
     username: "",
     fullName: "",
     email: "",
     password: "",
+    confirmPassword: "",
     phone: "",
     birthdate: "",
     address: "",
+    gender: "",
+    identityNumber: "",
   });
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Enviando datos:", form);
-    const ok = await register(form);
+    
+    // Validar que las contraseñas coincidan
+    if (form.password !== form.confirmPassword) {
+      toast.error("Las contraseñas no coinciden");
+      return;
+    }
+    
+    // Validar que la contraseña tenga al menos 6 caracteres
+    if (form.password.length < 6) {
+      toast.error("La contraseña debe tener al menos 6 caracteres");
+      return;
+    }
+    
+    // Preparar datos para enviar al backend (excluir campos que no están en la BD)
+    const { confirmPassword, gender, identityNumber, ...dataToSend } = form;
+    console.log("Enviando datos:", dataToSend);
+    const ok = await register(dataToSend);
     console.log("Resultado:", ok, "Error:", error);
     if (ok) {
       toast.success("¡Registro exitoso! Ahora puedes iniciar sesión.");
@@ -77,15 +101,41 @@ export default function RegisterPage() {
             required
             className="w-full px-3 py-2 border border-gray-300 rounded-md"
           />
-          <input
+          <PasswordInput
             name="password"
-            type="password"
             placeholder="Contraseña"
             value={form.password}
             onChange={handleChange}
             required
+          />
+          <PasswordInput
+            name="confirmPassword"
+            placeholder="Repetir contraseña"
+            value={form.confirmPassword}
+            onChange={handleChange}
+            required
+          />
+          <input
+            name="identityNumber"
+            placeholder="Número de identidad"
+            value={form.identityNumber}
+            onChange={handleChange}
+            required
             className="w-full px-3 py-2 border border-gray-300 rounded-md"
           />
+          <select
+            name="gender"
+            value={form.gender}
+            onChange={handleChange}
+            required
+            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+          >
+            <option value="">Seleccionar género</option>
+            <option value="masculino">Masculino</option>
+            <option value="femenino">Femenino</option>
+            <option value="otro">Otro</option>
+            <option value="prefiero-no-decir">Prefiero no decir</option>
+          </select>
           <input
             name="phone"
             placeholder="No. de teléfono"
