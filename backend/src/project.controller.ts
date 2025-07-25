@@ -71,6 +71,19 @@ export class ProjectController {
     return this.projectService.deleteProject(parseInt(id));
   }
 
+  @Post(':id/execute-code')
+  async executeCode(
+    @Param('id') id: string,
+    @Body() body: { code: string; language: string },
+  ) {
+    const result = await this.projectService.executeCode(
+      parseInt(id),
+      body.code,
+      body.language,
+    );
+    return result;
+  }
+
   @Post(':id/analyze-ia')
   async analyzeIA(@Param('id') id: string) {
     return this.projectService.analyzeProjectIA(parseInt(id));
