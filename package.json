@@ -1,0 +1,51 @@
+{
+  "name": "proogia-platform",
+  "version": "1.0.0",
+  "description": "STORYSINC - PaaS para Entornos de Desarrollo Impulsados por IA",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend",
+    "ai-service",
+    "shared"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\" \"npm run dev:ai\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && npm run start:dev",
+    "dev:ai": "cd ai-service && npm run dev",
+    "build": "npm run build:shared && npm run build:frontend && npm run build:backend",
+    "build:shared": "cd shared && npm run build",
+    "build:frontend": "cd frontend && npm run build",
+    "build:backend": "cd backend && npm run build",
+    "install:all": "npm install && npm run install:frontend && npm run install:backend && npm run install:ai && npm run install:shared",
+    "install:frontend": "cd frontend && npm install",
+    "install:backend": "cd backend && npm install",
+    "install:ai": "cd ai-service && npm install",
+    "install:shared": "cd shared && npm install",
+    "type-check": "npm run type-check:frontend && npm run type-check:backend",
+    "type-check:frontend": "cd frontend && npm run type-check",
+    "type-check:backend": "cd backend && npm run build",
+    "lint": "npm run lint:frontend && npm run lint:backend",
+    "lint:frontend": "cd frontend && npm run lint",
+    "lint:backend": "cd backend && npm run lint"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "concurrently": "^8.2.2",
+    "eslint-config-prettier": "^10.1.8",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "dependencies": {
+    "@nestjs/platform-socket.io": "^11.1.5",
+    "@nestjs/websockets": "^11.1.5",
+    "apexcharts": "^5.3.1",
+    "react-apexcharts": "^1.7.0",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1"
+  }
+}

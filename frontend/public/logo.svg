@@ -1,0 +1,62 @@
+<svg width="200" height="60" viewBox="0 0 200 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Gafas Icono -->
+  <g transform="translate(10, 15)">
+    <!-- Frame izquierdo -->
+    <circle
+      cx="8"
+      cy="15"
+      r="6"
+      stroke="#262626"
+      stroke-width="2.5"
+      fill="none"
+    />
+    
+    <!-- Frame derecho -->
+    <circle
+      cx="22"
+      cy="15"
+      r="6"
+      stroke="#262626"
+      stroke-width="2.5"
+      fill="none"
+    />
+    
+    <!-- Puente central -->
+    <line
+      x1="14"
+      y1="15"
+      x2="16"
+      y2="15"
+      stroke="#262626"
+      stroke-width="2.5"
+      stroke-linecap="round"
+    />
+    
+    <!-- Patilla izquierda -->
+    <line
+      x1="2"
+      y1="15"
+      x2="2"
+      y2="15"
+      stroke="#262626"
+      stroke-width="2.5"
+      stroke-linecap="round"
+    />
+    
+    <!-- Patilla derecha -->
+    <line
+      x1="28"
+      y1="15"
+      x2="28"
+      y2="15"
+      stroke="#262626"
+      stroke-width="2.5"
+      stroke-linecap="round"
+    />
+  </g>
+  
+  <!-- Texto "Proogia" -->
+  <text x="50" y="38" font-family="Roboto, Arial, sans-serif" font-size="28" font-weight="bold" fill="#262626">
+    Pr<tspan fill="#22c55e">oo</tspan>gia
+  </text>
+</svg> 
