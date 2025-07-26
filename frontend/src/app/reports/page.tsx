@@ -354,7 +354,11 @@ export default function ReportsPage() {
                           {report.title}
                         </h3>
                         <span className="text-xs text-gray-500">
-                          {new Date(report.createdAt).toLocaleDateString()}
+                          {new Date(report.createdAt).toLocaleDateString('es-ES', { 
+                            year: 'numeric', 
+                            month: '2-digit', 
+                            day: '2-digit' 
+                          })}
                         </span>
                       </div>
                       <p className="text-sm text-gray-600 mb-2">

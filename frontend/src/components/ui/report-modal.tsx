@@ -48,7 +48,11 @@ export function ReportModal({ report, isOpen, onClose, onDownload }: ReportModal
                   {report.title}
                 </h2>
                 <p className="text-gray-600">
-                  Generado el {new Date(report.createdAt).toLocaleDateString()}
+                  Generado el {new Date(report.createdAt).toLocaleDateString('es-ES', { 
+                    year: 'numeric', 
+                    month: '2-digit', 
+                    day: '2-digit' 
+                  })}
                 </p>
               </div>
               <button

@@ -6,7 +6,7 @@ import { toast } from 'react-hot-toast';
 import { AILoader } from '@/components/ui/ai-loader';
 import { Dialog } from '@/components/ui/dialog';
 import { api } from '@/lib/api';
-import { useAuthStore } from '@/store/auth';
+import { useAuth } from '@/store/auth';
 
 interface Project {
   id: number;
@@ -17,6 +17,7 @@ interface Project {
   tags: string;
   lastSync: string;
   iaInsights: string;
+  components?: string;
   owner: {
     id: number;
     name: string;
@@ -34,7 +35,7 @@ interface CreateProjectData {
 
 export default function ProjectsPage() {
   const router = useRouter();
-  const { token } = useAuthStore();
+  const { token } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingIA, setLoadingIA] = useState(false);
@@ -316,38 +317,53 @@ export default function ProjectsPage() {
                     )}
 
                     {/* Actions */}
-                    <div className="flex space-x-2">
+                    <div className="flex flex-col space-y-2">
                       <button
-                        onClick={() => handleAnalyzeIA(project.id)}
-                        disabled={loadingIA}
-                        className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {loadingIA ? (
-                          <AILoader size="sm" text="" />
-                        ) : (
-                          <>
-                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                            </svg>
-                            Analizar IA
-                          </>
-                        )}
-                      </button>
-                      <button
-                        onClick={() => handleSyncProject(project.id)}
-                        disabled={loadingIA}
-                        className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={() => router.push(`/projects/${project.id}`)}
+                        className="w-full inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
                       >
                         <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
                         </svg>
-                        Sincronizar
+                        Abrir Editor
                       </button>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => handleAnalyzeIA(project.id)}
+                          disabled={loadingIA}
+                          className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {loadingIA ? (
+                            <AILoader size="sm" text="" />
+                          ) : (
+                            <>
+                              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                              </svg>
+                              Analizar IA
+                            </>
+                          )}
+                        </button>
+                        <button
+                          onClick={() => handleSyncProject(project.id)}
+                          disabled={loadingIA}
+                          className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          </svg>
+                          Sincronizar
+                        </button>
+                      </div>
                     </div>
 
                     {/* Last sync */}
                     <div className="mt-4 text-xs text-gray-500">
-                      Última sincronización: {new Date(project.lastSync).toLocaleDateString()}
+                      Última sincronización: {new Date(project.lastSync).toLocaleDateString('es-ES', { 
+                        year: 'numeric', 
+                        month: '2-digit', 
+                        day: '2-digit' 
+                      })}
                     </div>
                   </div>
                 </div>
