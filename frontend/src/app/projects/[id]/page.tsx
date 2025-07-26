@@ -55,6 +55,143 @@ interface IAAnalysis {
   };
 }
 
+// Tipos para archivos y carpetas
+interface FileNode {
+  id: string;
+  name: string;
+  type: "file" | "folder";
+  children?: FileNode[];
+}
+
+// Mock de estructura de archivos (esto luego se puede traer del backend)
+const initialFileTree: FileNode[] = [
+  {
+    id: "1",
+    name: "src",
+    type: "folder",
+    children: [
+      { id: "2", name: "components", type: "folder", children: [
+        { id: "3", name: "Header.tsx", type: "file" },
+        { id: "4", name: "Footer.tsx", type: "file" },
+      ] },
+      { id: "5", name: "App.tsx", type: "file" },
+      { id: "6", name: "index.tsx", type: "file" },
+    ]
+  },
+  {
+    id: "7",
+    name: "public",
+    type: "folder",
+    children: [
+      { id: "8", name: "logo.svg", type: "file" },
+      { id: "9", name: "favicon.ico", type: "file" },
+    ]
+  },
+  { id: "10", name: "package.json", type: "file" },
+  { id: "11", name: "README.md", type: "file" },
+];
+
+// Componente recursivo para mostrar archivos/carpeta
+function FileExplorer({ nodes, onFileClick, expanded, setExpanded }: {
+  nodes: FileNode[];
+  onFileClick: (file: FileNode) => void;
+  expanded: Set<string>;
+  setExpanded: (ids: Set<string>) => void;
+}) {
+  return (
+    <ul className="pl-2">
+      {nodes.map((node) => (
+        <li key={node.id} className="mb-1">
+          {node.type === "folder" ? (
+            <div>
+              <button
+                className="flex items-center gap-2 text-gray-700 hover:text-green-700 font-medium focus:outline-none"
+                onClick={() => {
+                  const newSet = new Set(expanded);
+                  if (expanded.has(node.id)) newSet.delete(node.id);
+                  else newSet.add(node.id);
+                  setExpanded(newSet);
+                }}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={expanded.has(node.id) ? "M6 18L18 6M6 6l12 12" : "M4 8h16v12H4z"} />
+                </svg>
+                <span>{node.name}</span>
+              </button>
+              {expanded.has(node.id) && node.children && (
+                <FileExplorer nodes={node.children} onFileClick={onFileClick} expanded={expanded} setExpanded={setExpanded} />
+              )}
+            </div>
+          ) : (
+            <button
+              className="flex items-center gap-2 pl-6 text-gray-800 hover:text-green-600 w-full text-left"
+              onClick={() => onFileClick(node)}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+              </svg>
+              <span>{node.name}</span>
+            </button>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+// Componente de fila para archivos/carpeta, visual tipo Figma
+function FileExplorerRow({ node, expanded, setExpanded, onFileClick, level }: {
+  node: FileNode;
+  expanded: Set<string>;
+  setExpanded: (ids: Set<string>) => void;
+  onFileClick: (file: FileNode) => void;
+  level: number;
+}) {
+  const isFolder = node.type === "folder";
+  return (
+    <>
+      <li className={`flex items-center px-4 py-2 bg-white hover:bg-green-50 transition-colors cursor-pointer select-none`} style={{ paddingLeft: `${level * 24}px` }}>
+        {isFolder ? (
+          <button
+            className="flex items-center gap-2 text-gray-700 hover:text-green-700 font-medium focus:outline-none"
+            onClick={e => {
+              e.stopPropagation();
+              const newSet = new Set(expanded);
+              if (expanded.has(node.id)) newSet.delete(node.id);
+              else newSet.add(node.id);
+              setExpanded(newSet);
+            }}
+            tabIndex={-1}
+            type="button"
+          >
+            <svg className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h3.172a2 2 0 011.414.586l.828.828A2 2 0 0011.828 6H16a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" /></svg>
+            <span className="font-medium">{node.name}/</span>
+            <svg className="w-4 h-4 ml-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={expanded.has(node.id) ? "M6 18L18 6M6 6l12 12" : "M19 9l-7 7-7-7"} /></svg>
+          </button>
+        ) : (
+          <button
+            className="flex items-center gap-2 text-gray-800 hover:text-green-600 w-full text-left"
+            onClick={() => onFileClick(node)}
+            type="button"
+          >
+            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /></svg>
+            <span>{node.name}</span>
+          </button>
+        )}
+      </li>
+      {isFolder && expanded.has(node.id) && node.children && node.children.map(child => (
+        <FileExplorerRow key={child.id} node={child} expanded={expanded} setExpanded={setExpanded} onFileClick={onFileClick} level={level + 1} />
+      ))}
+    </>
+  );
+}
+
+// Corregir error ESLint: handleFileClick debe usarse
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function handleFileClick(file: FileNode) {
+  // Aquí se navegará al editor
+}
+
 export default function ProjectDetailPage() {
   const params = useParams();
   const [project, setProject] = useState<Project | null>(null);
@@ -87,6 +224,7 @@ console.log("¡Código ejecutado exitosamente!");`);
   const [executingCode, setExecutingCode] = useState(false);
   const [loadingIA, setLoadingIA] = useState(false);
   const [iaAnalysis, setIaAnalysis] = useState<IAAnalysis | null>(null);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   const fetchProject = useCallback(async () => {
     try {
@@ -334,6 +472,19 @@ console.log("¡Código ejecutado exitosamente!");`);
                       <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                     </button>
                   </div>
+                </div>
+                {/* Notificación de actividad */}
+                <div className="bg-green-100 border border-green-200 rounded-md px-4 py-2 mb-2 flex items-center gap-2 text-green-900 text-sm font-medium">
+                  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01" /></svg>
+                  <span><span className="font-semibold">Diego Cordero</span> - Ha subido un nuevo archivo <span className="font-semibold">ColorPaletteGenerator.js</span></span>
+                </div>
+                {/* Explorador de archivos tipo GitHub/Figma */}
+                <div className="bg-white border border-gray-200 rounded-lg p-0 md:p-0 overflow-x-auto">
+                  <ul className="divide-y divide-gray-200">
+                    {initialFileTree.map((node) => (
+                      <FileExplorerRow key={node.id} node={node} expanded={expanded} setExpanded={setExpanded} onFileClick={handleFileClick} level={0} />
+                    ))}
+                  </ul>
                 </div>
                 {/* Editor de código funcional */}
                 <div className="bg-white border border-gray-200 rounded-lg p-4 md:p-6">
