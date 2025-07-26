@@ -224,7 +224,7 @@ export default function ProjectsPage() {
                 </svg>
                 Crear
               </button>
-            </div>
+      </div>
 
             {/* Filtros */}
             <div className="flex flex-col sm:flex-row gap-4 mb-6">
@@ -250,23 +250,23 @@ export default function ProjectsPage() {
                 <option value="inactive">Inactivo</option>
                 <option value="archived">Archivado</option>
               </select>
-            </div>
+      </div>
 
             {/* Project Grid - Corregido como en Figma */}
-            {filteredProjects.length === 0 ? (
-              <div className="text-center py-12">
+        {filteredProjects.length === 0 ? (
+          <div className="text-center py-12">
                 <div className="text-gray-500 mb-4">No se encontraron proyectos</div>
-                <button
+            <button
                   onClick={() => setShowCreateForm(true)}
                   className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
-                >
-                  Crear Proyecto
-                </button>
-              </div>
-            ) : (
+            >
+              Crear Proyecto
+            </button>
+          </div>
+        ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 mb-8">
                 {filteredProjects.map((project) => (
-                  <div key={project.id} className="bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow">
+                <div key={project.id} className="bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow">
                     <div className="p-4 md:p-6">
                       {/* Layout corregido como en Figma */}
                       <div className="flex items-start justify-between mb-3">
@@ -282,20 +282,20 @@ export default function ProjectsPage() {
                         <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
                           <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getStatusColor(project.status)}`}>
                             {project.status === 'active' ? 'Activo' : project.status}
-                          </span>
-                          <button
-                            onClick={() => {
-                              setSelectedProject(project);
-                              setShowDeleteModal(true);
-                            }}
+                        </span>
+                        <button
+                          onClick={() => {
+                            setSelectedProject(project);
+                            setShowDeleteModal(true);
+                          }}
                             className="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                        </div>
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
                       </div>
+                    </div>
 
                       {/* Información del proyecto */}
                       <div className="space-y-1 mb-3">
@@ -304,24 +304,24 @@ export default function ProjectsPage() {
                         </div>
                         <div className="text-xs text-gray-600">
                           Propietario: {project.owner?.name || 'John Doe'}
-                        </div>
                       </div>
+                    </div>
 
-                      {/* Tags */}
-                      {project.tags && (
+                    {/* Tags */}
+                    {project.tags && (
                         <div className="flex flex-wrap gap-1 mb-3">
                           {project.tags.split(',').slice(0, 3).map((tag, index) => (
                             <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                              {tag.trim()}
-                            </span>
-                          ))}
+                            {tag.trim()}
+                          </span>
+                        ))}
                           {project.tags.split(',').length > 3 && (
                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                               +{project.tags.split(',').length - 3}
                             </span>
                           )}
-                        </div>
-                      )}
+                      </div>
+                    )}
 
                       {/* Botón Ver */}
                       <div className="flex justify-end">
@@ -331,11 +331,11 @@ export default function ProjectsPage() {
                         >
                           Ver
                         </a>
-                      </div>
+                    </div>
                     </div>
                   </div>
                 ))}
-              </div>
+                </div>
             )}
 
             {/* Paginación como en el Figma */}
@@ -356,8 +356,8 @@ export default function ProjectsPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </button>
-              </div>
-            )}
+          </div>
+        )}
 
             {/* Create Project Form - Integrado como en Figma */}
             {showCreateForm && (
@@ -372,21 +372,21 @@ export default function ProjectsPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
-                </div>
-                
+      </div>
+
                 <div className="space-y-6">
                   <div className="flex flex-col md:flex-row md:items-center md:gap-6">
                     <div className="flex-1">
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Nombre de repositorio <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            </label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                        placeholder="Mi Proyecto"
-                      />
+              placeholder="Mi Proyecto"
+            />
                     </div>
                     <div className="flex-1 mt-4 md:mt-0">
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -400,26 +400,26 @@ export default function ProjectsPage() {
                         placeholder="Nombre del dueño"
                       />
                     </div>
-                  </div>
+          </div>
 
-                  <div>
+          <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Descripción
-                    </label>
-                    <textarea
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      rows={3}
+              Descripción
+            </label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              rows={3}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                      placeholder="Describe tu proyecto..."
-                    />
-                  </div>
+              placeholder="Describe tu proyecto..."
+            />
+          </div>
 
-                  <div>
+          <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Licencia
-                    </label>
-                    <select
+            </label>
+            <select
                       value={formData.license || "MIT"}
                       onChange={(e) => setFormData({ ...formData, license: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
@@ -428,10 +428,10 @@ export default function ProjectsPage() {
                       <option value="Apache">Apache License 2.0</option>
                       <option value="GPL">GPL v3</option>
                       <option value="BSD">BSD License</option>
-                    </select>
-                  </div>
+            </select>
+          </div>
 
-                  <div>
+          <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Visibilidad
                     </label>
@@ -491,9 +491,9 @@ export default function ProjectsPage() {
                           className="mr-2"
                         />
                         Agregar .gitignore
-                      </label>
+            </label>
                       <label className="flex items-center">
-                        <input
+            <input
                           type="checkbox"
                           name="chooseLicense"
                           checked={formData.chooseLicense || false}
@@ -503,31 +503,31 @@ export default function ProjectsPage() {
                         Elegir una licencia
                       </label>
                     </div>
-                  </div>
+          </div>
 
-                  <div className="flex justify-end space-x-3 pt-4">
-                    <button
+          <div className="flex justify-end space-x-3 pt-4">
+            <button
                       onClick={() => setShowCreateForm(false)}
-                      className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      onClick={handleCreateProject}
-                      disabled={loadingIA}
+              className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleCreateProject}
+              disabled={loadingIA}
                       className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {loadingIA ? (
-                        <div className="flex items-center">
-                          <AILoader size="sm" text="" />
-                          <span className="ml-2">Creando...</span>
-                        </div>
-                      ) : (
-                        'Crear repositorio'
-                      )}
-                    </button>
-                  </div>
+            >
+              {loadingIA ? (
+                <div className="flex items-center">
+                  <AILoader size="sm" text="" />
+                  <span className="ml-2">Creando...</span>
                 </div>
+              ) : (
+                        'Crear repositorio'
+              )}
+            </button>
+          </div>
+        </div>
               </div>
             )}
           </div>
@@ -543,27 +543,27 @@ export default function ProjectsPage() {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Eliminar Proyecto</h3>
               <p className="text-gray-600 mb-6">
                 ¿Estás seguro de que quieres eliminar el proyecto &quot;{selectedProject?.name}&quot;? 
-                Esta acción no se puede deshacer.
-              </p>
-              
-              <div className="flex justify-end space-x-3">
-                <button
-                  onClick={() => setShowDeleteModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleDeleteProject}
-                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700"
-                >
-                  Eliminar
-                </button>
-              </div>
-            </div>
+            Esta acción no se puede deshacer.
+          </p>
+          
+          <div className="flex justify-end space-x-3">
+            <button
+              onClick={() => setShowDeleteModal(false)}
+              className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleDeleteProject}
+              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700"
+            >
+              Eliminar
+            </button>
+          </div>
+        </div>
           </div>
         </div>
       )}
     </div>
   );
-}
+} 

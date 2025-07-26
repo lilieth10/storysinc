@@ -197,34 +197,29 @@ export default function ProjectDetailPage() {
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("code");
-  const [codeLanguage, setCodeLanguage] = useState("javascript");
-  const [codeContent, setCodeContent] = useState(`console.log("¡Hola desde el editor de código!");
-console.log("Este es un mensaje de prueba");
-
-// Función para calcular el factorial
-function factorial(n) {
-  if (n <= 1) return 1;
-  return n * factorial(n - 1);
-}
-
-console.log("Factorial de 5:", factorial(5));
-
-// Array de colores
-const colores = ["rojo", "verde", "azul", "amarillo", "morado"];
-console.log("Paleta de colores:", colores);
-
-// Simular generación de paleta
-const paletaAleatoria = colores
-  .sort(() => Math.random() - 0.5)
-  .slice(0, 3);
-console.log("Paleta aleatoria generada:", paletaAleatoria);
-
-console.log("¡Código ejecutado exitosamente!");`);
+  // Eliminado: codeContent y setCodeContent, ahora se usa editorContent
   const [codeOutput, setCodeOutput] = useState("");
-  const [executingCode, setExecutingCode] = useState(false);
-  const [loadingIA, setLoadingIA] = useState(false);
+  // Eliminados: estados de carga no usados
+  // Listener para recibir mensajes del iframe y actualizar el estado
+  useEffect(() => {
+    function handleCodeOutput(event: CustomEvent) {
+      setCodeOutput(event.detail);
+    }
+    function handleIaAnalysis(event: CustomEvent) {
+      setIaAnalysis(event.detail);
+    }
+    window.addEventListener('codeOutput', handleCodeOutput as EventListener);
+    window.addEventListener('iaAnalysis', handleIaAnalysis as EventListener);
+    return () => {
+      window.removeEventListener('codeOutput', handleCodeOutput as EventListener);
+      window.removeEventListener('iaAnalysis', handleIaAnalysis as EventListener);
+    };
+  }, []);
   const [iaAnalysis, setIaAnalysis] = useState<IAAnalysis | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [selectedFile, setSelectedFile] = useState<FileNode | null>(null);
+  const [editorContent, setEditorContent] = useState<string>("");
+  const [editorLanguage, setEditorLanguage] = useState<string>("javascript");
 
   const fetchProject = useCallback(async () => {
     try {
@@ -241,107 +236,35 @@ console.log("¡Código ejecutado exitosamente!");`);
     fetchProject();
   }, [fetchProject]);
 
-  const handleCodeChange = (newCode: string) => {
-    setCodeContent(newCode);
-  };
 
-  const handleExecuteCode = async () => {
-    if (!project) return;
-    
-    setExecutingCode(true);
+  // Eliminado: handleExecuteCode, ahora la ejecución se maneja vía iframe
+
+
+  // Eliminado: handleAnalyzeIA, ahora el análisis IA se maneja vía iframe
+
+  function handleFileClick(file: FileNode) {
+    setSelectedFile(file);
+    const content = "// Código de ejemplo para " + file.name + "\nconsole.log('Hello, World!');";
+    let lang = "plaintext";
+    if (file.name.endsWith('.js') || file.name.endsWith('.ts')) lang = "javascript";
+    else if (file.name.endsWith('.py')) lang = "python";
+    else if (file.name.endsWith('.java')) lang = "java";
+    setEditorContent(content);
+    setEditorLanguage(lang);
+    // Enviar el contenido y lenguaje al iframe si ya está cargado
+    setTimeout(() => {
+      const iframe = document.getElementById('editor-iframe') as HTMLIFrameElement;
+      if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage({ type: 'sync', code: content, language: lang, projectId: project?.id }, '*');
+      }
+    }, 300);
+  }
+
+  function handleBackToRepo() {
+    setSelectedFile(null);
     setCodeOutput("");
-    
-    try {
-      const response = await api.post(`/projects/${project.id}/execute-code`, {
-        code: codeContent,
-        language: codeLanguage
-      });
-      
-      if (response.data.success) {
-        setCodeOutput(response.data.output);
-        toast.success(response.data.result);
-      } else {
-        setCodeOutput(`Error: ${response.data.error}`);
-        toast.error("Error ejecutando el código");
-      }
-    } catch (error: unknown) {
-      console.error("Error ejecutando código:", error);
-      setCodeOutput("Error de conexión con el servidor");
-      toast.error("Error ejecutando el código");
-    } finally {
-      setExecutingCode(false);
-    }
-  };
-
-  const handleCopyCode = async () => {
-    try {
-      await navigator.clipboard.writeText(codeContent);
-      toast.success("Código copiado al portapapeles");
-    } catch (error: unknown) {
-      console.error("Error copiando código:", error);
-      toast.error("Error copiando el código");
-    }
-  };
-
-  const handleAnalyzeIA = async () => {
-    if (!project) return;
-    
-    setLoadingIA(true);
-    try {
-      const response = await api.post(`/projects/${project.id}/analyze-ia`);
-      
-      if (response.data) {
-        // Generar análisis específico basado en el proyecto
-        const projectSpecificAnalysis: IAAnalysis = {
-          recommendations: [
-            {
-              type: "performance",
-              component: project.name,
-              message: `Optimizar rendimiento en ${project.name}: Considerar implementar lazy loading`,
-              priority: "medium"
-            },
-            {
-              type: "security",
-              component: project.name,
-              message: `Revisar autenticación en ${project.name}: Implementar validación de entrada`,
-              priority: "high"
-            },
-            {
-              type: "code_quality",
-              component: project.name,
-              message: `Agregar documentación y comentarios en ${project.name}`,
-              priority: "low"
-            }
-          ],
-          alerts: [
-            {
-              type: "performance",
-              message: `Proyecto ${project.name}: Detectar posibles memory leaks`,
-              priority: "medium"
-            },
-            {
-              type: "security",
-              message: `Proyecto ${project.name}: Revisar dependencias vulnerables`,
-              priority: "high"
-            }
-          ],
-          lastAnalysis: new Date().toISOString(),
-          performance: {
-            score: Math.floor(Math.random() * 30) + 70, // 70-100
-            bottlenecks: ["Rendering", "API calls", "Database queries"]
-          }
-        };
-        
-        setIaAnalysis(projectSpecificAnalysis);
-        toast.success("Análisis de IA completado");
-      }
-    } catch (error: unknown) {
-      console.error("Error en análisis de IA:", error);
-      toast.error("Error al realizar el análisis de IA");
-    } finally {
-      setLoadingIA(false);
-    }
-  };
+    setIaAnalysis(null);
+  }
 
   if (loading) {
     return (
@@ -478,182 +401,122 @@ console.log("¡Código ejecutado exitosamente!");`);
                   <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01" /></svg>
                   <span><span className="font-semibold">Diego Cordero</span> - Ha subido un nuevo archivo <span className="font-semibold">ColorPaletteGenerator.js</span></span>
                 </div>
-                {/* Explorador de archivos tipo GitHub/Figma */}
-                <div className="bg-white border border-gray-200 rounded-lg p-0 md:p-0 overflow-x-auto">
-                  <ul className="divide-y divide-gray-200">
-                    {initialFileTree.map((node) => (
-                      <FileExplorerRow key={node.id} node={node} expanded={expanded} setExpanded={setExpanded} onFileClick={handleFileClick} level={0} />
-                    ))}
-                  </ul>
-                </div>
-                {/* Editor de código funcional */}
-                <div className="bg-white border border-gray-200 rounded-lg p-4 md:p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">Editor de código</h3>
-                    <div className="flex items-center space-x-2">
-                      <select
-                        value={codeLanguage}
-                        onChange={(e) => setCodeLanguage(e.target.value)}
-                        className="text-sm border border-gray-300 rounded-md px-2 py-1"
-                      >
-                        <option value="javascript">JavaScript</option>
-                        <option value="java">Java</option>
-                        <option value="python">Python</option>
-                      </select>
-                      <button
-                        onClick={handleCopyCode}
-                        className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-                      >
-                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                        </svg>
-                        Copiar
+                {selectedFile ? (
+                  <div className="bg-white border border-gray-200 rounded-lg p-4 md:p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <button onClick={handleBackToRepo} className="text-green-600 hover:underline font-medium flex items-center gap-1">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                        Volver al repositorio
                       </button>
+                      <span className="text-sm text-gray-500 font-mono">{selectedFile.name}</span>
+                    </div>
+                    <div className="mb-4">
+                      {/* Editor aislado en iframe, diseño responsivo y seguro */}
+                      <iframe
+                        id="editor-iframe"
+                        title="Editor de código seguro"
+                        src={`/projects/${project.id}/editor-iframe?file=${selectedFile?.name ?? ''}&lang=${editorLanguage}`}
+                        style={{ width: '100%', height: '350px', borderRadius: '8px', border: '1px solid #e5e7eb', background: '#fff' }}
+                        className="shadow-sm"
+                        allow="clipboard-read; clipboard-write"
+                        onLoad={() => {
+                          // Enviar el contenido y lenguaje al iframe al cargar
+                          const iframe = document.getElementById('editor-iframe') as HTMLIFrameElement;
+                          if (iframe && iframe.contentWindow) {
+                            iframe.contentWindow.postMessage({ type: 'sync', code: editorContent, language: editorLanguage, projectId: project.id }, '*');
+                          }
+                        }}
+                        onError={(e) => {
+                          const container = document.createElement('div');
+                          container.style.textAlign = 'center';
+                          container.style.color = '#b91c1c';
+                          container.style.padding = '40px';
+                          container.innerText = 'No se pudo cargar el editor. Verifica que el frontend esté corriendo y la ruta sea válida.';
+                          e.target.replaceWith(container);
+                        }}
+                      />
+                    </div>
+                    <div className="flex items-center gap-2 mb-4">
+                      {/* Botones envían mensajes al iframe para ejecutar código y análisis IA */}
                       <button
-                        onClick={handleExecuteCode}
-                        disabled={executingCode}
-                        className="inline-flex items-center px-3 py-1 border border-transparent rounded-md text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={() => {
+                          const iframe = document.getElementById('editor-iframe') as HTMLIFrameElement;
+                          if (iframe && iframe.contentWindow) {
+                            iframe.contentWindow.postMessage({ type: 'execute', code: editorContent, language: editorLanguage, projectId: project.id }, '*');
+                          }
+                        }}
+                        className="inline-flex items-center px-4 py-2 bg-green-600 text-white font-semibold rounded-md shadow hover:bg-green-700"
                       >
-                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
+                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                         Ejecutar
                       </button>
-                      <div className="flex items-center text-green-600">
-                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        Código
-                      </div>
-                    </div>
-                  </div>
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                    <textarea
-                      value={codeContent}
-                      onChange={(e) => handleCodeChange(e.target.value)}
-                      className="w-full h-64 bg-transparent text-sm text-gray-800 font-mono resize-none focus:outline-none"
-                      placeholder="Escribe tu código aquí..."
-                    />
-                  </div>
-                  <div className="mt-4 flex items-center justify-between text-xs text-gray-500">
-                    <span>{codeLanguage === 'javascript' ? 'JavaScript' : codeLanguage === 'java' ? 'Java' : 'Python'} • {codeContent.split('\n').length} líneas</span>
-                    <span>UTF-8</span>
-                  </div>
-                </div>
-
-                {/* Consola de salida */}
-                {codeOutput && (
-                  <div className="bg-black border border-gray-200 rounded-lg p-4 md:p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-green-400">Consola de salida</h3>
                       <button
-                        onClick={() => setCodeOutput("")}
-                        className="text-gray-400 hover:text-white"
+                        onClick={() => {
+                          const iframe = document.getElementById('editor-iframe') as HTMLIFrameElement;
+                          if (iframe && iframe.contentWindow) {
+                            iframe.contentWindow.postMessage({ type: 'analyze-ia', code: editorContent, language: editorLanguage, projectId: project.id }, '*');
+                          }
+                        }}
+                        className="inline-flex items-center px-4 py-2 bg-green-50 text-green-700 font-semibold rounded-md border border-green-600 hover:bg-green-100"
                       >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
+                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                        Analizar IA
                       </button>
                     </div>
-                    <div className="bg-gray-900 border border-gray-700 rounded-lg p-4">
-                      <pre className="text-green-400 font-mono text-sm whitespace-pre-wrap">
+                    {codeOutput && (
+                      <div className="bg-black text-green-400 font-mono rounded-md p-4 mb-4 whitespace-pre-wrap text-sm">
                         {codeOutput}
-                      </pre>
-                    </div>
-                  </div>
-                )}
-
-                {/* Análisis de IA */}
-                {iaAnalysis && (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 md:p-6">
-                    <h4 className="text-lg font-semibold text-green-900 mb-4">Análisis de IA</h4>
-                    <div className="space-y-4">
-                      {iaAnalysis.recommendations && iaAnalysis.recommendations.length > 0 && (
-                        <div>
-                          <h5 className="font-medium text-green-800 mb-2">Recomendaciones:</h5>
-                          <div className="space-y-2">
-                            {iaAnalysis.recommendations.map((rec, index) => (
-                              <div key={index} className="bg-white p-3 rounded-md border border-green-200">
-                                <div className="flex items-center justify-between mb-1">
-                                  <span className="text-sm font-medium text-green-900">{rec.component}</span>
-                                  <span className={`text-xs px-2 py-1 rounded-full ${
-                                    rec.priority === 'high' ? 'bg-red-100 text-red-800' :
-                                    rec.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                                    'bg-blue-100 text-blue-800'
-                                  }`}>
-                                    {rec.priority}
-                                  </span>
-                                </div>
-                                <p className="text-sm text-green-800">{rec.message}</p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {iaAnalysis.alerts && iaAnalysis.alerts.length > 0 && (
-                        <div>
-                          <h5 className="font-medium text-green-800 mb-2">Alertas:</h5>
-                          <div className="space-y-2">
-                            {iaAnalysis.alerts.map((alert, index) => (
-                              <div key={index} className="bg-white p-3 rounded-md border border-green-200">
-                                <div className="flex items-center justify-between mb-1">
-                                  <span className="text-sm font-medium text-green-900">{alert.type}</span>
-                                  <span className={`text-xs px-2 py-1 rounded-full ${
-                                    alert.priority === 'high' ? 'bg-red-100 text-red-800' :
-                                    alert.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                                    'bg-blue-100 text-blue-800'
-                                  }`}>
-                                    {alert.priority}
-                                  </span>
-                                </div>
-                                <p className="text-sm text-green-800">{alert.message}</p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {iaAnalysis.performance && (
-                        <div>
-                          <h5 className="font-medium text-green-800 mb-2">Rendimiento:</h5>
-                          <div className="bg-white p-3 rounded-md border border-green-200">
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-sm font-medium text-green-900">Puntuación</span>
-                              <span className="text-lg font-bold text-green-600">{iaAnalysis.performance.score}/100</span>
-                            </div>
-                            <div>
-                              <span className="text-sm font-medium text-green-900">Cuellos de botella:</span>
-                              <ul className="mt-1 text-sm text-green-800">
-                                {iaAnalysis.performance.bottlenecks.map((bottleneck, index) => (
-                                  <li key={index}>• {bottleneck}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Botón para solicitar análisis de IA */}
-                <div className="flex justify-center">
-                  <button
-                    onClick={handleAnalyzeIA}
-                    disabled={loadingIA}
-                    className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {loadingIA ? (
-                      <>
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                        <span>Analizando...</span>
-                      </>
-                    ) : (
-                      'Solicitar Análisis de IA'
+                      </div>
                     )}
-                  </button>
-                </div>
+                    {/* Listener para recibir mensajes del iframe con el resultado de ejecución o análisis IA */}
+                    <script dangerouslySetInnerHTML={{
+                      __html: `
+                        window.addEventListener('message', function(event) {
+                          if (event.data && event.data.type === 'code-output') {
+                            window.dispatchEvent(new CustomEvent('codeOutput', { detail: event.data.output }));
+                          }
+                          if (event.data && event.data.type === 'ia-analysis') {
+                            window.dispatchEvent(new CustomEvent('iaAnalysis', { detail: event.data.analysis }));
+                          }
+                        });
+                      `
+                    }} />
+                    {iaAnalysis && (
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-2">
+                        <h4 className="text-base font-semibold text-green-900 mb-2">Análisis de IA</h4>
+                        <div className="space-y-2">
+                          {iaAnalysis.recommendations?.map((rec, i) => (
+                            <div key={i} className="bg-white p-2 rounded-md border border-green-200 flex items-center justify-between">
+                              <span className="text-green-900 font-medium">{rec.message}</span>
+                              <span className={`text-xs px-2 py-1 rounded-full ${rec.priority === 'high' ? 'bg-red-100 text-red-800' : rec.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'}`}>{rec.priority}</span>
+                            </div>
+                          ))}
+                          {iaAnalysis.alerts?.map((alert, i) => (
+                            <div key={i} className="bg-white p-2 rounded-md border border-green-200 flex items-center justify-between">
+                              <span className="text-green-900 font-medium">{alert.message}</span>
+                              <span className={`text-xs px-2 py-1 rounded-full ${alert.priority === 'high' ? 'bg-red-100 text-red-800' : alert.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'}`}>{alert.priority}</span>
+                            </div>
+                          ))}
+                          {iaAnalysis.performance && (
+                            <div className="bg-white p-2 rounded-md border border-green-200">
+                              <span className="text-green-900 font-medium">Puntuación: {iaAnalysis.performance.score}/100</span>
+                              <div className="text-green-800 text-xs mt-1">Cuellos de botella: {iaAnalysis.performance.bottlenecks.join(", ")}</div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  // Explorador de archivos tipo GitHub/Figma
+                  <div className="bg-white border border-gray-200 rounded-lg p-0 md:p-0 overflow-x-auto">
+                    <ul className="divide-y divide-gray-200">
+                      {initialFileTree.map((node) => (
+                        <FileExplorerRow key={node.id} node={node} expanded={expanded} setExpanded={setExpanded} onFileClick={handleFileClick} level={0} />
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             )}
 
@@ -676,4 +539,4 @@ console.log("¡Código ejecutado exitosamente!");`);
       <Footer />
     </div>
   );
-} 
+}
