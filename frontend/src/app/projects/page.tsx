@@ -199,16 +199,19 @@ export default function ProjectsPage() {
           <div className="max-w-7xl mx-auto">
             {/* Header con búsqueda y crear como en el Figma */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-              <div className="flex-1 max-w-md w-full">
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Buscar proyectos..."
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                  />
-                  <svg className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
+              <div className="flex flex-1 items-center gap-6 max-w-3xl w-full">
+                <h1 className="text-2xl font-bold text-gray-800 whitespace-nowrap mr-4">Proyectos</h1>
+                <div className="flex-1">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Buscar proyectos..."
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    />
+                    <svg className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
                 </div>
               </div>
               
@@ -372,17 +375,31 @@ export default function ProjectsPage() {
                 </div>
                 
                 <div className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Nombre de repositorio *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                      placeholder="Mi Proyecto"
-                    />
+                  <div className="flex flex-col md:flex-row md:items-center md:gap-6">
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Nombre de repositorio <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        placeholder="Mi Proyecto"
+                      />
+                    </div>
+                    <div className="flex-1 mt-4 md:mt-0">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Dueño <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={/* Aquí deberías poner el valor del dueño si lo tienes, por ahora vacío */""}
+                        readOnly
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500 cursor-not-allowed"
+                        placeholder="Nombre del dueño"
+                      />
+                    </div>
                   </div>
 
                   <div>
@@ -428,6 +445,9 @@ export default function ProjectsPage() {
                           onChange={(e) => setFormData({ ...formData, visibility: e.target.value })}
                           className="mr-2"
                         />
+                        <span className="mr-1">
+                          <svg className="inline w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 17a4 4 0 100-8 4 4 0 000 8zm6-4V7a6 6 0 10-12 0v6a2 2 0 002 2h8a2 2 0 002-2z" /></svg>
+                        </span>
                         Público
                       </label>
                       <label className="flex items-center">
@@ -439,6 +459,9 @@ export default function ProjectsPage() {
                           onChange={(e) => setFormData({ ...formData, visibility: e.target.value })}
                           className="mr-2"
                         />
+                        <span className="mr-1">
+                          <svg className="inline w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 17a4 4 0 100-8 4 4 0 000 8zm6-4V7a6 6 0 10-12 0v6a2 2 0 002 2h8a2 2 0 002-2z" /><circle cx="12" cy="12" r="4" fill="currentColor" /></svg>
+                        </span>
                         Privado
                       </label>
                     </div>

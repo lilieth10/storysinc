@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-html-link-for-pages */
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -289,6 +290,51 @@ console.log("¡Código ejecutado exitosamente!");`);
             {/* Contenido de las tabs */}
             {activeTab === "code" && (
               <div className="space-y-6">
+                {/* Paleta de colores y visibilidad */}
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-2">
+                  <div className="flex items-center gap-3">
+                    <span className="font-semibold text-gray-700">Generador de paletas de colores</span>
+                    <div className="flex gap-1">
+                      <span className="w-5 h-5 rounded-full bg-red-400 border border-gray-200"></span>
+                      <span className="w-5 h-5 rounded-full bg-green-400 border border-gray-200"></span>
+                      <span className="w-5 h-5 rounded-full bg-blue-400 border border-gray-200"></span>
+                      <span className="w-5 h-5 rounded-full bg-yellow-400 border border-gray-200"></span>
+                      <span className="w-5 h-5 rounded-full bg-purple-400 border border-gray-200"></span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button className="inline-flex items-center px-3 py-1 bg-green-600 text-white font-semibold rounded-md shadow hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">
+                      {project.visibility === 'private' ? (
+                        <svg className="w-4 h-4 mr-1" fill="white" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 17a4 4 0 100-8 4 4 0 000 8zm6-4V7a6 6 0 10-12 0v6a2 2 0 002 2h8a2 2 0 002-2z" /><circle cx="12" cy="12" r="4" fill="currentColor" /></svg>
+                      ) : (
+                        <svg className="w-4 h-4 mr-1" fill="white" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 17a4 4 0 100-8 4 4 0 000 8zm6-4V7a6 6 0 10-12 0v6a2 2 0 002 2h8a2 2 0 002-2z" /></svg>
+                      )}
+                      {project.visibility === 'private' ? 'Privado' : 'Público'}
+                    </button>
+                  </div>
+                </div>
+                {/* Barra de ramas, buscador, agregar archivo y código */}
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+                  <div className="flex items-center gap-2 flex-1">
+                    <select className="border border-gray-300 rounded-md px-2 py-1 text-sm">
+                      <option>main</option>
+                      <option>develop</option>
+                      <option>feature/ui</option>
+                    </select>
+                    <input type="text" placeholder="Buscar archivos..." className="border border-gray-300 rounded-md px-2 py-1 text-sm flex-1" />
+                    <button className="inline-flex items-center px-3 py-1 border border-green-600 rounded-md text-sm font-medium text-green-600 bg-white hover:bg-green-50">
+                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                      Agregar archivo
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-end flex-shrink-0">
+                    <button className="inline-flex items-center px-4 py-2 bg-green-600 text-white font-semibold rounded-md shadow hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">
+                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                      Código
+                      <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                    </button>
+                  </div>
+                </div>
                 {/* Editor de código funcional */}
                 <div className="bg-white border border-gray-200 rounded-lg p-4 md:p-6">
                   <div className="flex items-center justify-between mb-4">
@@ -461,15 +507,15 @@ console.log("¡Código ejecutado exitosamente!");`);
             )}
 
             {activeTab === "collaborators" && (
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Colaboradores</h3>
+              <div className="bg-white border border-gray-200 rounded-lg p-6 text-center">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Colaboradores</h3>
                 <p className="text-gray-600">Funcionalidad de colaboradores en desarrollo</p>
               </div>
             )}
 
             {activeTab === "config" && (
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Configuración</h3>
+              <div className="bg-white border border-gray-200 rounded-lg p-6 text-center">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Configuración</h3>
                 <p className="text-gray-600">Funcionalidad de configuración en desarrollo</p>
               </div>
             )}
