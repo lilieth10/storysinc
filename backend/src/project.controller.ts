@@ -8,6 +8,7 @@ import {
   Param,
   UseGuards,
   Req,
+  HttpException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ProjectService } from './project.service';
@@ -30,6 +31,23 @@ interface UpdateProjectDto {
   pattern?: string;
   status?: string;
   tags?: string;
+}
+
+interface SaveFileDto {
+  filePath: string;
+  content: string;
+}
+
+interface ExecuteCodeDto {
+  filePath: string;
+  content: string;
+  language: string;
+}
+
+interface AnalyzeCodeDto {
+  filePath: string;
+  content: string;
+  language: string;
 }
 
 @UseGuards(AuthGuard('jwt'))
@@ -71,17 +89,77 @@ export class ProjectController {
     return this.projectService.deleteProject(parseInt(id));
   }
 
-  @Post(':id/execute-code')
+  // Nuevos endpoints para el editor de código
+  @Get(':id/files')
+  async getProjectFiles(@Param('id') id: string, @Req() req: AuthRequest) {
+    try {
+      return await this.projectService.getProjectFiles(
+        parseInt(id),
+        req.user.userId,
+      );
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Error obteniendo archivos del proyecto';
+      throw new HttpException(message, 404);
+    }
+  }
+
+  @Put(':id/files')
+  async saveFile(
+    @Param('id') id: string,
+    @Body() saveFileDto: SaveFileDto,
+    @Req() req: AuthRequest,
+  ) {
+    try {
+      return await this.projectService.saveFile(
+        parseInt(id),
+        saveFileDto.filePath,
+        saveFileDto.content,
+        req.user.userId,
+      );
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Error guardando archivo';
+      throw new HttpException(message, 400);
+    }
+  }
+
+  @Post(':id/execute')
   async executeCode(
     @Param('id') id: string,
-    @Body() body: { code: string; language: string },
+    @Body() executeCodeDto: ExecuteCodeDto,
+    @Req() req: AuthRequest,
   ) {
-    const result = await this.projectService.executeCode(
-      parseInt(id),
-      body.code,
-      body.language,
-    );
-    return result;
+    try {
+      return await this.projectService.executeCode(
+        parseInt(id),
+        executeCodeDto.filePath,
+        executeCodeDto.content,
+        executeCodeDto.language,
+        req.user.userId,
+      );
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Error ejecutando código';
+      throw new HttpException(message, 400);
+    }
+  }
+
+  @Post(':id/analyze')
+  async analyzeCode(
+    @Param('id') id: string,
+    @Body() analyzeCodeDto: AnalyzeCodeDto,
+    @Req() req: AuthRequest,
+  ) {
+    try {
+      return await this.projectService.analyzeCode(
+        parseInt(id),
+        analyzeCodeDto.filePath,
+        analyzeCodeDto.content,
+        analyzeCodeDto.language,
+        req.user.userId,
+      );
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Error analizando código';
+      throw new HttpException(message, 400);
+    }
   }
 
   @Post(':id/analyze-ia')
