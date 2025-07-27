@@ -12,9 +12,7 @@ export default function TrainingPage() {
         <main className="flex-1 p-8">
           <div className="max-w-7xl mx-auto">
             <div className="bg-blue-600 text-white px-8 py-6 rounded-lg mb-8">
-              <h1 className="text-3xl font-bold">
-                CAPACITACIÓN
-              </h1>
+              <h1 className="text-3xl font-bold">CAPACITACIÓN</h1>
             </div>
 
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -22,7 +20,8 @@ export default function TrainingPage() {
                 Contenido de Capacitación
               </h2>
               <p className="text-gray-600">
-                Aquí encontrarás recursos de capacitación para el uso de la plataforma.
+                Aquí encontrarás recursos de capacitación para el uso de la
+                plataforma.
               </p>
             </div>
           </div>
@@ -31,4 +30,4 @@ export default function TrainingPage() {
       <Footer />
     </div>
   );
-} 
+}

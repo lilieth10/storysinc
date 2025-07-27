@@ -105,76 +105,6 @@ export class ProjectService {
     });
   }
 
-  async executeCode(projectId: number, code: string, language: string) {
-    try {
-      // Simular ejecución de código según el lenguaje
-      let result = '';
-      let output = '';
-      let error: string | null = null;
-
-      switch (language.toLowerCase()) {
-        case 'javascript':
-        case 'js':
-          try {
-            // Evaluar código JavaScript de forma segura
-            const sandbox = {
-              console: {
-                log: (...args: unknown[]) => (output += args.join(' ') + '\n'),
-              },
-            };
-            // eslint-disable-next-line @typescript-eslint/no-implied-eval
-            const func = new Function('console', code);
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            await Promise.resolve(func(sandbox.console));
-            result = 'Código ejecutado exitosamente';
-          } catch (e) {
-            error = e instanceof Error ? e.message : 'Error desconocido';
-          }
-          break;
-
-        case 'python':
-        case 'py':
-          // Simular ejecución de Python
-          await Promise.resolve();
-          if (code.includes('print')) {
-            output = 'Hello, World!\nResultado: 42\n';
-            result = 'Código Python ejecutado exitosamente';
-          } else {
-            error = 'Error de sintaxis en Python';
-          }
-          break;
-
-        case 'java':
-          // Simular ejecución de Java
-          await Promise.resolve();
-          if (code.includes('System.out.println')) {
-            output = 'Hello, World!\nCompilado y ejecutado correctamente.\n';
-            result = 'Código Java compilado y ejecutado exitosamente';
-          } else {
-            error = 'Error de compilación en Java';
-          }
-          break;
-
-        default:
-          await Promise.resolve();
-          error = `Lenguaje ${language} no soportado`;
-      }
-
-      return {
-        success: !error,
-        result: result,
-        output: output,
-        error: error,
-        language: language,
-        timestamp: new Date().toISOString(),
-      };
-    } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Error desconocido';
-      throw new Error(`Error ejecutando código: ${errorMessage}`);
-    }
-  }
-
   async analyzeProjectIA(projectId: number) {
     const project = await this.prisma.project.findUnique({
       where: { id: projectId },
@@ -328,7 +258,7 @@ export const Button: React.FC<ButtonProps> = ({
     </button>
   );
 };`,
-                language: 'typescript'
+                language: 'typescript',
               },
               {
                 id: '4',
@@ -350,9 +280,9 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle }) => {
     </header>
   );
 };`,
-                language: 'typescript'
-              }
-            ]
+                language: 'typescript',
+              },
+            ],
           },
           {
             id: '5',
@@ -407,9 +337,9 @@ export class ApiClient {
 }
 
 export const apiClient = new ApiClient();`,
-                language: 'typescript'
-              }
-            ]
+                language: 'typescript',
+              },
+            ],
           },
           {
             id: '7',
@@ -447,11 +377,11 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
 
   return [storedValue, setValue] as const;
 }`,
-                language: 'typescript'
-              }
-            ]
-          }
-        ]
+                language: 'typescript',
+              },
+            ],
+          },
+        ],
       },
       {
         id: '9',
@@ -485,7 +415,7 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
     "jest": "^29.0.0"
   }
 }`,
-        language: 'json'
+        language: 'json',
       },
       {
         id: '10',
@@ -529,14 +459,19 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 4. Push to the branch (\`git push origin feature/AmazingFeature\`)
 5. Open a Pull Request
 `,
-        language: 'markdown'
-      }
+        language: 'markdown',
+      },
     ];
 
     return fileTree;
   }
 
-  async saveFile(projectId: number, filePath: string, content: string, userId: number) {
+  async saveFile(
+    projectId: number,
+    filePath: string,
+    content: string,
+    userId: number,
+  ) {
     // Verificar acceso al proyecto
     const project = await this.prisma.project.findFirst({
       where: {
@@ -558,7 +493,10 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
     // En un caso real, aquí guardarías el archivo en el sistema de archivos o base de datos
     // Por ahora, simularemos que se guardó correctamente
-    console.log(`Saving file ${filePath} in project ${projectId}:`, content.substring(0, 100) + '...');
+    console.log(
+      `Saving file ${filePath} in project ${projectId}:`,
+      content.substring(0, 100) + '...',
+    );
 
     // Actualizar la fecha de modificación del proyecto
     await this.prisma.project.update({
@@ -574,7 +512,13 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
     };
   }
 
-  async executeCode(projectId: number, filePath: string, content: string, language: string, userId: number) {
+  async executeCode(
+    projectId: number,
+    filePath: string,
+    content: string,
+    language: string,
+    userId: number,
+  ) {
     // Verificar acceso al proyecto
     const project = await this.prisma.project.findFirst({
       where: {
@@ -604,12 +548,18 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
         case 'javascript':
         case 'typescript':
           if (content.includes('console.log')) {
-            const logMatches = content.match(/console\.log\(['"`]([^'"`]*)['"`]\)/g);
+            const logMatches = content.match(
+              /console\.log\(['"`]([^'"`]*)['"`]\)/g,
+            );
             if (logMatches) {
-              output = logMatches.map(match => {
-                const textMatch = match.match(/console\.log\(['"`]([^'"`]*)['"`]\)/);
-                return textMatch ? textMatch[1] : '';
-              }).join('\n');
+              output = logMatches
+                .map((match) => {
+                  const textMatch = match.match(
+                    /console\.log\(['"`]([^'"`]*)['"`]\)/,
+                  );
+                  return textMatch ? textMatch[1] : '';
+                })
+                .join('\n');
             } else {
               output = 'Código ejecutado correctamente\n';
             }
@@ -624,10 +574,12 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
           if (content.includes('print(')) {
             const printMatches = content.match(/print\(['"`]([^'"`]*)['"`]\)/g);
             if (printMatches) {
-              output = printMatches.map(match => {
-                const textMatch = match.match(/print\(['"`]([^'"`]*)['"`]\)/);
-                return textMatch ? textMatch[1] : '';
-              }).join('\n');
+              output = printMatches
+                .map((match) => {
+                  const textMatch = match.match(/print\(['"`]([^'"`]*)['"`]\)/);
+                  return textMatch ? textMatch[1] : '';
+                })
+                .join('\n');
             } else {
               output = 'Código Python ejecutado\n';
             }
@@ -647,7 +599,6 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
       // Agregar timestamp
       output += `\n--- Ejecutado a las ${new Date().toLocaleTimeString()} ---`;
-
     } catch (e) {
       success = false;
       error = `Error de sintaxis: ${e instanceof Error ? e.message : 'Error desconocido'}`;
@@ -663,7 +614,13 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
     };
   }
 
-  async analyzeCode(projectId: number, filePath: string, content: string, language: string, userId: number) {
+  async analyzeCode(
+    projectId: number,
+    filePath: string,
+    content: string,
+    language: string,
+    userId: number,
+  ) {
     // Verificar acceso al proyecto
     const project = await this.prisma.project.findFirst({
       where: {
@@ -686,9 +643,14 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
     // Simular análisis de IA (en un caso real, usarías OpenAI, Claude, etc.)
     const lines = content.split('\n').length;
     const hasComments = content.includes('//') || content.includes('/*');
-    const hasTypeScript = language === 'typescript' || filePath.endsWith('.ts') || filePath.endsWith('.tsx');
-    const hasConsoleLog = content.includes('console.log') || content.includes('console.warn');
-    const hasErrorHandling = content.includes('try') || content.includes('catch');
+    const hasTypeScript =
+      language === 'typescript' ||
+      filePath.endsWith('.ts') ||
+      filePath.endsWith('.tsx');
+    const hasConsoleLog =
+      content.includes('console.log') || content.includes('console.warn');
+    const hasErrorHandling =
+      content.includes('try') || content.includes('catch');
 
     // Generar puntuaciones basadas en el análisis
     let performanceScore = 85;
@@ -702,21 +664,29 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
     // Análisis de rendimiento
     if (lines > 100) {
       performanceScore -= 10;
-      performanceSuggestions.push('Considera dividir este archivo en módulos más pequeños');
+      performanceSuggestions.push(
+        'Considera dividir este archivo en módulos más pequeños',
+      );
     }
     if (content.includes('for (') && !content.includes('const ')) {
       performanceScore -= 5;
-      performanceSuggestions.push('Usa for...of o métodos de array como map/filter para mejor rendimiento');
+      performanceSuggestions.push(
+        'Usa for...of o métodos de array como map/filter para mejor rendimiento',
+      );
     }
     if (!hasTypeScript && language === 'javascript') {
       performanceScore -= 15;
-      performanceSuggestions.push('Migrar a TypeScript mejorará el rendimiento y mantenibilidad');
+      performanceSuggestions.push(
+        'Migrar a TypeScript mejorará el rendimiento y mantenibilidad',
+      );
     }
 
     // Análisis de seguridad
     if (content.includes('eval(')) {
       securityScore -= 20;
-      securityRisks.push('Uso de eval() detectado - riesgo de ejecución de código malicioso');
+      securityRisks.push(
+        'Uso de eval() detectado - riesgo de ejecución de código malicioso',
+      );
     }
     if (content.includes('innerHTML') && !content.includes('sanitize')) {
       securityScore -= 10;
@@ -724,25 +694,38 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
     }
     if (content.includes('localStorage') && !content.includes('JSON.parse')) {
       securityScore -= 5;
-      securityRisks.push('Datos en localStorage podrían necesitar validación adicional');
+      securityRisks.push(
+        'Datos en localStorage podrían necesitar validación adicional',
+      );
     }
 
     // Análisis de mejores prácticas
     if (!hasComments && lines > 20) {
       bestPracticesScore -= 15;
-      bestPracticesIssues.push('Agregar comentarios para mejorar la legibilidad del código');
+      bestPracticesIssues.push(
+        'Agregar comentarios para mejorar la legibilidad del código',
+      );
     }
     if (hasConsoleLog) {
       bestPracticesScore -= 10;
-      bestPracticesIssues.push('Remover console.log antes de producción o usar un logger apropiado');
+      bestPracticesIssues.push(
+        'Remover console.log antes de producción o usar un logger apropiado',
+      );
     }
-    if (!hasErrorHandling && (content.includes('fetch') || content.includes('api'))) {
+    if (
+      !hasErrorHandling &&
+      (content.includes('fetch') || content.includes('api'))
+    ) {
       bestPracticesScore -= 15;
-      bestPracticesIssues.push('Agregar manejo de errores para llamadas asíncronas');
+      bestPracticesIssues.push(
+        'Agregar manejo de errores para llamadas asíncronas',
+      );
     }
     if (content.includes('any') && hasTypeScript) {
       bestPracticesScore -= 10;
-      bestPracticesIssues.push('Evitar el uso de "any" - definir tipos específicos');
+      bestPracticesIssues.push(
+        'Evitar el uso de "any" - definir tipos específicos',
+      );
     }
 
     // Agregar sugerencias positivas si el código está bien

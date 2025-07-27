@@ -10,17 +10,17 @@ import toast from "react-hot-toast";
 export default function LoginPage() {
   const { login, loading, error } = useAuth();
   const router = useRouter();
-  const [form, setForm] = useState({ 
-    email: "", 
-    password: "", 
-    rememberMe: false 
+  const [form, setForm] = useState({
+    email: "",
+    password: "",
+    rememberMe: false,
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
-    setForm({ 
-      ...form, 
-      [name]: type === 'checkbox' ? checked : value 
+    setForm({
+      ...form,
+      [name]: type === "checkbox" ? checked : value,
     });
   };
 

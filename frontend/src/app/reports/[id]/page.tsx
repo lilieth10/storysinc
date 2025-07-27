@@ -29,7 +29,12 @@ interface DownloadModalProps {
   isDownloading: boolean;
 }
 
-function DownloadModal({ isOpen, onClose, onDownload, isDownloading }: DownloadModalProps) {
+function DownloadModal({
+  isOpen,
+  onClose,
+  onDownload,
+  isDownloading,
+}: DownloadModalProps) {
   const [format, setFormat] = useState("pdf");
   const [selection, setSelection] = useState("all");
   const [by, setBy] = useState("date");
@@ -39,11 +44,7 @@ function DownloadModal({ isOpen, onClose, onDownload, isDownloading }: DownloadM
   };
 
   return (
-    <Dialog 
-      isOpen={isOpen} 
-      onClose={onClose}
-      title="Reporte"
-    >
+    <Dialog isOpen={isOpen} onClose={onClose} title="Reporte">
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -124,16 +125,17 @@ interface SuccessModalProps {
 
 function SuccessModal({ isOpen, onClose }: SuccessModalProps) {
   return (
-    <Dialog 
-      isOpen={isOpen} 
+    <Dialog
+      isOpen={isOpen}
       onClose={onClose}
       title="Reporte descargado con éxito"
     >
       <div>
         <p className="text-gray-600 mb-6">
-          El reporte se ha descargado correctamente y está disponible para su visualización.
+          El reporte se ha descargado correctamente y está disponible para su
+          visualización.
         </p>
-        
+
         <button
           onClick={onClose}
           className="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors"
@@ -169,16 +171,20 @@ export default function ReportPage({ params }: { params: { id: string } }) {
     loadReport();
   }, [loadReport]);
 
-  const handleDownload = async (_format: string, _selection: string, _by: string) => {
+  const handleDownload = async (
+    _format: string,
+    _selection: string,
+    _by: string,
+  ) => {
     try {
       setIsDownloading(true);
-      
+
       // Simular descarga
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
       setDownloadModalOpen(false);
       setSuccessModalOpen(true);
-      
+
       toast.success("Reporte descargado exitosamente");
     } catch (error) {
       console.error("Error downloading report:", error);
@@ -213,14 +219,15 @@ export default function ReportPage({ params }: { params: { id: string } }) {
           <div className="max-w-7xl mx-auto">
             {/* Header con título */}
             <div className="bg-blue-600 text-white px-8 py-6 rounded-lg mb-8">
-              <h1 className="text-3xl font-bold">
-                REPORTE
-              </h1>
+              <h1 className="text-3xl font-bold">REPORTE</h1>
             </div>
 
             {/* Breadcrumb */}
             <div className="mb-6">
-              <Link href="/reports" className="text-blue-600 hover:text-blue-800 font-medium">
+              <Link
+                href="/reports"
+                className="text-blue-600 hover:text-blue-800 font-medium"
+              >
                 ← Reportes
               </Link>
             </div>
@@ -230,10 +237,12 @@ export default function ReportPage({ params }: { params: { id: string } }) {
               <h2 className="text-xl font-semibold text-gray-900 mb-6">
                 {report.title}
               </h2>
-              
+
               <div className="space-y-6 text-gray-700">
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-3">Uso de recursos</h3>
+                  <h3 className="font-semibold text-gray-900 mb-3">
+                    Uso de recursos
+                  </h3>
                   <div className="space-y-2">
                     <p>• CPU: 50% utilización</p>
                     <p>• RAM: 20% utilización</p>
@@ -242,29 +251,56 @@ export default function ReportPage({ params }: { params: { id: string } }) {
                 </div>
 
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-3">Análisis de rendimiento</h3>
-                  <p>Los valores indican un rendimiento estable del sistema. La utilización de CPU se mantiene en niveles óptimos, mientras que el uso de RAM es eficiente. Se recomienda monitorear el almacenamiento para evitar saturación.</p>
+                  <h3 className="font-semibold text-gray-900 mb-3">
+                    Análisis de rendimiento
+                  </h3>
+                  <p>
+                    Los valores indican un rendimiento estable del sistema. La
+                    utilización de CPU se mantiene en niveles óptimos, mientras
+                    que el uso de RAM es eficiente. Se recomienda monitorear el
+                    almacenamiento para evitar saturación.
+                  </p>
                 </div>
 
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-3">Recomendaciones de IA</h3>
+                  <h3 className="font-semibold text-gray-900 mb-3">
+                    Recomendaciones de IA
+                  </h3>
                   <div className="space-y-2">
-                    <p>• Plan Básico: Segunda opción más utilizada por usuarios nuevos</p>
-                    <p>• Plan Empresa: Menor número de usuarios, mayor valor por cliente</p>
-                    <p>• Optimizar recursos de almacenamiento para mejorar rendimiento</p>
-                    <p>• Considerar escalabilidad horizontal para futuras expansiones</p>
+                    <p>
+                      • Plan Básico: Segunda opción más utilizada por usuarios
+                      nuevos
+                    </p>
+                    <p>
+                      • Plan Empresa: Menor número de usuarios, mayor valor por
+                      cliente
+                    </p>
+                    <p>
+                      • Optimizar recursos de almacenamiento para mejorar
+                      rendimiento
+                    </p>
+                    <p>
+                      • Considerar escalabilidad horizontal para futuras
+                      expansiones
+                    </p>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-3">Métricas clave</h3>
+                  <h3 className="font-semibold text-gray-900 mb-3">
+                    Métricas clave
+                  </h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-gray-50 p-4 rounded-lg">
-                      <p className="text-sm text-gray-600">Tiempo de respuesta promedio</p>
+                      <p className="text-sm text-gray-600">
+                        Tiempo de respuesta promedio
+                      </p>
                       <p className="text-2xl font-bold text-green-600">245ms</p>
                     </div>
                     <div className="bg-gray-50 p-4 rounded-lg">
-                      <p className="text-sm text-gray-600">Disponibilidad del sistema</p>
+                      <p className="text-sm text-gray-600">
+                        Disponibilidad del sistema
+                      </p>
                       <p className="text-2xl font-bold text-blue-600">99.8%</p>
                     </div>
                   </div>
@@ -293,11 +329,11 @@ export default function ReportPage({ params }: { params: { id: string } }) {
         onDownload={handleDownload}
         isDownloading={isDownloading}
       />
-      
+
       <SuccessModal
         isOpen={successModalOpen}
         onClose={() => setSuccessModalOpen(false)}
       />
     </div>
   );
-} 
+}

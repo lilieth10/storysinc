@@ -1,27 +1,50 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { useRouter, useParams } from "next/navigation";
+import { api } from "@/lib/api";
+import { Sidebar } from "@/components/layout/Sidebar";
+import { DashboardHeader } from "@/components/layout/DashboardHeader";
+import { Footer } from "@/components/landing/Footer";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { useAuth } from "@/store/auth";
+import toast from "react-hot-toast";
+import Editor from "@monaco-editor/react";
+import {
+  ArrowLeftIcon,
+  DocumentIcon,
+  FolderIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
+  ClipboardDocumentIcon,
+  BookmarkIcon,
+  PlayIcon,
+  CodeBracketIcon,
+  UserGroupIcon,
+  Cog6ToothIcon,
+  LockOpenIcon,
+  PlusIcon,
+  MagnifyingGlassIcon,
+  LockClosedIcon,
+} from "@heroicons/react/24/outline";
+
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /*
   This file has been cleaned up to keep the advanced, modular, and feature-rich implementation.
-  All merge conflict markers and the simpler version have been removed.
+  It includes:
+  - Monaco Editor integration
+  - File tree navigation
+  - Code execution
+  - IA analysis
+  - Real-time collaboration features
+  - Advanced UI components
 */
-
-'use client';
-
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import { toast } from 'react-hot-toast';
-import dynamic from 'next/dynamic';
-import { api } from '@/lib/api';
-import { useAuth } from '@/store/auth';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { ChevronRightIcon, ChevronDownIcon, FolderIcon, DocumentIcon, PlayIcon, BookmarkIcon, ArrowLeftIcon, ClipboardDocumentIcon } from '@heroicons/react/24/outline';
-
-// Monaco Editor dinámico para evitar SSR
-const MonacoEditor = dynamic(() => import('@monaco-editor/react'), { ssr: false });
 
 interface FileNode {
   id: string;
   name: string;
-  type: 'file' | 'folder';
+  type: "file" | "folder";
   path: string;
   children?: FileNode[];
   content?: string;
@@ -73,61 +96,28 @@ export default function ProjectDetailPage() {
   // Estados principales
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'codigo' | 'colaboradores' | 'configuracion'>('codigo');
   const [fileTree, setFileTree] = useState<FileNode[]>([]);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [selectedFile, setSelectedFile] = useState<FileNode | null>(null);
   const [editorContent, setEditorContent] = useState<string>('');
-  const [isEditorReady, setIsEditorReady] = useState(false);
   const [saving, setSaving] = useState(false);
   const [executing, setExecuting] = useState(false);
   const [executionOutput, setExecutionOutput] = useState<string>('');
   const [iaAnalysis, setIaAnalysis] = useState<IAAnalysis | null>(null);
   const [loadingIA, setLoadingIA] = useState(false);
-  const [showPublicDropdown, setShowPublicDropdown] = useState(false);
-  const [showAddFileDropdown, setShowAddFileDropdown] = useState(false);
-  const [showCodeDropdown, setShowCodeDropdown] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState<'code' | 'collaborators' | 'settings'>('code');
+  const [currentBranch, setCurrentBranch] = useState('main');
 
-  // Efectos principales
-  useEffect(() => {
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-    if (projectId) {
-      fetchProject();
-      fetchFileTree();
-    }
-  }, [token, projectId, router]);
-
-  // Cerrar dropdowns al hacer clic fuera
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Element;
-      if (!target.closest('.dropdown-container')) {
-        setShowPublicDropdown(false);
-        setShowAddFileDropdown(false);
-        setShowCodeDropdown(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
-  // Funciones de API
+  // Funciones de API (mover antes del useEffect)
   const fetchProject = useCallback(async () => {
     try {
       const response = await api.get(`/projects/${projectId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setProject(response.data);
-    } catch (error) {
-      toast.error('Error al cargar el proyecto');
-      router.push('/projects');
+    } catch {
+      toast.error("Error al cargar el proyecto");
+      router.push("/projects");
     } finally {
       setLoading(false);
     }
@@ -139,26 +129,26 @@ export default function ProjectDetailPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       setFileTree(response.data);
-    } catch (error) {
+    } catch {
       // Si falla, crear estructura ejemplo
       const exampleTree: FileNode[] = [
         {
-          id: '1',
-          name: 'src',
-          type: 'folder',
-          path: '/src',
+          id: "1",
+          name: "src",
+          type: "folder",
+          path: "/src",
           children: [
             {
-              id: '2',
-              name: 'components',
-              type: 'folder',
-              path: '/src/components',
+              id: "2",
+              name: "components",
+              type: "folder",
+              path: "/src/components",
               children: [
                 {
-                  id: '3',
-                  name: 'Button.tsx',
-                  type: 'file',
-                  path: '/src/components/Button.tsx',
+                  id: "3",
+                  name: "Button.tsx",
+                  type: "file",
+                  path: "/src/components/Button.tsx",
                   content: `import React from 'react';
 
 interface ButtonProps {
@@ -184,105 +174,86 @@ export const Button: React.FC<ButtonProps> = ({
     </button>
   );
 };`,
-                  language: 'typescript'
-                }
-              ]
+                  language: "typescript",
+                },
+              ],
             },
             {
-              id: '4',
-              name: 'utils',
-              type: 'folder',
-              path: '/src/utils',
+              id: "4",
+              name: "utils",
+              type: "folder",
+              path: "/src/utils",
               children: [
                 {
-                  id: '5',
-                  name: 'api.ts',
-                  type: 'file',
-                  path: '/src/utils/api.ts',
-                  content: `export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+                  id: "5",
+                  name: "helpers.ts",
+                  type: "file",
+                  path: "/src/utils/helpers.ts",
+                  content: `export const formatDate = (date: Date): string => {
+  return date.toLocaleDateString('es-ES', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+};
 
-export class ApiClient {
-  private baseURL: string;
-
-  constructor(baseURL: string = API_BASE_URL) {
-    this.baseURL = baseURL;
-  }
-
-  async get<T>(endpoint: string, options?: RequestInit): Promise<T> {
-    const response = await fetch(\`\${this.baseURL}\${endpoint}\`, {
-      method: 'GET',
-      ...options,
-    });
-    
-    if (!response.ok) {
-      throw new Error(\`HTTP error! status: \${response.status}\`);
-    }
-    
-    return response.json();
-  }
-
-  async post<T>(endpoint: string, data: any, options?: RequestInit): Promise<T> {
-    const response = await fetch(\`\${this.baseURL}\${endpoint}\`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...options?.headers,
-      },
-      body: JSON.stringify(data),
-      ...options,
-    });
-    
-    if (!response.ok) {
-      throw new Error(\`HTTP error! status: \${response.status}\`);
-    }
-    
-    return response.json();
-  }
-}
-
-export const apiClient = new ApiClient();`,
-                  language: 'typescript'
-                }
-              ]
-            }
-          ]
+export const capitalize = (str: string): string => {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+};`,
+                  language: "typescript",
+                },
+              ],
+            },
+          ],
         },
         {
-          id: '6',
-          name: 'package.json',
-          type: 'file',
-          path: '/package.json',
+          id: "6",
+          name: "package.json",
+          type: "file",
+          path: "/package.json",
           content: `{
-  "name": "${project?.name || 'my-project'}",
+  "name": "mi-proyecto",
   "version": "1.0.0",
-  "description": "${project?.description || 'Project description'}",
-  "main": "index.js",
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
-  },
   "dependencies": {
-    "next": "^14.0.0",
     "react": "^18.0.0",
-    "react-dom": "^18.0.0",
-    "typescript": "^5.0.0"
-  },
-  "devDependencies": {
-    "@types/node": "^20.0.0",
-    "@types/react": "^18.0.0",
-    "@types/react-dom": "^18.0.0",
-    "eslint": "^8.0.0",
-    "eslint-config-next": "^14.0.0"
+    "typescript": "^4.9.0"
   }
 }`,
-          language: 'json'
-        }
+          language: "json",
+        },
       ];
       setFileTree(exampleTree);
     }
-  }, [projectId, token, project]);
+  }, [projectId, token]);
+
+  // Efectos principales
+  useEffect(() => {
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+    if (projectId) {
+      fetchProject();
+      fetchFileTree();
+    }
+  }, [token, projectId, router, fetchProject, fetchFileTree]);
+
+  // Cerrar dropdowns al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest(".dropdown-container")) {
+        // setShowPublicDropdown(false); // This state was removed
+        // setShowAddFileDropdown(false); // This state was removed
+        // setShowCodeDropdown(false); // This state was removed
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const saveFile = useCallback(async () => {
     if (!selectedFile) return;
@@ -295,7 +266,7 @@ export const apiClient = new ApiClient();`,
       }, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       toast.success('Archivo guardado correctamente');
     } catch (error) {
       toast.error('Error al guardar el archivo');
@@ -308,38 +279,32 @@ export const apiClient = new ApiClient();`,
     if (!selectedFile) return;
 
     setExecuting(true);
-    setExecutionOutput('Ejecutando código...\n');
-
     try {
-      const response = await api.post<ExecutionResult>(`/projects/${projectId}/execute`, {
+      const response = await api.post(`/projects/${projectId}/execute`, {
         filePath: selectedFile.path,
         content: editorContent,
-        language: selectedFile.language || 'javascript',
       }, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (response.data.success) {
-        setExecutionOutput(response.data.output);
-      } else {
-        setExecutionOutput(`Error: ${response.data.error || 'Error desconocido'}`);
-      }
+      setExecutionOutput(response.data.output);
+      toast.success('Código ejecutado correctamente');
     } catch (error) {
-      setExecutionOutput('Error: No se pudo ejecutar el código');
+      setExecutionOutput('Error al ejecutar el código');
+      toast.error('Error al ejecutar el código');
     } finally {
       setExecuting(false);
     }
   }, [selectedFile, editorContent, projectId, token]);
 
   const analyzeWithIA = useCallback(async () => {
-    if (!selectedFile || !editorContent) return;
+    if (!selectedFile) return;
 
     setLoadingIA(true);
     try {
-      const response = await api.post<IAAnalysis>(`/projects/${projectId}/analyze`, {
+      const response = await api.post(`/projects/${projectId}/analyze`, {
         filePath: selectedFile.path,
         content: editorContent,
-        language: selectedFile.language || 'javascript',
       }, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -353,7 +318,7 @@ export const apiClient = new ApiClient();`,
     }
   }, [selectedFile, editorContent, projectId, token]);
 
-  // Funciones de interfaz
+  // Funciones auxiliares
   const toggleExpanded = (nodeId: string) => {
     const newExpanded = new Set(expanded);
     if (newExpanded.has(nodeId)) {
@@ -365,35 +330,27 @@ export const apiClient = new ApiClient();`,
   };
 
   const handleFileSelect = (file: FileNode) => {
-    if (file.type === 'file') {
-      setSelectedFile(file);
-      setEditorContent(file.content || '');
-      setExecutionOutput('');
-      setIaAnalysis(null);
-    }
+    setSelectedFile(file);
+    setEditorContent(file.content || '');
   };
 
   const getLanguageFromFile = (filename: string): string => {
-    const extension = filename.split('.').pop()?.toLowerCase();
-    const languageMap: Record<string, string> = {
+    const ext = filename.split('.').pop()?.toLowerCase();
+    const languageMap: { [key: string]: string } = {
       'js': 'javascript',
       'jsx': 'javascript',
       'ts': 'typescript',
       'tsx': 'typescript',
+      'html': 'html',
+      'css': 'css',
+      'json': 'json',
+      'md': 'markdown',
       'py': 'python',
       'java': 'java',
       'cpp': 'cpp',
       'c': 'c',
-      'css': 'css',
-      'html': 'html',
-      'json': 'json',
-      'md': 'markdown',
-      'yml': 'yaml',
-      'yaml': 'yaml',
-      'xml': 'xml',
-      'sql': 'sql',
     };
-    return languageMap[extension || ''] || 'plaintext';
+    return languageMap[ext || ''] || 'plaintext';
   };
 
   const copyCode = () => {
@@ -405,95 +362,40 @@ export const apiClient = new ApiClient();`,
     router.push('/projects');
   };
 
-  const handleSearchFiles = (query: string) => {
-    setSearchQuery(query);
-    // Función para buscar archivos en el árbol
-    if (query.trim()) {
-      const searchInTree = (nodes: FileNode[]): FileNode[] => {
-        const results: FileNode[] = [];
-        for (const node of nodes) {
-          if (node.name.toLowerCase().includes(query.toLowerCase())) {
-            results.push(node);
-          }
-          if (node.children) {
-            results.push(...searchInTree(node.children));
-          }
-        }
-        return results;
-      };
-      const results = searchInTree(fileTree);
-      if (results.length > 0) {
-        handleFileSelect(results[0]); // Selecciona el primer resultado
-      }
-    }
-  };
-
-  const createNewFile = () => {
-    const fileName = prompt('Nombre del nuevo archivo:');
-    if (fileName) {
-      const newFile: FileNode = {
-        id: `new-${Date.now()}`,
-        name: fileName,
-        type: 'file',
-        path: `/${fileName}`,
-        content: '// Nuevo archivo\n',
-        language: getLanguageFromFile(fileName)
-      };
-      setFileTree([...fileTree, newFile]);
-      handleFileSelect(newFile);
-      toast.success(`Archivo ${fileName} creado`);
-    }
-    setShowAddFileDropdown(false);
-  };
-
-  const cloneRepository = () => {
-    if (project?.owner?.name && project?.name) {
-      navigator.clipboard.writeText(`git clone https://github.com/${project.owner.name}/${project.name}.git`);
-      toast.success('Comando de clonación copiado al portapapeles');
-    } else {
-      toast.error('Error: información del proyecto no disponible');
-    }
-    setShowCodeDropdown(false);
-  };
-
-  const downloadZip = () => {
-    toast.success('Descarga de archivo ZIP iniciada');
-    setShowCodeDropdown(false);
-  };
-
-  // Función recursiva para renderizar el árbol de archivos
   const renderFileTree = (nodes: FileNode[], level = 0) => {
     return nodes.map((node) => (
       <div key={node.id} className="select-none">
         <div
-          className={`flex items-center px-2 py-1 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 rounded ${
-            selectedFile?.id === node.id ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : ''
+          className={`flex items-center px-2 py-1 text-sm cursor-pointer hover:bg-gray-100 rounded ${
+            selectedFile?.id === node.id
+              ? "bg-green-50 text-green-600"
+              : "text-gray-700"
           }`}
           style={{ paddingLeft: `${level * 20 + 8}px` }}
           onClick={() => {
-            if (node.type === 'folder') {
+            if (node.type === "folder") {
               toggleExpanded(node.id);
             } else {
               handleFileSelect(node);
             }
           }}
         >
-          {node.type === 'folder' && (
+          {node.type === "folder" && (
             <>
               {expanded.has(node.id) ? (
                 <ChevronDownIcon className="w-4 h-4 mr-1" />
               ) : (
                 <ChevronRightIcon className="w-4 h-4 mr-1" />
               )}
-              <FolderIcon className="w-4 h-4 mr-2 text-blue-500" />
+              <FolderIcon className="w-4 h-4 mr-2 text-green-500" />
             </>
           )}
-          {node.type === 'file' && (
+          {node.type === "file" && (
             <DocumentIcon className="w-4 h-4 mr-2 text-gray-500 ml-5" />
           )}
           <span className="truncate">{node.name}</span>
         </div>
-        {node.type === 'folder' && expanded.has(node.id) && node.children && (
+        {node.type === "folder" && expanded.has(node.id) && node.children && (
           <div>{renderFileTree(node.children, level + 1)}</div>
         )}
       </div>
@@ -502,7 +404,7 @@ export const apiClient = new ApiClient();`,
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
       </div>
     );
@@ -510,19 +412,564 @@ export const apiClient = new ApiClient();`,
 
   if (!project) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-4">
             Proyecto no encontrado
           </h2>
-          <Button onClick={handleBackToProjects}>
-            Volver a Proyectos
-          </Button>
+          <Button onClick={handleBackToProjects}>Volver a Proyectos</Button>
         </div>
       </div>
     );
   }
 
-  // ... (rest of the advanced implementation remains unchanged)
-  // For brevity, the rest of the code is kept as in the advanced version, including the tab navigation, file explorer, Monaco editor, code execution, IA analysis, and configuration tabs.
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header existente */}
+      <DashboardHeader />
+      
+      <div className="flex">
+        {/* Sidebar existente */}
+        <Sidebar />
+        
+        {/* Contenido principal */}
+        <div className="flex-1 flex flex-col">
+          {/* Header interno con pestañas como en Figma */}
+          <div className="bg-white border-b border-gray-200">
+            <div className="px-6 py-4">
+              {/* Botón volver - solo flecha */}
+              <div className="mb-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleBackToProjects}
+                  className="text-gray-600 hover:bg-gray-100"
+                >
+                  <ArrowLeftIcon className="w-4 h-4" />
+                </Button>
+              </div>
+              
+              {/* Información del proyecto */}
+              <div className="mb-4">
+                <h1 className="text-2xl font-semibold text-gray-900 mb-2">{project.name}</h1>
+                <p className="text-gray-600">{project.description || 'Sin descripción'}</p>
+              </div>
+              
+              {/* Pestañas */}
+              <div className="flex space-x-8 mb-4">
+                <button
+                  onClick={() => setActiveTab('code')}
+                  className={`px-4 py-3 rounded-lg font-medium transition-colors ${
+                    activeTab === 'code' 
+                      ? 'bg-green-500 text-white' 
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  <CodeBracketIcon className="w-4 h-4 inline mr-2" />
+                  Código
+                </button>
+                <button
+                  onClick={() => setActiveTab('collaborators')}
+                  className={`px-4 py-3 rounded-lg font-medium transition-colors ${
+                    activeTab === 'collaborators' 
+                      ? 'bg-green-500 text-white' 
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  <UserGroupIcon className="w-4 h-4 inline mr-2" />
+                  Colaboradores
+                </button>
+                <button
+                  onClick={() => setActiveTab('settings')}
+                  className={`px-4 py-3 rounded-lg font-medium transition-colors ${
+                    activeTab === 'settings' 
+                      ? 'bg-green-500 text-white' 
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  <Cog6ToothIcon className="w-4 h-4 inline mr-2" />
+                  Configuración
+                </button>
+              </div>
+
+              {/* Raya gris debajo de las pestañas */}
+              <div className="border-b border-gray-200 mb-4"></div>
+
+              {/* Badges en fila separada - solo en vista de código */}
+              {activeTab === 'code' && (
+                <div className="flex items-center justify-between mb-4">
+                  <span className="px-3 py-2 text-sm font-medium text-gray-900 flex items-center">
+                    <div className="w-4 h-4 bg-gradient-to-r from-green-400 to-blue-500 rounded-full mr-2"></div>
+                    Generador de paletas de colores
+                  </span>
+                  <span className="px-3 py-2 text-sm font-medium bg-green-500 text-white rounded-full flex items-center">
+                    <LockOpenIcon className="w-4 h-4 mr-2" />
+                    Público
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Contenido de las pestañas */}
+          {activeTab === 'code' && (
+            <div className="flex-1 flex flex-col bg-white">
+              {/* Barra de controles Git - fondo blanco */}
+              <div className="bg-white border-b border-gray-200 px-6 py-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+                  <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-6">
+                    {/* Selector de ramas */}
+                    <div className="flex items-center space-x-3">
+                      <select 
+                        value={currentBranch}
+                        onChange={(e) => setCurrentBranch(e.target.value)}
+                        className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-gray-50"
+                      >
+                        <option value="main">Principal</option>
+                        <option value="develop">develop</option>
+                        <option value="feature/new-component">feature/new-component</option>
+                      </select>
+                      <span className="text-sm text-gray-600 font-medium">6 Branches</span>
+                    </div>
+                    
+                    {/* Buscador */}
+                    <div className="flex items-center space-x-3">
+                      <div className="relative">
+                        <MagnifyingGlassIcon className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                        <input 
+                          type="text" 
+                          placeholder="Ir al archivo..."
+                          className="pl-10 pr-4 py-1.5 border border-gray-300 rounded-lg text-sm w-full sm:w-80 focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-gray-50"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-3">
+                    <Button size="sm" variant="outline" className="px-3 py-1.5 text-sm">
+                      <PlusIcon className="w-4 h-4 mr-2" />
+                      Agregar archivo
+                    </Button>
+                    <Button size="sm" className="bg-green-500 hover:bg-green-600 px-3 py-1.5 text-sm">
+                      <CodeBracketIcon className="w-4 h-4 mr-2" />
+                      Código
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Mensaje de actividad Git - fondo del footer */}
+              <div className="bg-[#E9F9EC] border-b border-green-200 px-6 py-3">
+                <p className="text-sm text-gray-900 font-medium">
+                  Diego Cordero ha subido un nuevo archivo hace 2 horas
+                </p>
+              </div>
+
+              {/* Área principal del editor */}
+              <div className="flex-1 flex mb-6">
+                {/* Sidebar - File Explorer en card */}
+                <div className="w-80 bg-white border-r border-gray-200 overflow-y-auto">
+                  <div className="p-4">
+                    <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                      <h3 className="text-sm font-medium text-gray-900 mb-3">
+                        Explorador de Archivos
+                      </h3>
+                      <div className="space-y-1">
+                        {renderFileTree(fileTree)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Main Content */}
+                <div className="flex-1 flex flex-col">
+                  {selectedFile ? (
+                    <>
+                      {/* File Header */}
+                      <div className="bg-white border-b border-gray-200 px-4 py-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center">
+                            <DocumentIcon className="w-5 h-5 mr-2 text-gray-500" />
+                            <span className="text-sm font-medium text-gray-900">
+                              {selectedFile.name}
+                            </span>
+                            <span className="ml-2 text-xs text-gray-500">
+                              {selectedFile.path}
+                            </span>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={copyCode}
+                              disabled={!editorContent}
+                            >
+                              <ClipboardDocumentIcon className="w-4 h-4 mr-1" />
+                              Copiar
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={saveFile}
+                              disabled={saving}
+                            >
+                              <BookmarkIcon className="w-4 h-4 mr-1" />
+                              {saving ? 'Guardando...' : 'Guardar'}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={executeCode}
+                              disabled={executing}
+                            >
+                              <PlayIcon className="w-4 h-4 mr-1" />
+                              {executing ? 'Ejecutando...' : 'Ejecutar'}
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={analyzeWithIA}
+                              disabled={loadingIA}
+                              className="bg-green-500 hover:bg-green-600 text-white"
+                            >
+                              {loadingIA ? 'Analizando...' : 'Analizar con IA'}
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex-1 flex">
+                        {/* Editor */}
+                        <div className="flex-1 flex flex-col">
+                          <div className="flex-1 relative">
+                            <Editor
+                              height="100%"
+                              language={getLanguageFromFile(selectedFile.name)}
+                              value={editorContent}
+                              onChange={(value) => setEditorContent(value || '')}
+                              options={{
+                                minimap: { enabled: false },
+                                fontSize: 14,
+                                automaticLayout: true,
+                                theme: 'vs-light',
+                              }}
+                              onMount={() => {}}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Right Panel - Output & IA Analysis */}
+                        <div className="w-96 bg-white border-l border-gray-200 flex flex-col">
+                          {/* Output Section */}
+                          <div className="flex-1 border-b border-gray-200">
+                            <div className="p-4">
+                              <h3 className="text-sm font-medium text-gray-900 mb-3">
+                                Salida del Código
+                              </h3>
+                              <div className="bg-gray-50 rounded-lg p-3 h-48 overflow-y-auto">
+                                <pre className="text-xs text-gray-700 whitespace-pre-wrap">
+                                  {executionOutput || 'Ejecuta el código para ver la salida...'}
+                                </pre>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* IA Analysis Section */}
+                          <div className="flex-1">
+                            <div className="p-4">
+                              <h3 className="text-sm font-medium text-gray-900 mb-3">
+                                Análisis de IA
+                              </h3>
+                              {iaAnalysis ? (
+                                <div className="space-y-4">
+                                  <Card className="p-3">
+                                    <h4 className="text-sm font-medium text-gray-900 mb-2">
+                                      Rendimiento ({iaAnalysis.performance.score}/100)
+                                    </h4>
+                                    <div className="space-y-1">
+                                      {iaAnalysis.performance.suggestions.map((suggestion, idx) => (
+                                        <p key={idx} className="text-xs text-gray-600">
+                                          • {suggestion}
+                                        </p>
+                                      ))}
+                                    </div>
+                                  </Card>
+
+                                  <Card className="p-3">
+                                    <h4 className="text-sm font-medium text-gray-900 mb-2">
+                                      Seguridad ({iaAnalysis.security.score}/100)
+                                    </h4>
+                                    <div className="space-y-1">
+                                      {iaAnalysis.security.risks.map((risk, idx) => (
+                                        <p key={idx} className="text-xs text-red-600">
+                                          ⚠ {risk}
+                                        </p>
+                                      ))}
+                                    </div>
+                                  </Card>
+
+                                  <Card className="p-3">
+                                    <h4 className="text-sm font-medium text-gray-900 mb-2">
+                                      Mejores Prácticas ({iaAnalysis.bestPractices.score}/100)
+                                    </h4>
+                                    <div className="space-y-1">
+                                      {iaAnalysis.bestPractices.issues.map((issue, idx) => (
+                                        <p key={idx} className="text-xs text-yellow-600">
+                                          ↻ {issue}
+                                        </p>
+                                      ))}
+                                    </div>
+                                  </Card>
+                                </div>
+                              ) : (
+                                <div className="text-center py-8">
+                                  <p className="text-sm text-gray-500">
+                                    Haz clic en &quot;Analizar con IA&quot; para obtener sugerencias de mejora
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    // No file selected
+                    <div className="flex-1 flex items-center justify-center">
+                      <div className="text-center">
+                        <DocumentIcon className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">
+                          Selecciona un archivo
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                          Elige un archivo del explorador para comenzar a editar
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'collaborators' && (
+            <div className="flex-1 bg-white p-6">
+              <div className="w-full">
+                <div className="flex justify-end items-center mb-6">
+                  <Button className="bg-green-500 hover:bg-green-600 text-white">
+                    <PlusIcon className="w-4 h-4 mr-2" />
+                    Agregar
+                  </Button>
+                </div>
+                
+                <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-8 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                          Colaboradores
+                        </th>
+                        <th className="px-8 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                          Rol
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      <tr>
+                        <td className="px-8 py-6 whitespace-nowrap">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center">
+                              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                                <span className="text-sm font-medium text-green-600">L</span>
+                              </div>
+                              <div className="ml-4">
+                                <div className="text-sm font-medium text-gray-900">Lili RMX</div>
+                                <div className="text-sm text-gray-500">lili@example.com</div>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-24">
+                              <select className="px-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                                <option>Usuario</option>
+                                <option>Admin</option>
+                                <option>Editor</option>
+                              </select>
+                              <Button variant="outline" size="sm" className="text-red-600 border-red-300 hover:bg-red-50">
+                                Remover
+                              </Button>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-8 py-6 whitespace-nowrap">
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="px-8 py-6 whitespace-nowrap">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center">
+                              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                <span className="text-sm font-medium text-blue-600">L</span>
+                              </div>
+                              <div className="ml-4">
+                                <div className="text-sm font-medium text-gray-900">Laura Rmx</div>
+                                <div className="text-sm text-gray-500">laura@example.com</div>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-24">
+                              <select className="px-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                                <option>Usuario</option>
+                                <option>Admin</option>
+                                <option>Editor</option>
+                              </select>
+                              <Button variant="outline" size="sm" className="text-red-600 border-red-300 hover:bg-red-50">
+                                Remover
+                              </Button>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-8 py-6 whitespace-nowrap">
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="px-8 py-6 whitespace-nowrap">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center">
+                              <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                                <span className="text-sm font-medium text-purple-600">D</span>
+                              </div>
+                              <div className="ml-4">
+                                <div className="text-sm font-medium text-gray-900">Diego Cordero</div>
+                                <div className="text-sm text-gray-500">diego@example.com</div>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-24">
+                              <select className="px-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                                <option>Admin</option>
+                                <option>Usuario</option>
+                                <option>Editor</option>
+                              </select>
+                              <Button variant="outline" size="sm" className="text-red-600 border-red-300 hover:bg-red-50">
+                                Remover
+                              </Button>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-8 py-6 whitespace-nowrap">
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'settings' && (
+            <div className="flex-1 bg-white p-6">
+              <div className="w-full">
+                <div className="space-y-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Dueño <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        defaultValue="Diego Cordero"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Nombre del repositorio <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        defaultValue={project.name}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Descripción
+                    </label>
+                    <textarea
+                      defaultValue={project.description}
+                      rows={4}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    />
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-center">
+                      <input
+                        type="radio"
+                        id="public"
+                        name="visibility"
+                        defaultChecked
+                        className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300"
+                      />
+                      <label htmlFor="public" className="ml-3 flex items-center text-sm text-gray-900">
+                        <LockOpenIcon className="w-5 h-5 mr-2 text-green-500" />
+                        Público
+                      </label>
+                    </div>
+                    
+                    <div className="flex items-center">
+                      <input
+                        type="radio"
+                        id="private"
+                        name="visibility"
+                        className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300"
+                      />
+                      <label htmlFor="private" className="ml-3 flex items-center text-sm text-gray-900">
+                        <LockClosedIcon className="w-5 h-5 mr-2 text-gray-500" />
+                        Privado
+                      </label>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg">
+                    <input
+                      type="checkbox"
+                      id="readme"
+                      defaultChecked
+                      className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded mt-1"
+                    />
+                    <div>
+                      <label htmlFor="readme" className="text-sm font-medium text-gray-900">
+                        Agregar un archivo README
+                      </label>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Aquí puedes escribir una descripción detallada de tu proyecto.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="text-sm text-gray-600">
+                    Estás creando un repositorio público en tu cuenta personal.
+                  </div>
+                </div>
+                
+                <div className="flex justify-end items-center mt-8 pt-6 border-t border-gray-200">
+                  <div className="flex space-x-3">
+                    <Button variant="outline" className="text-red-600 border-red-300 hover:bg-red-50">
+                      Eliminar
+                    </Button>
+                    <Button className="bg-green-500 hover:bg-green-600 text-white">
+                      Guardar cambios
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Footer existente */}
+      <Footer />
+    </div>
+  );
 }

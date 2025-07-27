@@ -20,19 +20,33 @@ export function Footer() {
         <div className="flex flex-1 flex-row justify-center gap-16">
           <div className="flex flex-col min-w-[120px] items-center">
             <span className="font-bold mb-2">Servicios</span>
-            <Link href="#" className="mb-1 hover:underline">Beneficios</Link>
-            <Link href="#" className="mb-1 hover:underline">Funciones</Link>
-            <Link href="#" className="mb-1 hover:underline">Integraciones</Link>
+            <Link href="#" className="mb-1 hover:underline">
+              Beneficios
+            </Link>
+            <Link href="#" className="mb-1 hover:underline">
+              Funciones
+            </Link>
+            <Link href="#" className="mb-1 hover:underline">
+              Integraciones
+            </Link>
           </div>
           <div className="flex flex-col min-w-[120px] items-center">
             <span className="font-bold mb-2">Sobre nosotros</span>
-            <Link href="#" className="mb-1 hover:underline">La plataforma</Link>
-            <Link href="#" className="mb-1 hover:underline">Contacto</Link>
+            <Link href="#" className="mb-1 hover:underline">
+              La plataforma
+            </Link>
+            <Link href="#" className="mb-1 hover:underline">
+              Contacto
+            </Link>
           </div>
           <div className="flex flex-col min-w-[120px] items-center">
             <span className="font-bold mb-2">Legales</span>
-            <Link href="#" className="mb-1 hover:underline">Términos y condiciones</Link>
-            <Link href="#" className="mb-1 hover:underline">Política de privacidad</Link>
+            <Link href="#" className="mb-1 hover:underline">
+              Términos y condiciones
+            </Link>
+            <Link href="#" className="mb-1 hover:underline">
+              Política de privacidad
+            </Link>
           </div>
         </div>
       </div>

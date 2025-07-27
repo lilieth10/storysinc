@@ -98,7 +98,10 @@ export class ProjectController {
         req.user.userId,
       );
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Error obteniendo archivos del proyecto';
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Error obteniendo archivos del proyecto';
       throw new HttpException(message, 404);
     }
   }
@@ -117,7 +120,8 @@ export class ProjectController {
         req.user.userId,
       );
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Error guardando archivo';
+      const message =
+        error instanceof Error ? error.message : 'Error guardando archivo';
       throw new HttpException(message, 400);
     }
   }
@@ -137,7 +141,8 @@ export class ProjectController {
         req.user.userId,
       );
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Error ejecutando código';
+      const message =
+        error instanceof Error ? error.message : 'Error ejecutando código';
       throw new HttpException(message, 400);
     }
   }
@@ -157,7 +162,8 @@ export class ProjectController {
         req.user.userId,
       );
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Error analizando código';
+      const message =
+        error instanceof Error ? error.message : 'Error analizando código';
       throw new HttpException(message, 400);
     }
   }

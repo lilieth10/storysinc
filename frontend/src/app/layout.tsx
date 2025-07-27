@@ -4,8 +4,6 @@ import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import { NotificationsProvider } from "@/components/notifications/NotificationsProvider";
 
-
-
 // 🔤 Configuración de fuente Roboto (del Figma)
 const roboto = Roboto({
   subsets: ["latin"],
