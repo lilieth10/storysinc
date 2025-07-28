@@ -30,6 +30,7 @@ model User {
   projectsOwned   Project[] @relation("ProjectOwner")
   projectsCollab  Project[] @relation("ProjectCollaborator")
   notifications   Notification[]
+  syncProjects    SyncProject[]
 }
 
 model Report {
@@ -71,6 +72,26 @@ model Project {
   // Relations
   owner       User     @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   collaborators_users User[] @relation("ProjectCollaborator")
+}
+
+model SyncProject {
+  id                 Int      @id @default(autoincrement())
+  name               String
+  description        String
+  type               String   // 'bff' or 'sidecar'
+  pattern            String?  // For BFF projects
+  tags               String?  // Comma-separated tags
+  frontendAssociation String? // Associated frontends
+  contact            String?  // Contact information
+  functions          String?  // JSON string for Sidecar functions
+  status             String   @default("active") // 'active' or 'inactive'
+  lastSync           DateTime @default(now())
+  userId             Int
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Notification {
