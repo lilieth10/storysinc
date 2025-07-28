@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Injectable } from '@nestjs/common';
@@ -53,7 +56,6 @@ export class ProjectService {
       data: {
         ...data,
         components: defaultComponents,
-        collaborators: defaultCollaborators,
         iaInsights: defaultIaInsights,
         tags: data.tags || '',
       },
@@ -66,8 +68,8 @@ export class ProjectService {
         OR: [
           { ownerId: userId },
           {
-            collaborators_users: {
-              some: { id: userId },
+            collaborators: {
+              some: { userId: userId },
             },
           },
         ],
@@ -75,6 +77,11 @@ export class ProjectService {
       include: {
         owner: {
           select: { id: true, fullName: true, email: true },
+        },
+        collaborators: {
+          include: {
+            user: { select: { id: true, fullName: true, email: true } },
+          },
         },
       },
       orderBy: { updatedAt: 'desc' },
@@ -85,8 +92,11 @@ export class ProjectService {
     return this.prisma.project.findUnique({
       where: { id },
       include: {
-        owner: {
-          select: { id: true, fullName: true, email: true },
+        owner: { select: { id: true, fullName: true, email: true } },
+        collaborators: {
+          include: {
+            user: { select: { id: true, fullName: true, email: true } },
+          },
         },
       },
     });
@@ -202,8 +212,8 @@ export class ProjectService {
         OR: [
           { ownerId: userId },
           {
-            collaborators_users: {
-              some: { id: userId },
+            collaborators: {
+              some: { userId: userId },
             },
           },
         ],
@@ -479,8 +489,8 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
         OR: [
           { ownerId: userId },
           {
-            collaborators_users: {
-              some: { id: userId },
+            collaborators: {
+              some: { userId: userId },
             },
           },
         ],
@@ -526,8 +536,8 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
         OR: [
           { ownerId: userId },
           {
-            collaborators_users: {
-              some: { id: userId },
+            collaborators: {
+              some: { userId: userId },
             },
           },
         ],
@@ -628,8 +638,8 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
         OR: [
           { ownerId: userId },
           {
-            collaborators_users: {
-              some: { id: userId },
+            collaborators: {
+              some: { userId: userId },
             },
           },
         ],
@@ -761,5 +771,47 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
         analyzedAt: new Date().toISOString(),
       },
     };
+  }
+
+  async addCollaborator(projectId: number, email: string, name: string) {
+    let user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      user = await this.prisma.user.create({
+        data: {
+          email,
+          fullName: name,
+          username: email.split('@')[0],
+          password: 'changeme',
+        },
+      });
+    }
+    let collaborator = await this.prisma.projectCollaborator.findFirst({
+      where: { projectId, userId: user.id },
+      include: { user: true },
+    });
+    if (!collaborator) {
+      collaborator = await this.prisma.projectCollaborator.create({
+        data: { projectId, userId: user.id, role: 'Usuario' },
+        include: { user: true },
+      });
+    }
+    return collaborator;
+  }
+
+  async updateCollaboratorRole(
+    projectId: number,
+    userId: number,
+    role: string,
+  ) {
+    await this.prisma.projectCollaborator.updateMany({
+      where: { projectId, userId },
+      data: { role },
+    });
+  }
+
+  async removeCollaborator(projectId: number, userId: number) {
+    await this.prisma.projectCollaborator.deleteMany({
+      where: { projectId, userId },
+    });
   }
 }

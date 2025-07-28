@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   Controller,
   Get,
@@ -9,6 +10,7 @@ import {
   UseGuards,
   Req,
   HttpException,
+  Patch,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ProjectService } from './project.service';
@@ -176,5 +178,44 @@ export class ProjectController {
   @Post(':id/sync')
   async sync(@Param('id') id: string) {
     return this.projectService.syncProject(parseInt(id));
+  }
+
+  @Post(':id/collaborators')
+  async addCollaborator(
+    @Param('id') id: string,
+    @Body() body: { email: string; name: string },
+  ) {
+    const collaborator = await this.projectService.addCollaborator(
+      parseInt(id),
+      body.email,
+      body.name,
+    );
+    return { message: 'Colaborador agregado', collaborator };
+  }
+
+  @Patch(':id/collaborators/:userId')
+  async updateCollaboratorRole(
+    @Param('id') id: string,
+    @Param('userId') userId: string,
+    @Body() body: { role: string },
+  ) {
+    await this.projectService.updateCollaboratorRole(
+      parseInt(id),
+      parseInt(userId),
+      body.role,
+    );
+    return { message: 'Rol actualizado' };
+  }
+
+  @Delete(':id/collaborators/:userId')
+  async removeCollaborator(
+    @Param('id') id: string,
+    @Param('userId') userId: string,
+  ) {
+    await this.projectService.removeCollaborator(
+      parseInt(id),
+      parseInt(userId),
+    );
+    return { message: 'Colaborador eliminado' };
   }
 }

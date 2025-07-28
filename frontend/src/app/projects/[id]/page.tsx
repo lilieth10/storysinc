@@ -51,6 +51,17 @@ interface FileNode {
   language?: string;
 }
 
+interface ProjectCollaborator {
+  id: number;
+  role?: string;
+  user?: {
+    id: number;
+    name: string;
+    email: string;
+    fullName?: string;
+  };
+}
+
 interface Project {
   id: number;
   name: string;
@@ -62,8 +73,10 @@ interface Project {
     id: number;
     name: string;
     email: string;
+    fullName?: string;
   };
   createdAt: string;
+  collaborators?: ProjectCollaborator[];
 }
 
 interface ExecutionResult {
@@ -99,14 +112,57 @@ export default function ProjectDetailPage() {
   const [fileTree, setFileTree] = useState<FileNode[]>([]);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [selectedFile, setSelectedFile] = useState<FileNode | null>(null);
-  const [editorContent, setEditorContent] = useState<string>('');
+  const [editorContent, setEditorContent] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [executing, setExecuting] = useState(false);
-  const [executionOutput, setExecutionOutput] = useState<string>('');
+  const [executionOutput, setExecutionOutput] = useState<string>("");
   const [iaAnalysis, setIaAnalysis] = useState<IAAnalysis | null>(null);
   const [loadingIA, setLoadingIA] = useState(false);
-  const [activeTab, setActiveTab] = useState<'code' | 'collaborators' | 'settings'>('code');
-  const [currentBranch, setCurrentBranch] = useState('main');
+  const [activeTab, setActiveTab] = useState<
+    "code" | "collaborators" | "settings"
+  >("code");
+  const [currentBranch, setCurrentBranch] = useState("main");
+  const [isEditingConfig, setIsEditingConfig] = useState(false);
+
+  // Estado para edición de configuración
+  const [editConfig, setEditConfig] = useState({
+    name: "",
+    description: "",
+  });
+  useEffect(() => {
+    if (project) {
+      setEditConfig({
+        name: project.name || "",
+        description: project.description || "",
+      });
+    }
+  }, [project]);
+
+  const handleConfigChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
+    setEditConfig({ ...editConfig, [e.target.name]: e.target.value });
+  };
+
+  const handleConfigSave = async () => {
+    try {
+      await api.put(
+        `/projects/${projectId}`,
+        {
+          name: editConfig.name,
+          description: editConfig.description,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+      toast.success("Cambios guardados");
+      fetchProject();
+      setIsEditingConfig(false);
+    } catch {
+      toast.error("Error al guardar los cambios");
+    }
+  };
 
   // Funciones de API (mover antes del useEffect)
   const fetchProject = useCallback(async () => {
@@ -229,7 +285,7 @@ export const capitalize = (str: string): string => {
   // Efectos principales
   useEffect(() => {
     if (!token) {
-      router.push('/login');
+      router.push("/login");
       return;
     }
     if (projectId) {
@@ -260,16 +316,20 @@ export const capitalize = (str: string): string => {
 
     setSaving(true);
     try {
-      await api.put(`/projects/${projectId}/files`, {
-        filePath: selectedFile.path,
-        content: editorContent,
-      }, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await api.put(
+        `/projects/${projectId}/files`,
+        {
+          filePath: selectedFile.path,
+          content: editorContent,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
 
-      toast.success('Archivo guardado correctamente');
+      toast.success("Archivo guardado correctamente");
     } catch (error) {
-      toast.error('Error al guardar el archivo');
+      toast.error("Error al guardar el archivo");
     } finally {
       setSaving(false);
     }
@@ -280,18 +340,22 @@ export const capitalize = (str: string): string => {
 
     setExecuting(true);
     try {
-      const response = await api.post(`/projects/${projectId}/execute`, {
-        filePath: selectedFile.path,
-        content: editorContent,
-      }, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await api.post(
+        `/projects/${projectId}/execute`,
+        {
+          filePath: selectedFile.path,
+          content: editorContent,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
 
       setExecutionOutput(response.data.output);
-      toast.success('Código ejecutado correctamente');
+      toast.success("Código ejecutado correctamente");
     } catch (error) {
-      setExecutionOutput('Error al ejecutar el código');
-      toast.error('Error al ejecutar el código');
+      setExecutionOutput("Error al ejecutar el código");
+      toast.error("Error al ejecutar el código");
     } finally {
       setExecuting(false);
     }
@@ -302,17 +366,21 @@ export const capitalize = (str: string): string => {
 
     setLoadingIA(true);
     try {
-      const response = await api.post(`/projects/${projectId}/analyze`, {
-        filePath: selectedFile.path,
-        content: editorContent,
-      }, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await api.post(
+        `/projects/${projectId}/analyze`,
+        {
+          filePath: selectedFile.path,
+          content: editorContent,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
 
       setIaAnalysis(response.data);
-      toast.success('Análisis de IA completado');
+      toast.success("Análisis de IA completado");
     } catch (error) {
-      toast.error('Error al analizar con IA');
+      toast.error("Error al analizar con IA");
     } finally {
       setLoadingIA(false);
     }
@@ -331,35 +399,35 @@ export const capitalize = (str: string): string => {
 
   const handleFileSelect = (file: FileNode) => {
     setSelectedFile(file);
-    setEditorContent(file.content || '');
+    setEditorContent(file.content || "");
   };
 
   const getLanguageFromFile = (filename: string): string => {
-    const ext = filename.split('.').pop()?.toLowerCase();
+    const ext = filename.split(".").pop()?.toLowerCase();
     const languageMap: { [key: string]: string } = {
-      'js': 'javascript',
-      'jsx': 'javascript',
-      'ts': 'typescript',
-      'tsx': 'typescript',
-      'html': 'html',
-      'css': 'css',
-      'json': 'json',
-      'md': 'markdown',
-      'py': 'python',
-      'java': 'java',
-      'cpp': 'cpp',
-      'c': 'c',
+      js: "javascript",
+      jsx: "javascript",
+      ts: "typescript",
+      tsx: "typescript",
+      html: "html",
+      css: "css",
+      json: "json",
+      md: "markdown",
+      py: "python",
+      java: "java",
+      cpp: "cpp",
+      c: "c",
     };
-    return languageMap[ext || ''] || 'plaintext';
+    return languageMap[ext || ""] || "plaintext";
   };
 
   const copyCode = () => {
     navigator.clipboard.writeText(editorContent);
-    toast.success('Código copiado al portapapeles');
+    toast.success("Código copiado al portapapeles");
   };
 
   const handleBackToProjects = () => {
-    router.push('/projects');
+    router.push("/projects");
   };
 
   const renderFileTree = (nodes: FileNode[], level = 0) => {
@@ -402,6 +470,91 @@ export const capitalize = (str: string): string => {
     ));
   };
 
+  // Estado para agregar colaborador
+  const [showAddColab, setShowAddColab] = useState(false);
+  const [newColab, setNewColab] = useState({ email: "", name: "" });
+  const handleAddColab = async () => {
+    try {
+      await api.post(`/projects/${projectId}/collaborators`, newColab, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      toast.success("Colaborador agregado");
+      setShowAddColab(false);
+      setNewColab({ email: "", name: "" });
+      fetchProject();
+    } catch {
+      toast.error("Error al agregar colaborador");
+    }
+  };
+
+  // Estado para roles de colaboradores
+  const [colabRoles, setColabRoles] = useState<Record<number, string>>({});
+  useEffect(() => {
+    if (project && Array.isArray(project.collaborators)) {
+      const roles: Record<number, string> = {};
+      project.collaborators.forEach((colab) => {
+        roles[colab.id] = colab.role || "Usuario";
+      });
+      setColabRoles(roles);
+    }
+  }, [project]);
+
+  const handleRoleChange = async (colabId: number, newRole: string) => {
+    setColabRoles((prev) => ({ ...prev, [colabId]: newRole }));
+    try {
+      await api.patch(
+        `/projects/${projectId}/collaborators/${colabId}`,
+        { role: newRole },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+      toast.success("Rol actualizado");
+      fetchProject();
+    } catch {
+      toast.error("Error al actualizar el rol");
+    }
+  };
+
+  const handleRemoveColab = (colabId: number) => {
+    toast(
+      (t) => (
+        <span>
+          ¿Seguro que quieres eliminar este colaborador?
+          <div className="mt-2 flex gap-2 justify-end">
+            <button
+              className="px-3 py-1 rounded bg-red-500 text-white text-xs"
+              onClick={async () => {
+                toast.dismiss(t.id);
+                try {
+                  await api.delete(
+                    `/projects/${projectId}/collaborators/${colabId}`,
+                    {
+                      headers: { Authorization: `Bearer ${token}` },
+                    },
+                  );
+                  fetchProject();
+                  toast.success("Colaborador eliminado");
+                } catch {
+                  toast.error("Error al eliminar colaborador");
+                }
+              }}
+            >
+              Sí, eliminar
+            </button>
+            <button
+              className="px-3 py-1 rounded bg-gray-200 text-gray-700 text-xs"
+              onClick={() => toast.dismiss(t.id)}
+            >
+              Cancelar
+            </button>
+          </div>
+        </span>
+      ),
+      { duration: 6000 },
+    );
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -427,11 +580,11 @@ export const capitalize = (str: string): string => {
     <div className="min-h-screen bg-gray-50">
       {/* Header existente */}
       <DashboardHeader />
-      
+
       <div className="flex">
         {/* Sidebar existente */}
         <Sidebar />
-        
+
         {/* Contenido principal */}
         <div className="flex-1 flex flex-col">
           {/* Header interno con pestañas como en Figma */}
@@ -448,43 +601,47 @@ export const capitalize = (str: string): string => {
                   <ArrowLeftIcon className="w-4 h-4" />
                 </Button>
               </div>
-              
+
               {/* Información del proyecto */}
               <div className="mb-4">
-                <h1 className="text-2xl font-semibold text-gray-900 mb-2">{project.name}</h1>
-                <p className="text-gray-600">{project.description || 'Sin descripción'}</p>
+                <h1 className="text-2xl font-semibold text-gray-900 mb-2">
+                  {project.name}
+                </h1>
+                <p className="text-gray-600">
+                  {project.description || "Sin descripción"}
+                </p>
               </div>
-              
+
               {/* Pestañas */}
               <div className="flex space-x-8 mb-4">
                 <button
-                  onClick={() => setActiveTab('code')}
+                  onClick={() => setActiveTab("code")}
                   className={`px-4 py-3 rounded-lg font-medium transition-colors ${
-                    activeTab === 'code' 
-                      ? 'bg-green-500 text-white' 
-                      : 'text-gray-600 hover:bg-gray-100'
+                    activeTab === "code"
+                      ? "bg-green-500 text-white"
+                      : "text-gray-600 hover:bg-gray-100"
                   }`}
                 >
                   <CodeBracketIcon className="w-4 h-4 inline mr-2" />
                   Código
                 </button>
                 <button
-                  onClick={() => setActiveTab('collaborators')}
+                  onClick={() => setActiveTab("collaborators")}
                   className={`px-4 py-3 rounded-lg font-medium transition-colors ${
-                    activeTab === 'collaborators' 
-                      ? 'bg-green-500 text-white' 
-                      : 'text-gray-600 hover:bg-gray-100'
+                    activeTab === "collaborators"
+                      ? "bg-green-500 text-white"
+                      : "text-gray-600 hover:bg-gray-100"
                   }`}
                 >
                   <UserGroupIcon className="w-4 h-4 inline mr-2" />
                   Colaboradores
                 </button>
                 <button
-                  onClick={() => setActiveTab('settings')}
+                  onClick={() => setActiveTab("settings")}
                   className={`px-4 py-3 rounded-lg font-medium transition-colors ${
-                    activeTab === 'settings' 
-                      ? 'bg-green-500 text-white' 
-                      : 'text-gray-600 hover:bg-gray-100'
+                    activeTab === "settings"
+                      ? "bg-green-500 text-white"
+                      : "text-gray-600 hover:bg-gray-100"
                   }`}
                 >
                   <Cog6ToothIcon className="w-4 h-4 inline mr-2" />
@@ -496,7 +653,7 @@ export const capitalize = (str: string): string => {
               <div className="border-b border-gray-200 mb-4"></div>
 
               {/* Badges en fila separada - solo en vista de código */}
-              {activeTab === 'code' && (
+              {activeTab === "code" && (
                 <div className="flex items-center justify-between mb-4">
                   <span className="px-3 py-2 text-sm font-medium text-gray-900 flex items-center">
                     <div className="w-4 h-4 bg-gradient-to-r from-green-400 to-blue-500 rounded-full mr-2"></div>
@@ -512,7 +669,7 @@ export const capitalize = (str: string): string => {
           </div>
 
           {/* Contenido de las pestañas */}
-          {activeTab === 'code' && (
+          {activeTab === "code" && (
             <div className="flex-1 flex flex-col bg-white">
               {/* Barra de controles Git - fondo blanco */}
               <div className="bg-white border-b border-gray-200 px-6 py-4">
@@ -520,37 +677,48 @@ export const capitalize = (str: string): string => {
                   <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-6">
                     {/* Selector de ramas */}
                     <div className="flex items-center space-x-3">
-                      <select 
+                      <select
                         value={currentBranch}
                         onChange={(e) => setCurrentBranch(e.target.value)}
                         className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-gray-50"
                       >
                         <option value="main">Principal</option>
                         <option value="develop">develop</option>
-                        <option value="feature/new-component">feature/new-component</option>
+                        <option value="feature/new-component">
+                          feature/new-component
+                        </option>
                       </select>
-                      <span className="text-sm text-gray-600 font-medium">6 Branches</span>
+                      <span className="text-sm text-gray-600 font-medium">
+                        6 Branches
+                      </span>
                     </div>
-                    
+
                     {/* Buscador */}
                     <div className="flex items-center space-x-3">
                       <div className="relative">
                         <MagnifyingGlassIcon className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-                        <input 
-                          type="text" 
+                        <input
+                          type="text"
                           placeholder="Ir al archivo..."
                           className="pl-10 pr-4 py-1.5 border border-gray-300 rounded-lg text-sm w-full sm:w-80 focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-gray-50"
                         />
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center space-x-3">
-                    <Button size="sm" variant="outline" className="px-3 py-1.5 text-sm">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="px-3 py-1.5 text-sm"
+                    >
                       <PlusIcon className="w-4 h-4 mr-2" />
                       Agregar archivo
                     </Button>
-                    <Button size="sm" className="bg-green-500 hover:bg-green-600 px-3 py-1.5 text-sm">
+                    <Button
+                      size="sm"
+                      className="bg-green-500 hover:bg-green-600 px-3 py-1.5 text-sm"
+                    >
                       <CodeBracketIcon className="w-4 h-4 mr-2" />
                       Código
                     </Button>
@@ -614,7 +782,7 @@ export const capitalize = (str: string): string => {
                               disabled={saving}
                             >
                               <BookmarkIcon className="w-4 h-4 mr-1" />
-                              {saving ? 'Guardando...' : 'Guardar'}
+                              {saving ? "Guardando..." : "Guardar"}
                             </Button>
                             <Button
                               variant="outline"
@@ -623,7 +791,7 @@ export const capitalize = (str: string): string => {
                               disabled={executing}
                             >
                               <PlayIcon className="w-4 h-4 mr-1" />
-                              {executing ? 'Ejecutando...' : 'Ejecutar'}
+                              {executing ? "Ejecutando..." : "Ejecutar"}
                             </Button>
                             <Button
                               size="sm"
@@ -631,7 +799,7 @@ export const capitalize = (str: string): string => {
                               disabled={loadingIA}
                               className="bg-green-500 hover:bg-green-600 text-white"
                             >
-                              {loadingIA ? 'Analizando...' : 'Analizar con IA'}
+                              {loadingIA ? "Analizando..." : "Analizar con IA"}
                             </Button>
                           </div>
                         </div>
@@ -645,12 +813,14 @@ export const capitalize = (str: string): string => {
                               height="100%"
                               language={getLanguageFromFile(selectedFile.name)}
                               value={editorContent}
-                              onChange={(value) => setEditorContent(value || '')}
+                              onChange={(value) =>
+                                setEditorContent(value || "")
+                              }
                               options={{
                                 minimap: { enabled: false },
                                 fontSize: 14,
                                 automaticLayout: true,
-                                theme: 'vs-light',
+                                theme: "vs-light",
                               }}
                               onMount={() => {}}
                             />
@@ -667,7 +837,8 @@ export const capitalize = (str: string): string => {
                               </h3>
                               <div className="bg-gray-50 rounded-lg p-3 h-48 overflow-y-auto">
                                 <pre className="text-xs text-gray-700 whitespace-pre-wrap">
-                                  {executionOutput || 'Ejecuta el código para ver la salida...'}
+                                  {executionOutput ||
+                                    "Ejecuta el código para ver la salida..."}
                                 </pre>
                               </div>
                             </div>
@@ -683,47 +854,66 @@ export const capitalize = (str: string): string => {
                                 <div className="space-y-4">
                                   <Card className="p-3">
                                     <h4 className="text-sm font-medium text-gray-900 mb-2">
-                                      Rendimiento ({iaAnalysis.performance.score}/100)
+                                      Rendimiento (
+                                      {iaAnalysis.performance.score}/100)
                                     </h4>
                                     <div className="space-y-1">
-                                      {iaAnalysis.performance.suggestions.map((suggestion, idx) => (
-                                        <p key={idx} className="text-xs text-gray-600">
-                                          • {suggestion}
-                                        </p>
-                                      ))}
+                                      {iaAnalysis.performance.suggestions.map(
+                                        (suggestion, idx) => (
+                                          <p
+                                            key={idx}
+                                            className="text-xs text-gray-600"
+                                          >
+                                            • {suggestion}
+                                          </p>
+                                        ),
+                                      )}
                                     </div>
                                   </Card>
 
                                   <Card className="p-3">
                                     <h4 className="text-sm font-medium text-gray-900 mb-2">
-                                      Seguridad ({iaAnalysis.security.score}/100)
+                                      Seguridad ({iaAnalysis.security.score}
+                                      /100)
                                     </h4>
                                     <div className="space-y-1">
-                                      {iaAnalysis.security.risks.map((risk, idx) => (
-                                        <p key={idx} className="text-xs text-red-600">
-                                          ⚠ {risk}
-                                        </p>
-                                      ))}
+                                      {iaAnalysis.security.risks.map(
+                                        (risk, idx) => (
+                                          <p
+                                            key={idx}
+                                            className="text-xs text-red-600"
+                                          >
+                                            ⚠ {risk}
+                                          </p>
+                                        ),
+                                      )}
                                     </div>
                                   </Card>
 
                                   <Card className="p-3">
                                     <h4 className="text-sm font-medium text-gray-900 mb-2">
-                                      Mejores Prácticas ({iaAnalysis.bestPractices.score}/100)
+                                      Mejores Prácticas (
+                                      {iaAnalysis.bestPractices.score}/100)
                                     </h4>
                                     <div className="space-y-1">
-                                      {iaAnalysis.bestPractices.issues.map((issue, idx) => (
-                                        <p key={idx} className="text-xs text-yellow-600">
-                                          ↻ {issue}
-                                        </p>
-                                      ))}
+                                      {iaAnalysis.bestPractices.issues.map(
+                                        (issue, idx) => (
+                                          <p
+                                            key={idx}
+                                            className="text-xs text-yellow-600"
+                                          >
+                                            ↻ {issue}
+                                          </p>
+                                        ),
+                                      )}
                                     </div>
                                   </Card>
                                 </div>
                               ) : (
                                 <div className="text-center py-8">
                                   <p className="text-sm text-gray-500">
-                                    Haz clic en &quot;Analizar con IA&quot; para obtener sugerencias de mejora
+                                    Haz clic en &quot;Analizar con IA&quot; para
+                                    obtener sugerencias de mejora
                                   </p>
                                 </div>
                               )}
@@ -751,16 +941,59 @@ export const capitalize = (str: string): string => {
             </div>
           )}
 
-          {activeTab === 'collaborators' && (
+          {activeTab === "collaborators" && (
             <div className="flex-1 bg-white p-6">
-              <div className="w-full">
+              <div className="w-full relative">
                 <div className="flex justify-end items-center mb-6">
-                  <Button className="bg-green-500 hover:bg-green-600 text-white">
+                  <Button
+                    className="bg-green-500 hover:bg-green-600 text-white"
+                    onClick={() => setShowAddColab(true)}
+                  >
                     <PlusIcon className="w-4 h-4 mr-2" />
                     Agregar
                   </Button>
                 </div>
-                
+                {showAddColab && (
+                  <div className="absolute left-1/2 top-0 transform -translate-x-1/2 z-50">
+                    <div className="bg-white rounded-2xl p-8 shadow-2xl w-full max-w-sm border border-green-200">
+                      <h3 className="text-lg font-bold mb-4 text-green-700">
+                        Agregar colaborador
+                      </h3>
+                      <input
+                        type="text"
+                        placeholder="Nombre"
+                        value={newColab.name}
+                        onChange={(e) =>
+                          setNewColab({ ...newColab, name: e.target.value })
+                        }
+                        className="w-full mb-3 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500"
+                      />
+                      <input
+                        type="email"
+                        placeholder="Email"
+                        value={newColab.email}
+                        onChange={(e) =>
+                          setNewColab({ ...newColab, email: e.target.value })
+                        }
+                        className="w-full mb-3 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500"
+                      />
+                      <div className="flex justify-end gap-2 mt-4">
+                        <Button
+                          variant="outline"
+                          onClick={() => setShowAddColab(false)}
+                        >
+                          Cancelar
+                        </Button>
+                        <Button
+                          className="bg-green-500 hover:bg-green-600 text-white"
+                          onClick={handleAddColab}
+                        >
+                          Agregar
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
@@ -768,93 +1001,79 @@ export const capitalize = (str: string): string => {
                         <th className="px-8 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                           Colaboradores
                         </th>
-                        <th className="px-8 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                        <th className="px-8 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider align-top">
                           Rol
                         </th>
+                        <th className="px-8 py-4 text-right text-xs font-bold text-gray-700 uppercase tracking-wider align-top"></th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      <tr>
-                        <td className="px-8 py-6 whitespace-nowrap">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center">
-                              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                                <span className="text-sm font-medium text-green-600">L</span>
+                      {(Array.isArray(project.collaborators)
+                        ? project.collaborators
+                        : []
+                      ).map((colab, idx) => {
+                        const user = colab.user;
+                        return (
+                          <tr key={colab.id}>
+                            <td className="px-8 py-6 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                                  <span className="text-sm font-medium text-green-600">
+                                    {user?.fullName?.charAt(0) ||
+                                      user?.name?.charAt(0) ||
+                                      "?"}
+                                  </span>
+                                </div>
+                                <div className="ml-4">
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {user?.fullName ||
+                                      user?.name ||
+                                      "Sin nombre"}
+                                  </div>
+                                  <div className="text-sm text-gray-500">
+                                    {user?.email || "Sin email"}
+                                  </div>
+                                </div>
                               </div>
-                              <div className="ml-4">
-                                <div className="text-sm font-medium text-gray-900">Lili RMX</div>
-                                <div className="text-sm text-gray-500">lili@example.com</div>
-                              </div>
-                            </div>
-                            <div className="flex items-center space-x-24">
-                              <select className="px-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                            </td>
+                            <td className="px-8 py-6 whitespace-nowrap align-middle">
+                              <select
+                                className="px-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                disabled={!isEditingConfig}
+                                value={colab.role || "Usuario"}
+                                onChange={(e) =>
+                                  handleRoleChange(colab.id, e.target.value)
+                                }
+                              >
                                 <option>Usuario</option>
                                 <option>Admin</option>
                                 <option>Editor</option>
                               </select>
-                              <Button variant="outline" size="sm" className="text-red-600 border-red-300 hover:bg-red-50">
-                                Remover
-                              </Button>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-8 py-6 whitespace-nowrap">
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="px-8 py-6 whitespace-nowrap">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center">
-                              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                <span className="text-sm font-medium text-blue-600">L</span>
-                              </div>
-                              <div className="ml-4">
-                                <div className="text-sm font-medium text-gray-900">Laura Rmx</div>
-                                <div className="text-sm text-gray-500">laura@example.com</div>
-                              </div>
-                            </div>
-                            <div className="flex items-center space-x-24">
-                              <select className="px-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500">
-                                <option>Usuario</option>
-                                <option>Admin</option>
-                                <option>Editor</option>
-                              </select>
-                              <Button variant="outline" size="sm" className="text-red-600 border-red-300 hover:bg-red-50">
-                                Remover
-                              </Button>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-8 py-6 whitespace-nowrap">
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="px-8 py-6 whitespace-nowrap">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center">
-                              <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                                <span className="text-sm font-medium text-purple-600">D</span>
-                              </div>
-                              <div className="ml-4">
-                                <div className="text-sm font-medium text-gray-900">Diego Cordero</div>
-                                <div className="text-sm text-gray-500">diego@example.com</div>
-                              </div>
-                            </div>
-                            <div className="flex items-center space-x-24">
-                              <select className="px-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500">
-                                <option>Admin</option>
-                                <option>Usuario</option>
-                                <option>Editor</option>
-                              </select>
-                              <Button variant="outline" size="sm" className="text-red-600 border-red-300 hover:bg-red-50">
-                                Remover
-                              </Button>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-8 py-6 whitespace-nowrap">
-                        </td>
-                      </tr>
+                            </td>
+                            <td className="px-8 py-6 whitespace-nowrap text-right align-middle">
+                              {isEditingConfig ? (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-gray-600 border-gray-300 hover:bg-gray-50"
+                                  onClick={() => setIsEditingConfig(false)}
+                                >
+                                  Cancelar
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-red-600 border-red-300 hover:bg-red-50"
+                                  onClick={() => handleRemoveColab(colab.id)}
+                                >
+                                  Eliminar
+                                </Button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -862,7 +1081,7 @@ export const capitalize = (str: string): string => {
             </div>
           )}
 
-          {activeTab === 'settings' && (
+          {activeTab === "settings" && (
             <div className="flex-1 bg-white p-6">
               <div className="w-full">
                 <div className="space-y-8">
@@ -873,34 +1092,42 @@ export const capitalize = (str: string): string => {
                       </label>
                       <input
                         type="text"
-                        defaultValue="Diego Cordero"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        value={
+                          project.owner?.fullName || project.owner?.name || ""
+                        }
+                        readOnly
+                        className="w-full px-4 py-3 border border-gray-300 rounded-md bg-gray-100 text-gray-700 cursor-not-allowed"
                       />
                     </div>
-                    
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Nombre del repositorio <span className="text-red-500">*</span>
+                        Nombre del repositorio{" "}
+                        <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
-                        defaultValue={project.name}
+                        name="name"
+                        value={editConfig.name}
+                        onChange={handleConfigChange}
                         className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        readOnly={!isEditingConfig}
                       />
                     </div>
                   </div>
-                  
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Descripción
                     </label>
                     <textarea
-                      defaultValue={project.description}
+                      name="description"
+                      value={editConfig.description}
+                      onChange={handleConfigChange}
                       rows={4}
                       className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      readOnly={!isEditingConfig}
                     />
                   </div>
-                  
+
                   <div className="space-y-4">
                     <div className="flex items-center">
                       <input
@@ -910,12 +1137,15 @@ export const capitalize = (str: string): string => {
                         defaultChecked
                         className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300"
                       />
-                      <label htmlFor="public" className="ml-3 flex items-center text-sm text-gray-900">
+                      <label
+                        htmlFor="public"
+                        className="ml-3 flex items-center text-sm text-gray-900"
+                      >
                         <LockOpenIcon className="w-5 h-5 mr-2 text-green-500" />
                         Público
                       </label>
                     </div>
-                    
+
                     <div className="flex items-center">
                       <input
                         type="radio"
@@ -923,13 +1153,16 @@ export const capitalize = (str: string): string => {
                         name="visibility"
                         className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300"
                       />
-                      <label htmlFor="private" className="ml-3 flex items-center text-sm text-gray-900">
+                      <label
+                        htmlFor="private"
+                        className="ml-3 flex items-center text-sm text-gray-900"
+                      >
                         <LockClosedIcon className="w-5 h-5 mr-2 text-gray-500" />
                         Privado
                       </label>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg">
                     <input
                       type="checkbox"
@@ -938,28 +1171,47 @@ export const capitalize = (str: string): string => {
                       className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded mt-1"
                     />
                     <div>
-                      <label htmlFor="readme" className="text-sm font-medium text-gray-900">
+                      <label
+                        htmlFor="readme"
+                        className="text-sm font-medium text-gray-900"
+                      >
                         Agregar un archivo README
                       </label>
                       <p className="text-sm text-gray-600 mt-1">
-                        Aquí puedes escribir una descripción detallada de tu proyecto.
+                        Aquí puedes escribir una descripción detallada de tu
+                        proyecto.
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="text-sm text-gray-600">
                     Estás creando un repositorio público en tu cuenta personal.
                   </div>
                 </div>
-                
+
                 <div className="flex justify-end items-center mt-8 pt-6 border-t border-gray-200">
                   <div className="flex space-x-3">
-                    <Button variant="outline" className="text-red-600 border-red-300 hover:bg-red-50">
+                    <Button
+                      variant="outline"
+                      className="text-red-600 border-red-300 hover:bg-red-50"
+                    >
                       Eliminar
                     </Button>
-                    <Button className="bg-green-500 hover:bg-green-600 text-white">
-                      Guardar cambios
-                    </Button>
+                    {isEditingConfig ? (
+                      <Button
+                        className="bg-green-500 hover:bg-green-600 text-white"
+                        onClick={handleConfigSave}
+                      >
+                        Guardar cambios
+                      </Button>
+                    ) : (
+                      <Button
+                        className="bg-green-500 hover:bg-green-600 text-white"
+                        onClick={() => setIsEditingConfig(true)}
+                      >
+                        Editar
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>

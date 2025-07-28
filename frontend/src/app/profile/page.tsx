@@ -18,7 +18,17 @@ export default function ProfilePage() {
     logout,
     initialized,
   } = useAuth();
-  const [form, setForm] = useState(user);
+  const [form, setForm] = useState({
+    username: user?.username || "",
+    fullName: user?.fullName || "",
+    email: user?.email || "",
+    password: "",
+    confirmPassword: "",
+    phone: user?.phone || "",
+    birthdate: user?.birthdate ? user.birthdate.substring(0, 10) : "",
+    address: user?.address || "",
+    avatar: user?.avatar || "",
+  });
   const [edit, setEdit] = useState(false);
   const router = useRouter();
 
@@ -27,7 +37,17 @@ export default function ProfilePage() {
   }, [fetchProfile]);
 
   useEffect(() => {
-    setForm(user);
+    setForm({
+      username: user?.username || "",
+      fullName: user?.fullName || "",
+      email: user?.email || "",
+      password: "",
+      confirmPassword: "",
+      phone: user?.phone || "",
+      birthdate: user?.birthdate ? user.birthdate.substring(0, 10) : "",
+      address: user?.address || "",
+      avatar: user?.avatar || "",
+    });
   }, [user]);
 
   useEffect(() => {
