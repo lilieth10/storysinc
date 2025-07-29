@@ -13,8 +13,9 @@ import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Footer } from "@/components/landing/Footer";
 import { Button } from "@/components/ui/button";
-import { ReportLoader } from "@/components/ui/report-loader";
 import dynamic from "next/dynamic";
+import toast from "react-hot-toast";
+import { useNotifications } from "@/store/notifications";
 
 // Importar ApexCharts dinámicamente para evitar errores de SSR
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
@@ -22,15 +23,19 @@ const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 interface SyncProject {
   id: number;
   name: string;
-  type: "bff" | "sidecar";
-  status: "active" | "inactive";
+  pattern: string;  // Cambiado de 'type' a 'pattern' para coincidir con el backend
+  language: string;  // Agregado para coincidir con el backend
   lastSync: string;
   description: string;
-  pattern: string;
-  tags: string;
-  frontendAssociation: string;
-  contact: string;
-  functions: string;
+  tags?: string;
+  frontendAssociation?: string;
+  contact?: string;
+  functions?: string;
+  owner?: {
+    id: number;
+    fullName?: string;
+    name: string;
+  };
 }
 
 interface CreateFormData {
@@ -110,11 +115,21 @@ export default function SyncPage() {
     history: true,
     aiMetrics: true,
   });
+  const { fetchNotifications } = useNotifications();
 
   // Cargar proyectos de sincronización
   useEffect(() => {
     fetchSyncProjects();
   }, []);
+
+  // Cargar métricas e historial cuando se cargan los proyectos
+  useEffect(() => {
+    if (syncProjects.length > 0) {
+      fetchAIMetrics();
+      fetchSyncHistory();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [syncProjects]);
 
   // Cargar métricas de IA cuando se selecciona un proyecto
   useEffect(() => {
@@ -126,12 +141,13 @@ export default function SyncPage() {
   }, [selectedProject]);
 
   const fetchAIMetrics = async () => {
-    if (!selectedProject) return;
+    const projectToUse = selectedProject || syncProjects[0];
+    if (!projectToUse) return;
 
     setLoadingMetrics(true);
     try {
       const response = await fetch(
-        `/api/sync/projects/${selectedProject.id}/ai-metrics`,
+        `/sync/projects/${projectToUse.id}/ai-metrics`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -151,13 +167,14 @@ export default function SyncPage() {
   };
 
   const fetchSyncHistory = async () => {
-    if (!selectedProject) return;
+    const projectToUse = selectedProject || syncProjects[0];
+    if (!projectToUse) return;
 
     setLoadingHistory(true);
     setHistoryError(null);
     try {
       const response = await fetch(
-        `/api/sync/projects/${selectedProject.id}/history`,
+        `/sync/projects/${projectToUse.id}/history`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -173,15 +190,50 @@ export default function SyncPage() {
       }
     } catch (error) {
       console.error("Error fetching sync history:", error);
-      setHistoryError("Error al cargar el historial");
+      setHistoryError("Error de red");
     } finally {
       setLoadingHistory(false);
     }
   };
 
   const deleteHistoryEntry = async (historyId: number) => {
+    // Confirmación elegante con toast
+    const t = toast(
+      (t) => (
+        <div className="flex items-center space-x-3">
+          <div className="flex-1">
+            <p className="font-medium">¿Eliminar entrada del historial?</p>
+            <p className="text-sm text-gray-600">Esta acción no se puede deshacer</p>
+          </div>
+          <div className="flex space-x-2">
+            <button
+              onClick={() => {
+                toast.dismiss(t.id);
+                performDelete(historyId);
+              }}
+              className="px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600"
+            >
+              Eliminar
+            </button>
+            <button
+              onClick={() => toast.dismiss(t.id)}
+              className="px-3 py-1 bg-gray-300 text-gray-700 rounded text-sm hover:bg-gray-400"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      ),
+      {
+        duration: 5000,
+        position: 'top-center',
+      }
+    );
+  };
+
+  const performDelete = async (historyId: number) => {
     try {
-      const response = await fetch(`/api/sync/history/${historyId}`, {
+      const response = await fetch(`/sync/history/${historyId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -191,9 +243,13 @@ export default function SyncPage() {
       if (response.ok) {
         // Recargar el historial
         await fetchSyncHistory();
+        toast.success("Entrada del historial eliminada con éxito.");
+      } else {
+        toast.error("Error al eliminar la entrada del historial.");
       }
     } catch (error) {
       console.error("Error deleting history entry:", error);
+      toast.error("Error de red al eliminar la entrada del historial.");
     }
   };
 
@@ -218,7 +274,7 @@ export default function SyncPage() {
     if (selectedProject) {
       setLoadingHistory(true);
       setHistoryError(null);
-      fetch(`/api/sync/projects/${selectedProject.id}/history`, {
+      fetch(`/sync/projects/${selectedProject.id}/history`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
@@ -234,7 +290,7 @@ export default function SyncPage() {
 
   const fetchSyncProjects = async () => {
     try {
-      const response = await fetch("/api/sync/projects", {
+      const response = await fetch("/sync/projects", {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
@@ -242,7 +298,10 @@ export default function SyncPage() {
 
       if (response.ok) {
         const projects = await response.json();
+        console.log("Proyectos recibidos:", projects); // Debug
         setSyncProjects(projects);
+      } else {
+        console.error("Error en la respuesta:", response.status, response.statusText);
       }
     } catch (error) {
       console.error("Error fetching sync projects:", error);
@@ -257,7 +316,7 @@ export default function SyncPage() {
 
   const handleCreate = async () => {
     try {
-      const response = await fetch("/api/sync/create", {
+      const response = await fetch("/sync/create", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -290,7 +349,7 @@ export default function SyncPage() {
 
   const handleDelete = async (id: number) => {
     try {
-      const response = await fetch(`/api/sync/projects/${id}`, {
+      const response = await fetch(`/sync/projects/${id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -576,7 +635,7 @@ export default function SyncPage() {
                   setEditSuccess(false);
                   try {
                     const response = await fetch(
-                      `/api/sync/projects/${selectedProject.id}`,
+                      `/sync/projects/${selectedProject.id}`,
                       {
                         method: "PATCH",
                         headers: {
@@ -585,7 +644,7 @@ export default function SyncPage() {
                         },
                         body: JSON.stringify({
                           ...formData,
-                          type: selectedProject.type,
+                          type: selectedProject.pattern, // Assuming pattern is the new type
                         }),
                       },
                     );
@@ -640,7 +699,7 @@ export default function SyncPage() {
                     placeholder="Describe el servicio"
                   />
                 </div>
-                {selectedProject.type === "bff" && (
+                {selectedProject.pattern === "monolito" && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Patrón
@@ -664,7 +723,7 @@ export default function SyncPage() {
                     </select>
                   </div>
                 )}
-                {selectedProject.type === "sidecar" && (
+                {selectedProject.pattern === "microservicio" && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Funciones
@@ -804,6 +863,149 @@ export default function SyncPage() {
         <div className="flex">
           <Sidebar />
           <div className="flex-1 flex flex-col items-center justify-start">
+            {/* Modal de Loading */}
+            {syncing && (
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl p-12 shadow-2xl border border-gray-200 z-10 min-w-[300px]">
+                <div className="text-center">
+                  {/* Spinner principal con SVG más grande */}
+                  <div className="mb-6">
+                    <svg
+                      width={100}
+                      height={100}
+                      viewBox="0 0 100 100"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="w-24 h-24 mx-auto"
+                    >
+                      {/* Central "Brain" Node - Pulsing */}
+                      <circle cx="50" cy="50" r="15" fill="#4CAF50" opacity="0.8">
+                        <animate
+                          attributeName="r"
+                          values="15;18;15"
+                          dur="3s"
+                          repeatCount="indefinite"
+                          keyTimes="0;0.5;1"
+                          calcMode="spline"
+                          keySplines="0.4 0 0.2 1; 0.4 0 0.2 1"
+                        />
+                        <animate
+                          attributeName="opacity"
+                          values="0.8;1;0.8"
+                          dur="3s"
+                          repeatCount="indefinite"
+                          keyTimes="0;0.5;1"
+                          calcMode="spline"
+                          keySplines="0.4 0 0.2 1; 0.4 0 0.2 1"
+                        />
+                      </circle>
+
+                      {/* Orbiting Nodes and Connecting Lines */}
+                      <g transform="rotate(0 50 50)">
+                        {/* Group for rotation */}
+                        <animateTransform
+                          attributeName="transform"
+                          attributeType="XML"
+                          type="rotate"
+                          from="0 50 50"
+                          to="360 50 50"
+                          dur="8s"
+                          repeatCount="indefinite"
+                        />
+
+                        {/* Node 1 */}
+                        <circle cx="50" cy="25" r="6" fill="#8BC34A" opacity="0.9">
+                          <animate
+                            attributeName="opacity"
+                            values="0.9;0.6;0.9"
+                            dur="2.5s"
+                            begin="0s"
+                            repeatCount="indefinite"
+                          />
+                        </circle>
+                        <line
+                          x1="50"
+                          y1="50"
+                          x2="50"
+                          y2="25"
+                          stroke="#388E3C"
+                          strokeWidth="3.125"
+                          strokeLinecap="round"
+                          strokeDasharray="10 10"
+                        >
+                          <animate
+                            attributeName="stroke-dashoffset"
+                            values="0; -20"
+                            dur="2s"
+                            repeatCount="indefinite"
+                          />
+                        </line>
+
+                        {/* Node 2 */}
+                        <circle cx="71.65" cy="62.5" r="6" fill="#8BC34A" opacity="0.9">
+                          <animate
+                            attributeName="opacity"
+                            values="0.9;0.6;0.9"
+                            dur="2.5s"
+                            begin="0.8s"
+                            repeatCount="indefinite"
+                          />
+                        </circle>
+                        <line
+                          x1="50"
+                          y1="50"
+                          x2="71.65"
+                          y2="62.5"
+                          stroke="#388E3C"
+                          strokeWidth="3.125"
+                          strokeLinecap="round"
+                          strokeDasharray="10 10"
+                        >
+                          <animate
+                            attributeName="stroke-dashoffset"
+                            values="0; -20"
+                            dur="2s"
+                            begin="0.5s"
+                            repeatCount="indefinite"
+                          />
+                        </line>
+
+                        {/* Node 3 */}
+                        <circle cx="28.35" cy="62.5" r="6" fill="#8BC34A" opacity="0.9">
+                          <animate
+                            attributeName="opacity"
+                            values="0.9;0.6;0.9"
+                            dur="2.5s"
+                            begin="1.6s"
+                            repeatCount="indefinite"
+                          />
+                        </circle>
+                        <line
+                          x1="50"
+                          y1="50"
+                          x2="28.35"
+                          y2="62.5"
+                          stroke="#388E3C"
+                          strokeWidth="3.125"
+                          strokeLinecap="round"
+                          strokeDasharray="10 10"
+                        >
+                          <animate
+                            attributeName="stroke-dashoffset"
+                            values="0; -20"
+                            dur="2s"
+                            begin="1s"
+                            repeatCount="indefinite"
+                          />
+                        </line>
+                      </g>
+                    </svg>
+                  </div>
+
+                  {/* Solo texto simple */}
+                  <p className="text-gray-600 font-medium text-lg">Sincronizando...</p>
+                </div>
+              </div>
+            )}
             <div className="w-full max-w-3xl bg-white border border-gray-200 rounded-lg shadow-sm mt-8 mb-8 px-8 py-6">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-800">
@@ -818,7 +1020,7 @@ export default function SyncPage() {
                       try {
                         const start = Date.now();
                         const response = await fetch(
-                          `/api/sync/projects/${selectedProject.id}/sync`,
+                          `/sync/projects/${selectedProject.id}/sync`,
                           {
                             method: "POST",
                             headers: {
@@ -842,11 +1044,20 @@ export default function SyncPage() {
                           });
                           setLastSyncHighlight(true);
                           setTimeout(() => setLastSyncHighlight(false), 1200);
+                          // Recargar historial después de sincronizar
+                          await fetchSyncHistory();
+                          // Recargar notificaciones
+                          const token = localStorage.getItem("token");
+                          if (token) {
+                            await fetchNotifications(token);
+                          }
                         } else {
                           setSyncError("Error al sincronizar");
+                          toast.error("Error al sincronizar el proyecto");
                         }
                       } catch (err) {
                         setSyncError("Error de red");
+                        toast.error("Error de red al sincronizar");
                       } finally {
                         setSyncing(false);
                         setTimeout(() => setSyncSuccess(false), 2000);
@@ -855,7 +1066,7 @@ export default function SyncPage() {
                     className="px-4 py-2 rounded font-semibold border border-green-400 bg-green-100 text-black hover:bg-green-200 transition-colors duration-150"
                     disabled={syncing}
                   >
-                    {syncing ? "Sincronizando..." : "Sincronizar ahora"}
+                    Sincronizar ahora
                   </button>
                   <button
                     onClick={() => setEditMode(true)}
@@ -875,19 +1086,19 @@ export default function SyncPage() {
                 <div>
                   <div className="mb-2">
                     <span className="font-semibold">Tipo:</span>{" "}
-                    {selectedProject.type === "bff" ? "BFF" : "Sidecar"}
+                    {selectedProject.pattern === "monolito" ? "Monolito" : selectedProject.pattern === "microservicio" ? "Microservicio" : selectedProject.pattern}
                   </div>
                   <div className="mb-2">
                     <span className="font-semibold">Descripción:</span>{" "}
                     {selectedProject.description}
                   </div>
-                  {selectedProject.type === "bff" && (
+                  {selectedProject.pattern === "monolito" && (
                     <div className="mb-2">
                       <span className="font-semibold">Patrón:</span>{" "}
                       {selectedProject.pattern || "-"}
                     </div>
                   )}
-                  {selectedProject.type === "sidecar" && (
+                  {selectedProject.pattern === "microservicio" && (
                     <div className="mb-2">
                       <span className="font-semibold">Funciones:</span>{" "}
                       {selectedProject.functions
@@ -939,12 +1150,6 @@ export default function SyncPage() {
                   </div>
                 </div>
               </div>
-              {syncing && (
-                <ReportLoader
-                  isGenerating={true}
-                  text="Sincronizando proyecto..."
-                />
-              )}
               {syncSuccess && (
                 <div className="text-green-600 mt-4">
                   ¡Sincronización exitosa!
@@ -1111,7 +1316,7 @@ export default function SyncPage() {
                               series={[
                                 {
                                   name: "Tiempo de Sincronización (ms)",
-                                  data: aiMetrics.performanceData || [
+                                  data: Array.isArray(aiMetrics.performanceData) ? aiMetrics.performanceData : [
                                     120, 95, 140, 110, 85, 130, 105,
                                   ],
                                 },
@@ -1134,10 +1339,10 @@ export default function SyncPage() {
                                   fontFamily: "Inter, sans-serif",
                                 },
                                 colors: [
-                                  "#10B981",
-                                  "#059669",
-                                  "#047857",
-                                  "#065F46",
+                                  "#22c55e", // Verde claro - BFF
+                                  "#16a34a", // Verde medio - Sidecar
+                                  "#15803d", // Verde oscuro - Monolito
+                                  "#166534", // Verde muy oscuro - Microservicios
                                 ],
                                 labels: [
                                   "BFF",
@@ -1148,18 +1353,32 @@ export default function SyncPage() {
                                 legend: {
                                   position: "bottom",
                                   fontSize: "12px",
+                                  labels: {
+                                    colors: "#374151",
+                                  },
                                 },
                                 dataLabels: {
                                   enabled: true,
                                   formatter: (val: number) => val + "%",
+                                  style: {
+                                    fontSize: "12px",
+                                    fontWeight: "bold",
+                                  },
+                                },
+                                plotOptions: {
+                                  pie: {
+                                    donut: {
+                                      size: "60%",
+                                    },
+                                  },
                                 },
                               }}
                               series={[
-                                aiMetrics.patterns.bff,
-                                aiMetrics.patterns.sidecar,
-                                aiMetrics.patterns.monolith,
-                                aiMetrics.patterns.microservices,
-                              ]}
+                                aiMetrics.patterns?.bff || 0,
+                                aiMetrics.patterns?.sidecar || 0,
+                                aiMetrics.patterns?.monolith || 0,
+                                aiMetrics.patterns?.microservices || 0,
+                              ].map(val => Number(val))}
                               type="donut"
                               height="100%"
                             />
@@ -1173,14 +1392,14 @@ export default function SyncPage() {
                           Sugerencias de IA
                         </h4>
                         <div className="space-y-3">
-                          {aiMetrics.suggestions.map((suggestion, index) => (
+                          {(aiMetrics.suggestions || []).map((suggestion, index) => (
                             <div
                               key={index}
                               className={`flex items-start space-x-3 p-3 rounded-lg ${
                                 suggestion.priority === "high"
                                   ? "bg-red-50"
                                   : suggestion.priority === "medium"
-                                    ? "bg-blue-50"
+                                    ? "bg-green-100"
                                     : "bg-green-50"
                               }`}
                             >
@@ -1189,7 +1408,7 @@ export default function SyncPage() {
                                   suggestion.priority === "high"
                                     ? "bg-red-500"
                                     : suggestion.priority === "medium"
-                                      ? "bg-blue-500"
+                                      ? "bg-green-600"
                                       : "bg-green-500"
                                 }`}
                               ></div>
@@ -1215,7 +1434,7 @@ export default function SyncPage() {
                                 Tiempo Promedio
                               </p>
                               <p className="text-2xl font-bold text-green-600">
-                                {aiMetrics.performance.averageTime}ms
+                                {aiMetrics.performance?.averageTime || 0}ms
                               </p>
                             </div>
                             <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
@@ -1231,7 +1450,7 @@ export default function SyncPage() {
                                 Tasa de Éxito
                               </p>
                               <p className="text-2xl font-bold text-green-600">
-                                {aiMetrics.performance.successRate}%
+                                {aiMetrics.performance?.successRate || 0}%
                               </p>
                             </div>
                             <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
@@ -1247,7 +1466,7 @@ export default function SyncPage() {
                                 Optimizaciones IA
                               </p>
                               <p className="text-2xl font-bold text-green-600">
-                                {aiMetrics.performance.optimizations}
+                                {aiMetrics.performance?.optimizations || 0}
                               </p>
                             </div>
                             <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
@@ -1327,7 +1546,7 @@ export default function SyncPage() {
                               {project.name}
                             </h3>
                             <p className="text-sm text-gray-500 capitalize">
-                              {project.type}
+                              {project.pattern === "monolito" ? "Monolito" : project.pattern === "microservicio" ? "Microservicio" : project.pattern}
                             </p>
                             <p className="text-xs text-gray-400">
                               Última sincronización:{" "}
@@ -1345,12 +1564,12 @@ export default function SyncPage() {
                       <div className="mt-3">
                         <span
                           className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                            project.status === "active"
+                            project.pattern === "monolito" || project.pattern === "microservicio"
                               ? "bg-green-100 text-green-800"
                               : "bg-gray-100 text-gray-800"
                           }`}
                         >
-                          {project.status === "active" ? "Activo" : "Inactivo"}
+                          {project.pattern === "monolito" || project.pattern === "microservicio" ? "Activo" : "Inactivo"}
                         </span>
                       </div>
                     </div>
