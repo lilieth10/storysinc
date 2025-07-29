@@ -32,6 +32,7 @@ model User {
   syncProjects    SyncProject[]
   syncHistory     SyncHistory[]
   collaborations  ProjectCollaborator[]
+  aiChatHistory   AIChatMessage[]
 }
 
 model Report {
@@ -57,6 +58,7 @@ model Project {
   pattern     String   @default("monolith")
   status      String   @default("active")
   ownerId     Int
+  language    String   @default("javascript") // javascript, typescript, python, etc.
   components  String   // JSON string
   lastSync    DateTime @default(now())
   iaInsights  String   // JSON string
@@ -72,6 +74,7 @@ model Project {
   // Relations
   owner       User     @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   collaborators ProjectCollaborator[]
+  aiChatHistory AIChatMessage[]
 }
 
 model SyncProject {
@@ -127,4 +130,17 @@ model ProjectCollaborator {
   userId    Int
   role      String  @default("Usuario")
   @@unique([projectId, userId])
+}
+
+model AIChatMessage {
+  id        Int      @id @default(autoincrement())
+  projectId Int
+  userId    Int
+  message   String   // User message or AI response
+  isAI      Boolean  @default(false) // true if AI response, false if user message
+  timestamp DateTime @default(now())
+  
+  // Relations
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 } 
