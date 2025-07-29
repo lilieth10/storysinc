@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -42,7 +43,7 @@ interface CreateProjectData {
 
 export default function ProjectsPage() {
   const router = useRouter();
-  const { token } = useAuth();
+  const { token: _token } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingIA, setLoadingIA] = useState(false);
@@ -189,11 +190,11 @@ export default function ProjectsPage() {
   });
 
   // Agregar handlers vacíos para evitar errores de referencia
-  const handleAnalyzeIA = (projectId: number) => {
+  const handleAnalyzeIA = (_projectId: number) => {
     // Implementación futura: análisis IA
     toast("Funcionalidad de análisis IA próximamente");
   };
-  const handleSyncProject = (projectId: number) => {
+  const handleSyncProject = (_projectId: number) => {
     // Implementación futura: sincronización
     toast("Funcionalidad de sincronización próximamente");
   };
@@ -304,13 +305,13 @@ export default function ProjectsPage() {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 mb-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-4 md:gap-6 mb-8">
                 {filteredProjects.map((project) => (
                   <div
                     key={project.id}
-                    className="bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
+                    className="bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow h-full flex flex-col"
                   >
-                    <div className="p-4 md:p-6">
+                    <div className="p-3 sm:p-4 md:p-6 h-full flex flex-col">
                       {/* Layout corregido como en Figma */}
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center space-x-3 flex-1 min-w-0">
@@ -394,7 +395,7 @@ export default function ProjectsPage() {
                       )}
 
                       {/* Actions */}
-                      <div className="flex flex-col space-y-2">
+                      <div className="flex flex-col space-y-2 mt-auto">
                         <button
                           onClick={() => router.push(`/projects/${project.id}`)}
                           className="w-full inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
@@ -418,14 +419,14 @@ export default function ProjectsPage() {
                           <button
                             onClick={() => handleAnalyzeIA(project.id)}
                             disabled={loadingIA}
-                            className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 inline-flex items-center justify-center px-2 py-2 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             {loadingIA ? (
                               <AILoader size="sm" text="" />
                             ) : (
                               <>
                                 <svg
-                                  className="w-4 h-4 mr-2"
+                                  className="w-3 h-3 mr-1"
                                   fill="none"
                                   stroke="currentColor"
                                   viewBox="0 0 24 24"
@@ -437,17 +438,17 @@ export default function ProjectsPage() {
                                     d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
                                   />
                                 </svg>
-                                Analizar IA
+                                IA
                               </>
                             )}
                           </button>
                           <button
                             onClick={() => handleSyncProject(project.id)}
                             disabled={loadingIA}
-                            className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 inline-flex items-center justify-center px-2 py-2 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <svg
-                              className="w-4 h-4 mr-2"
+                              className="w-3 h-3 mr-1"
                               fill="none"
                               stroke="currentColor"
                               viewBox="0 0 24 24"
@@ -459,22 +460,9 @@ export default function ProjectsPage() {
                                 d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                               />
                             </svg>
-                            Sincronizar
+                            Sync
                           </button>
                         </div>
-                      </div>
-
-                      {/* Last sync */}
-                      <div className="mt-4 text-xs text-gray-500">
-                        Última sincronización:{" "}
-                        {new Date(project.lastSync).toLocaleDateString(
-                          "es-ES",
-                          {
-                            year: "numeric",
-                            month: "2-digit",
-                            day: "2-digit",
-                          },
-                        )}
                       </div>
                     </div>
                   </div>
