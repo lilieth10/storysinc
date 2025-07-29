@@ -23,8 +23,8 @@ export function NotificationsList() {
           <div
             key={n.id}
             className={`flex items-start gap-4 rounded-lg p-4 transition-all ${
-              n.read 
-                ? "bg-gray-50 border border-gray-200" 
+              n.read
+                ? "bg-gray-50 border border-gray-200"
                 : "bg-green-50 border-l-4 border-l-green-500 shadow-sm"
             }`}
           >
@@ -45,12 +45,18 @@ export function NotificationsList() {
               </div>
               {/* Campana pequeña en la esquina */}
               <div className="absolute -top-1 -right-1 h-5 w-5 bg-blue-500 rounded-full flex items-center justify-center">
-                <svg width="10" height="10" fill="currentColor" viewBox="0 0 24 24" className="text-white">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                <svg
+                  width="10"
+                  height="10"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                  className="text-white"
+                >
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
                 </svg>
               </div>
             </div>
-            
+
             <div className="flex-1 min-w-0">
               <div className="font-semibold text-gray-900 text-base mb-1">
                 {n.title}
@@ -59,20 +65,20 @@ export function NotificationsList() {
                 {n.message}
               </div>
               <div className="text-xs text-gray-400">
-                {new Date(n.createdAt).toLocaleDateString('es-ES', { 
-                  month: 'short', 
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
+                {new Date(n.createdAt).toLocaleDateString("es-ES", {
+                  month: "short",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
                 })}
               </div>
             </div>
-            
+
             {/* Punto naranja para no leídas */}
             {!n.read && (
               <div className="w-3 h-3 bg-orange-500 rounded-full flex-shrink-0 mt-1"></div>
             )}
-            
+
             {/* Botones de acción */}
             <div className="flex flex-col gap-2 flex-shrink-0">
               {!n.read && token && (

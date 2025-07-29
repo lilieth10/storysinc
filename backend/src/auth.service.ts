@@ -18,7 +18,7 @@ export class AuthService {
 
   async register(
     data: RegisterDto,
-  ): Promise<{ id: number; fullName: string; email: string }> {
+  ): Promise<{ id: number; fullName: string; email: string; role: string }> {
     const existing = await this.prisma.user.findFirst({
       where: { email: data.email },
     });
@@ -30,10 +30,16 @@ export class AuthService {
         password: hash,
         fullName: data.fullName,
         username: data.username,
+        role: 'user', // Por defecto todos son usuarios
       },
     });
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    return { id: user.id, fullName: user.fullName, email: user.email };
+    return {
+      id: user.id,
+      fullName: user.fullName,
+      email: user.email,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      role: user.role,
+    };
   }
 
   async validateUser(
@@ -44,6 +50,7 @@ export class AuthService {
     fullName: string;
     email: string;
     password: string;
+    role: string;
   }> {
     // Buscar por email o username
     const user = await this.prisma.user.findFirst({
@@ -59,14 +66,19 @@ export class AuthService {
 
   async login(data: LoginDto): Promise<{
     access_token: string;
-    user: { id: number; fullName: string; email: string };
+    user: { id: number; fullName: string; email: string; role: string };
   }> {
     const user = await this.validateUser(data.email, data.password);
     if (!user) throw new UnauthorizedException('Credenciales inválidas');
-    const payload = { sub: user.id, email: user.email };
+    const payload = { sub: user.id, email: user.email, role: user.role };
     return {
       access_token: this.jwt.sign(payload),
-      user: { id: user.id, fullName: user.fullName, email: user.email },
+      user: {
+        id: user.id,
+        fullName: user.fullName,
+        email: user.email,
+        role: user.role,
+      },
     };
   }
 }

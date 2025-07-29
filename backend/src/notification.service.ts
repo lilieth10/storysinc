@@ -63,9 +63,7 @@ export class NotificationService {
     }));
   }
 
-  async markAsRead(
-    notificationId: number,
-  ): Promise<NotificationPayload> {
+  async markAsRead(notificationId: number): Promise<NotificationPayload> {
     // Marcar como leída en la DB
     const notification = await this.prisma.notification.update({
       where: { id: notificationId },
@@ -83,7 +81,9 @@ export class NotificationService {
     };
   }
 
-  async deleteNotification(notificationId: number): Promise<NotificationPayload> {
+  async deleteNotification(
+    notificationId: number,
+  ): Promise<NotificationPayload> {
     // Eliminar de la DB
     const notification = await this.prisma.notification.delete({
       where: { id: notificationId },

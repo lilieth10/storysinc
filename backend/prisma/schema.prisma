@@ -22,6 +22,7 @@ model User {
   gender        String?
   identityNumber String?
   avatar        String?
+  role          String   @default("user") // "admin" | "user"
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -33,6 +34,8 @@ model User {
   syncHistory     SyncHistory[]
   collaborations  ProjectCollaborator[]
   aiChatHistory   AIChatMessage[]
+  userProgress    UserTrainingProgress[]
+  certificates    TrainingCertificate[]
 }
 
 model Report {
@@ -143,4 +146,59 @@ model AIChatMessage {
   // Relations
   project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model TrainingResource {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  content     String   // JSON string for rich content
+  type        String   // "module", "tutorial", "documentation"
+  category    String   // "react", "css", "testing", "performance", "accessibility", "i18n"
+  difficulty  String   @default("beginner") // "beginner", "intermediate", "advanced"
+  duration    Int?     // Estimated time in minutes
+  imageUrl    String?
+  codeSnippet String?  // JSON string for code examples
+  order       Int      @default(0) // For ordering modules
+  isActive    Boolean  @default(true)
+  fileUrl     String?  // URL for downloadable PDF
+  videoUrl    String?  // URL for video content
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  userProgress UserTrainingProgress[]
+  certificates TrainingCertificate[]
+}
+
+model UserTrainingProgress {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  resourceId Int
+  progress  Int      @default(0) // Percentage completed (0-100)
+  timeSpent Int      @default(0) // Time spent in minutes
+  completed Boolean  @default(false)
+  startedAt DateTime @default(now())
+  completedAt DateTime?
+  
+  // Relations
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resource TrainingResource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, resourceId])
+}
+
+model TrainingCertificate {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  resourceId Int
+  certificateUrl String? // URL to generated PDF certificate
+  issuedAt  DateTime @default(now())
+  expiresAt DateTime?
+  
+  // Relations
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resource TrainingResource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, resourceId])
 } 

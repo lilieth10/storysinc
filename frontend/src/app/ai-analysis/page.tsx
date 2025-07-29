@@ -2,16 +2,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { 
-  CodeBracketIcon, 
-  LightBulbIcon, 
+import {
+  CodeBracketIcon,
+  LightBulbIcon,
   ExclamationTriangleIcon,
   CheckCircleIcon,
   MagnifyingGlassIcon,
   PaperAirplaneIcon,
   DocumentIcon,
   FolderIcon,
-  ClockIcon
+  ClockIcon,
 } from "@heroicons/react/24/outline";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import { Sidebar } from "@/components/layout/Sidebar";
@@ -20,7 +20,9 @@ import { Button } from "@/components/ui/button";
 import dynamic from "next/dynamic";
 
 // Importar Monaco Editor dinámicamente para evitar errores de SSR
-const MonacoEditor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
+const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
+  ssr: false,
+});
 
 interface AIAnalysis {
   id: number;
@@ -28,10 +30,10 @@ interface AIAnalysis {
   code: string;
   language: string;
   suggestions: Array<{
-    type: 'optimization' | 'security' | 'best-practice' | 'performance';
+    type: "optimization" | "security" | "best-practice" | "performance";
     title: string;
     description: string;
-    severity: 'low' | 'medium' | 'high';
+    severity: "low" | "medium" | "high";
     line?: number;
     code?: string;
   }>;
@@ -49,12 +51,12 @@ interface Project {
   name: string;
   language: string;
   files?: string[];
-  pattern?: 'monolith' | 'microservices' | 'Standard' | 'BFF' | 'Sidecar';
+  pattern?: "monolith" | "microservices" | "Standard" | "BFF" | "Sidecar";
 }
 
 interface ChatMessage {
   id: string;
-  type: 'user' | 'ai';
+  type: "user" | "ai";
   content: string;
   timestamp: Date;
   code?: string;
@@ -74,22 +76,22 @@ export default function AIAnalysisPage() {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        console.log('Fetching projects from /api/ai/projects...');
-        const token = localStorage.getItem('token');
-        console.log('Token:', token ? 'Present' : 'Missing');
-        
+        console.log("Fetching projects from /api/ai/projects...");
+        const token = localStorage.getItem("token");
+        console.log("Token:", token ? "Present" : "Missing");
+
         // Usar directamente el endpoint que funciona
-        const response = await fetch('http://localhost:3001/projects-test', {
+        const response = await fetch("http://localhost:3001/projects-test", {
           headers: {
-            'Authorization': `Bearer ${token}`
-          }
+            Authorization: `Bearer ${token}`,
+          },
         });
-        
-        console.log('Response status:', response.status);
-        
+
+        console.log("Response status:", response.status);
+
         if (response.ok) {
           const data = await response.json();
-          console.log('Projects loaded:', data);
+          console.log("Projects loaded:", data);
           setProjects(data);
           if (data.length > 0) {
             setSelectedProject(data[0]);
@@ -97,15 +99,15 @@ export default function AIAnalysisPage() {
             setCodeContent(generateProjectCode(data[0]));
             setSelectedFile("main.js");
           } else {
-            console.log('No projects found');
+            console.log("No projects found");
           }
         } else {
-          console.error('Error response:', response.status);
+          console.error("Error response:", response.status);
           const errorText = await response.text();
-          console.error('Error details:', errorText);
+          console.error("Error details:", errorText);
         }
       } catch (error) {
-        console.error('Error fetching projects:', error);
+        console.error("Error fetching projects:", error);
       }
     };
 
@@ -115,7 +117,7 @@ export default function AIAnalysisPage() {
   // Generar código específico según el proyecto
   const generateProjectCode = (project: Project) => {
     switch (project.pattern) {
-      case 'BFF':
+      case "BFF":
         return `// Backend for Frontend (BFF) - ${project.name}
 const express = require('express');
 const app = express();
@@ -168,7 +170,7 @@ app.listen(3000, () => {
   console.log('BFF corriendo en puerto 3000');
 });`;
 
-      case 'Sidecar':
+      case "Sidecar":
         return `// Sidecar Pattern - ${project.name}
 const express = require('express');
 const app = express();
@@ -224,7 +226,7 @@ app.listen(3001, () => {
   console.log('Sidecar corriendo en puerto 3001');
 });`;
 
-      case 'Standard':
+      case "Standard":
         return `// Monolito Standard - ${project.name}
 const express = require('express');
 const app = express();
@@ -339,19 +341,19 @@ app.listen(3000, () => {
       const analysisData: AIAnalysis = {
         id: Date.now(),
         projectId: selectedProject.id,
-        language: selectedProject.language || 'javascript',
+        language: selectedProject.language || "javascript",
         code: codeContent,
         suggestions: generateSuggestions(selectedProject),
         metrics: generateMetrics(selectedProject),
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
       };
-      
+
       // Simular delay para que se vea el loader
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
       setAnalysis(analysisData);
     } catch (error) {
-      console.error('Error analyzing code:', error);
+      console.error("Error analyzing code:", error);
     } finally {
       setLoading(false);
     }
@@ -359,20 +361,21 @@ app.listen(3000, () => {
 
   const generateSuggestions = (project: Project) => {
     const suggestions: Array<{
-      type: 'optimization' | 'best-practice' | 'performance' | 'security';
+      type: "optimization" | "best-practice" | "performance" | "security";
       title: string;
       description: string;
-      severity: 'low' | 'medium' | 'high';
+      severity: "low" | "medium" | "high";
       line?: number;
       code?: string;
     }> = [];
-    
-    if (project.pattern === 'Standard') {
+
+    if (project.pattern === "Standard") {
       suggestions.push({
-        type: 'optimization',
-        title: 'Refactorización a Microservicios',
-        description: 'Este monolito tiene alta complejidad. Considera dividirlo en microservicios para mejorar escalabilidad y mantenimiento',
-        severity: 'medium',
+        type: "optimization",
+        title: "Refactorización a Microservicios",
+        description:
+          "Este monolito tiene alta complejidad. Considera dividirlo en microservicios para mejorar escalabilidad y mantenimiento",
+        severity: "medium",
         line: 1,
         code: `// Antes: Monolito
 class MonolithicApp {
@@ -384,16 +387,17 @@ class MonolithicApp {
 // Después: Microservicios
 class UserService { handleUserRequest() { /* lógica específica */ } }
 class PaymentService { handlePayment() { /* lógica específica */ } }
-class InventoryService { handleInventory() { /* lógica específica */ } }`
+class InventoryService { handleInventory() { /* lógica específica */ } }`,
       });
     }
 
-    if (project.pattern === 'BFF') {
+    if (project.pattern === "BFF") {
       suggestions.push({
-        type: 'performance',
-        title: 'Optimización de BFF',
-        description: 'Implementa rate limiting y caché para mejorar el rendimiento del BFF',
-        severity: 'medium',
+        type: "performance",
+        title: "Optimización de BFF",
+        description:
+          "Implementa rate limiting y caché para mejorar el rendimiento del BFF",
+        severity: "medium",
         line: 15,
         code: `// Agregar rate limiting
 const rateLimit = require('express-rate-limit');
@@ -401,14 +405,15 @@ const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 100 // máximo 100 requests por ventana
 });
-app.use('/api/', limiter);`
+app.use('/api/', limiter);`,
       });
 
       suggestions.push({
-        type: 'security',
-        title: 'Validación de Inputs en BFF',
-        description: 'Agrega validación robusta de inputs para prevenir ataques',
-        severity: 'high',
+        type: "security",
+        title: "Validación de Inputs en BFF",
+        description:
+          "Agrega validación robusta de inputs para prevenir ataques",
+        severity: "high",
         line: 8,
         code: `// Validación de inputs
 const { body, validationResult } = require('express-validator');
@@ -420,16 +425,17 @@ app.post('/api/data', [
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
-});`
+});`,
       });
     }
 
-    if (project.pattern === 'Sidecar') {
+    if (project.pattern === "Sidecar") {
       suggestions.push({
-        type: 'best-practice',
-        title: 'Health Checks para Sidecar',
-        description: 'Implementa health checks para monitorear el estado del sidecar',
-        severity: 'medium',
+        type: "best-practice",
+        title: "Health Checks para Sidecar",
+        description:
+          "Implementa health checks para monitorear el estado del sidecar",
+        severity: "medium",
         code: `// Health check endpoint
 app.get('/health', (req, res) => {
   const health = {
@@ -439,29 +445,31 @@ app.get('/health', (req, res) => {
     memory: process.memoryUsage()
   };
   res.status(200).json(health);
-});`
+});`,
       });
     }
 
     // Sugerencias de seguridad universales
     suggestions.push({
-      type: 'security',
-      title: 'Sanitización de Datos',
-      description: 'Implementa sanitización de datos para prevenir XSS y inyecciones',
-      severity: 'high',
+      type: "security",
+      title: "Sanitización de Datos",
+      description:
+        "Implementa sanitización de datos para prevenir XSS y inyecciones",
+      severity: "high",
       line: 8,
       code: `// Sanitización de inputs
 const DOMPurify = require('dompurify');
 const userInput = req.body.content;
-const sanitizedInput = DOMPurify.sanitize(userInput);`
+const sanitizedInput = DOMPurify.sanitize(userInput);`,
     });
 
     // Sugerencias de rendimiento
     suggestions.push({
-      type: 'performance',
-      title: 'Implementar Caché',
-      description: 'Agrega caché para consultas frecuentes y mejorar el rendimiento',
-      severity: 'medium',
+      type: "performance",
+      title: "Implementar Caché",
+      description:
+        "Agrega caché para consultas frecuentes y mejorar el rendimiento",
+      severity: "medium",
       code: `// Implementar Redis cache
 const redis = require('redis');
 const client = redis.createClient();
@@ -473,23 +481,32 @@ async function getCachedData(key) {
   const data = await fetchFromDatabase();
   await client.setex(key, 3600, JSON.stringify(data));
   return data;
-}`
+}`,
     });
 
     return suggestions;
   };
 
   const generateMetrics = (project: Project) => {
-    const baseComplexity = project.pattern === 'Standard' ? 75 : 45;
-    const baseMaintainability = project.pattern === 'microservices' ? 85 : 60;
+    const baseComplexity = project.pattern === "Standard" ? 75 : 45;
+    const baseMaintainability = project.pattern === "microservices" ? 85 : 60;
     const baseSecurity = 70;
     const basePerformance = 65;
 
     return {
-      complexity: Math.min(100, baseComplexity + Math.floor(Math.random() * 20)),
-      maintainability: Math.min(100, baseMaintainability + Math.floor(Math.random() * 15)),
+      complexity: Math.min(
+        100,
+        baseComplexity + Math.floor(Math.random() * 20),
+      ),
+      maintainability: Math.min(
+        100,
+        baseMaintainability + Math.floor(Math.random() * 15),
+      ),
       security: Math.min(100, baseSecurity + Math.floor(Math.random() * 25)),
-      performance: Math.min(100, basePerformance + Math.floor(Math.random() * 20))
+      performance: Math.min(
+        100,
+        basePerformance + Math.floor(Math.random() * 20),
+      ),
     };
   };
 
@@ -499,67 +516,70 @@ async function getCachedData(key) {
 
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
-      type: 'user',
+      type: "user",
       content: userQuery,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
-    setChatHistory(prev => [...prev, userMessage]);
+    setChatHistory((prev) => [...prev, userMessage]);
     const currentQuery = userQuery;
     setUserQuery("");
 
     try {
       // Conectar con el backend real
-      const response = await fetch('http://localhost:3001/api/ai/query', {
-        method: 'POST',
+      const response = await fetch("http://localhost:3001/api/ai/query", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
         body: JSON.stringify({
           projectId: selectedProject.id,
-          query: currentQuery
-        })
+          query: currentQuery,
+        }),
       });
 
       if (response.ok) {
         const data = await response.json();
         const aiMessage: ChatMessage = {
           id: (Date.now() + 1).toString(),
-          type: 'ai',
+          type: "ai",
           content: data.response,
-          timestamp: new Date()
+          timestamp: new Date(),
         };
-        setChatHistory(prev => [...prev, aiMessage]);
+        setChatHistory((prev) => [...prev, aiMessage]);
       } else {
         // Fallback a respuesta local si el backend falla
         const aiResponse = generateAIResponse(currentQuery, selectedProject);
         const aiMessage: ChatMessage = {
           id: (Date.now() + 1).toString(),
-          type: 'ai',
+          type: "ai",
           content: aiResponse,
-          timestamp: new Date()
+          timestamp: new Date(),
         };
-        setChatHistory(prev => [...prev, aiMessage]);
+        setChatHistory((prev) => [...prev, aiMessage]);
       }
     } catch (error) {
-      console.error('Error sending query:', error);
+      console.error("Error sending query:", error);
       // Fallback a respuesta local
       const aiResponse = generateAIResponse(currentQuery, selectedProject);
       const aiMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
-        type: 'ai',
+        type: "ai",
         content: aiResponse,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
-      setChatHistory(prev => [...prev, aiMessage]);
+      setChatHistory((prev) => [...prev, aiMessage]);
     }
   };
 
   const generateAIResponse = (query: string, project: Project) => {
     const lowerQuery = query.toLowerCase();
 
-    if (lowerQuery.includes('optimizar') || lowerQuery.includes('performance')) {
+    if (
+      lowerQuery.includes("optimizar") ||
+      lowerQuery.includes("performance")
+    ) {
       return `Para optimizar el rendimiento de "${project.name}", te recomiendo:
 1. Implementar caché con Redis para consultas frecuentes
 2. Usar lazy loading para componentes pesados
@@ -567,7 +587,7 @@ async function getCachedData(key) {
 4. Implementar compresión gzip para respuestas HTTP`;
     }
 
-    if (lowerQuery.includes('seguridad') || lowerQuery.includes('security')) {
+    if (lowerQuery.includes("seguridad") || lowerQuery.includes("security")) {
       return `Recomendaciones de seguridad para "${project.name}":
 1. Implementar autenticación JWT
 2. Validar todos los inputs del usuario
@@ -576,7 +596,10 @@ async function getCachedData(key) {
 5. Sanitizar datos antes de mostrarlos`;
     }
 
-    if (lowerQuery.includes('estructura') || lowerQuery.includes('arquitectura')) {
+    if (
+      lowerQuery.includes("estructura") ||
+      lowerQuery.includes("arquitectura")
+    ) {
       return `Para mejorar la arquitectura de "${project.name}":
 1. Separar responsabilidades en capas
 2. Implementar el patrón Repository
@@ -584,7 +607,7 @@ async function getCachedData(key) {
 4. Crear interfaces claras entre módulos`;
     }
 
-    if (lowerQuery.includes('test') || lowerQuery.includes('testing')) {
+    if (lowerQuery.includes("test") || lowerQuery.includes("testing")) {
       return `Estrategia de testing para "${project.name}":
 1. Implementar tests unitarios con Jest
 2. Crear tests de integración
@@ -598,19 +621,27 @@ async function getCachedData(key) {
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
-      case 'high': return 'bg-red-50 border-red-200 text-red-800';
-      case 'medium': return 'bg-yellow-50 border-yellow-200 text-yellow-800';
-      case 'low': return 'bg-blue-50 border-blue-200 text-blue-800';
-      default: return 'bg-gray-50 border-gray-200 text-gray-800';
+      case "high":
+        return "bg-red-50 border-red-200 text-red-800";
+      case "medium":
+        return "bg-yellow-50 border-yellow-200 text-yellow-800";
+      case "low":
+        return "bg-blue-50 border-blue-200 text-blue-800";
+      default:
+        return "bg-gray-50 border-gray-200 text-gray-800";
     }
   };
 
   const getSeverityIcon = (severity: string) => {
     switch (severity) {
-      case 'high': return <ExclamationTriangleIcon className="w-5 h-5 text-red-600" />;
-      case 'medium': return <LightBulbIcon className="w-5 h-5 text-yellow-600" />;
-      case 'low': return <CheckCircleIcon className="w-5 h-5 text-blue-600" />;
-      default: return <CodeBracketIcon className="w-5 h-5 text-gray-600" />;
+      case "high":
+        return <ExclamationTriangleIcon className="w-5 h-5 text-red-600" />;
+      case "medium":
+        return <LightBulbIcon className="w-5 h-5 text-yellow-600" />;
+      case "low":
+        return <CheckCircleIcon className="w-5 h-5 text-blue-600" />;
+      default:
+        return <CodeBracketIcon className="w-5 h-5 text-gray-600" />;
     }
   };
 
@@ -625,39 +656,44 @@ async function getCachedData(key) {
     if (!selectedProject) return;
 
     try {
-      const response = await fetch(`http://localhost:3001/api/ai/chat/${selectedProject.id}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
+      const response = await fetch(
+        `http://localhost:3001/api/ai/chat/${selectedProject.id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        },
+      );
 
       if (response.ok) {
         const history = await response.json();
-        const formattedHistory: ChatMessage[] = history.map((msg: {
-          id: number;
-          isAI: boolean;
-          message: string;
-          timestamp: string;
-        }) => ({
-          id: msg.id.toString(),
-          type: msg.isAI ? 'ai' : 'user',
-          content: msg.message,
-          timestamp: new Date(msg.timestamp)
-        }));
+        const formattedHistory: ChatMessage[] = history.map(
+          (msg: {
+            id: number;
+            isAI: boolean;
+            message: string;
+            timestamp: string;
+          }) => ({
+            id: msg.id.toString(),
+            type: msg.isAI ? "ai" : "user",
+            content: msg.message,
+            timestamp: new Date(msg.timestamp),
+          }),
+        );
         setChatHistory(formattedHistory);
       }
     } catch (error) {
-      console.error('Error loading chat history:', error);
+      console.error("Error loading chat history:", error);
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
       <DashboardHeader />
-      
+
       <div className="flex">
         <Sidebar />
-        
+
         <div className="flex-1 flex flex-col">
           <div className="flex-1 bg-white p-6">
             {/* Header de la sección */}
@@ -666,7 +702,8 @@ async function getCachedData(key) {
                 Análisis de IA
               </h1>
               <p className="text-gray-600">
-                Analiza tu código con inteligencia artificial para optimizaciones y mejoras
+                Analiza tu código con inteligencia artificial para
+                optimizaciones y mejoras
               </p>
             </div>
 
@@ -677,9 +714,11 @@ async function getCachedData(key) {
                   Seleccionar Proyecto
                 </label>
                 <select
-                  value={selectedProject?.id || ''}
+                  value={selectedProject?.id || ""}
                   onChange={(e) => {
-                    const project = projects.find(p => p.id === parseInt(e.target.value));
+                    const project = projects.find(
+                      (p) => p.id === parseInt(e.target.value),
+                    );
                     setSelectedProject(project || null);
                   }}
                   className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
@@ -692,7 +731,7 @@ async function getCachedData(key) {
                   ))}
                 </select>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Archivo
@@ -717,7 +756,9 @@ async function getCachedData(key) {
                   <div className="flex items-center justify-between p-4 border-b border-gray-200">
                     <div className="flex items-center">
                       <DocumentIcon className="w-5 h-5 text-gray-400 mr-2" />
-                      <span className="text-sm font-medium text-gray-900">{selectedFile}</span>
+                      <span className="text-sm font-medium text-gray-900">
+                        {selectedFile}
+                      </span>
                     </div>
                     <Button
                       onClick={analyzeCode}
@@ -767,7 +808,7 @@ async function getCachedData(key) {
                       Escribe tus preguntas basándote en el código
                     </p>
                   </div>
-                  
+
                   {/* Historial de chat */}
                   <div className="flex-1 p-4 overflow-y-auto max-h-64">
                     {chatHistory.length === 0 ? (
@@ -780,13 +821,13 @@ async function getCachedData(key) {
                         {chatHistory.map((message) => (
                           <div
                             key={message.id}
-                            className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+                            className={`flex ${message.type === "user" ? "justify-end" : "justify-start"}`}
                           >
                             <div
                               className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                                message.type === 'user'
-                                  ? 'bg-green-500 text-white'
-                                  : 'bg-gray-100 text-gray-900'
+                                message.type === "user"
+                                  ? "bg-green-500 text-white"
+                                  : "bg-gray-100 text-gray-900"
                               }`}
                             >
                               <p className="text-sm">{message.content}</p>
@@ -799,7 +840,7 @@ async function getCachedData(key) {
                       </div>
                     )}
                   </div>
-                  
+
                   {/* Input para consulta */}
                   <div className="p-4 border-t border-gray-200">
                     <div className="flex gap-2">
@@ -812,7 +853,7 @@ async function getCachedData(key) {
                           placeholder="Escribe tus preguntas basándote en el código..."
                           className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
                           onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
+                            if (e.key === "Enter") {
                               sendQuery();
                             }
                           }}
@@ -849,7 +890,9 @@ async function getCachedData(key) {
                           {getSeverityIcon(suggestion.severity)}
                           <div className="ml-3 flex-1">
                             <h4 className="font-medium">{suggestion.title}</h4>
-                            <p className="text-sm mt-1">{suggestion.description}</p>
+                            <p className="text-sm mt-1">
+                              {suggestion.description}
+                            </p>
                             {suggestion.line && (
                               <p className="text-xs mt-2 opacity-75">
                                 Línea {suggestion.line}
@@ -885,7 +928,7 @@ async function getCachedData(key) {
                         ></div>
                       </div>
                     </div>
-                    
+
                     <div>
                       <div className="flex justify-between text-sm mb-1">
                         <span>Mantenibilidad</span>
@@ -894,11 +937,13 @@ async function getCachedData(key) {
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div
                           className="bg-green-500 h-2 rounded-full"
-                          style={{ width: `${analysis.metrics.maintainability}%` }}
+                          style={{
+                            width: `${analysis.metrics.maintainability}%`,
+                          }}
                         ></div>
                       </div>
                     </div>
-                    
+
                     <div>
                       <div className="flex justify-between text-sm mb-1">
                         <span>Seguridad</span>
@@ -911,7 +956,7 @@ async function getCachedData(key) {
                         ></div>
                       </div>
                     </div>
-                    
+
                     <div>
                       <div className="flex justify-between text-sm mb-1">
                         <span>Rendimiento</span>
@@ -943,7 +988,7 @@ async function getCachedData(key) {
           </div>
         </div>
       </div>
-      
+
       <Footer />
     </div>
   );

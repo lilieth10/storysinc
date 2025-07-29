@@ -104,7 +104,9 @@ const EditorLoading = () => (
     <div className="text-center">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
       <p className="text-sm text-gray-600">Cargando editor...</p>
-      <p className="text-xs text-gray-400 mt-2">Esto puede tomar unos segundos</p>
+      <p className="text-xs text-gray-400 mt-2">
+        Esto puede tomar unos segundos
+      </p>
     </div>
   </div>
 );
@@ -196,7 +198,7 @@ export default function ProjectDetailPage() {
       });
       setFileTree(response.data);
     } catch (error) {
-      console.error('Error fetching file tree:', error);
+      console.error("Error fetching file tree:", error);
       // No mostrar error al usuario, usar estructura por defecto
     }
   }, [projectId, token]);
@@ -204,10 +206,7 @@ export default function ProjectDetailPage() {
   // Cargar datos en paralelo para mejor rendimiento
   useEffect(() => {
     if (projectId && token) {
-      Promise.all([
-        fetchProject(),
-        fetchFileTree(),
-      ]).catch(console.error);
+      Promise.all([fetchProject(), fetchFileTree()]).catch(console.error);
     }
   }, [fetchProject, fetchFileTree, projectId, token]);
 
@@ -745,7 +744,9 @@ export default function ProjectDetailPage() {
                             <Suspense fallback={<EditorLoading />}>
                               <Editor
                                 height="100%"
-                                language={getLanguageFromFile(selectedFile.name)}
+                                language={getLanguageFromFile(
+                                  selectedFile.name,
+                                )}
                                 value={editorContent}
                                 onChange={(value) =>
                                   setEditorContent(value || "")

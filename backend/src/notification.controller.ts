@@ -27,7 +27,9 @@ export class NotificationController {
 
   @Get()
   async list(@Req() req: AuthRequest): Promise<NotificationPayload[]> {
-    return await this.notificationService.getNotificationsForUser(req.user.userId);
+    return await this.notificationService.getNotificationsForUser(
+      req.user.userId,
+    );
   }
 
   @Post()

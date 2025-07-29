@@ -253,7 +253,12 @@ export class SyncController {
       });
 
       // Crear notificación de sincronización exitosa
-      console.log('Creando notificación para userId:', userId, 'proyecto:', project.name);
+      console.log(
+        'Creando notificación para userId:',
+        userId,
+        'proyecto:',
+        project.name,
+      );
       await this.notificationService.createNotification({
         userId: userId,
         title: 'Sincronización completada',
