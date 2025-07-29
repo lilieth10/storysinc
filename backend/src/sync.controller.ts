@@ -11,6 +11,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
+import { NotificationService } from './notification.service';
 
 interface AuthenticatedRequest extends Request {
   user: {
@@ -28,7 +29,10 @@ interface CreateSyncProjectDto {
 
 @Controller('sync')
 export class SyncController {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationService: NotificationService,
+  ) {}
 
   // Crear proyecto de sincronización
   @Post('create')
@@ -215,17 +219,10 @@ export class SyncController {
       const userId = req.user?.userId ?? req.user?.id ?? 1;
 
       // Verificar que el proyecto pertenece al usuario
-      const project = await this.prisma.project.findFirst({
+      const project = await this.prisma.syncProject.findFirst({
         where: {
           id: parseInt(id),
-          OR: [
-            { ownerId: userId },
-            {
-              collaborators: {
-                some: { userId: userId },
-              },
-            },
-          ],
+          userId: userId,
         },
       });
 
@@ -237,7 +234,7 @@ export class SyncController {
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
       // Actualizar último sync
-      await this.prisma.project.update({
+      await this.prisma.syncProject.update({
         where: { id: parseInt(id) },
         data: {
           lastSync: new Date(),
@@ -253,6 +250,15 @@ export class SyncController {
           status: 'success',
           message: 'Sincronización manual realizada',
         },
+      });
+
+      // Crear notificación de sincronización exitosa
+      console.log('Creando notificación para userId:', userId, 'proyecto:', project.name);
+      await this.notificationService.createNotification({
+        userId: userId,
+        title: 'Sincronización completada',
+        message: `El proyecto "${project.name}" se sincronizó exitosamente`,
+        type: 'success',
       });
 
       return {
