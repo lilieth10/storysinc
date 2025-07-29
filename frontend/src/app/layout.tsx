@@ -3,6 +3,7 @@ import { Roboto } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import { NotificationsProvider } from "@/components/notifications/NotificationsProvider";
+import { AuthInitializer } from "@/components/auth/AuthInitializer";
 
 // 🔤 Configuración de fuente Roboto (del Figma)
 const roboto = Roboto({
@@ -100,6 +101,7 @@ export default function RootLayout({
     <html lang="es" className={roboto.variable}>
       <body className={`${roboto.className} antialiased`}>
         <NotificationsProvider />
+        <AuthInitializer />
         {children}
         <Toaster
           position="top-right"

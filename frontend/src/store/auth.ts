@@ -42,6 +42,14 @@ export const useAuth = create<AuthState>((set, get) => ({
   error: null,
   initialized: typeof window !== "undefined" ? false : true,
 
+  // Cargar perfil automáticamente si hay token
+  initialize: async () => {
+    const token = get().token;
+    if (token && !get().user) {
+      await get().fetchProfile();
+    }
+  },
+
   register: async (data) => {
     set({ loading: true, error: null });
     try {
