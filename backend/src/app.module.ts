@@ -11,6 +11,7 @@ import { ProjectController } from './project.controller';
 import { ProjectService } from './project.service';
 import { NotificationService } from './notification.service';
 import { SyncController } from './sync.controller';
+import { AIController } from './ai.controller';
 
 @Module({
   imports: [AuthModule, UserModule, PrismaModule],
@@ -20,6 +21,7 @@ import { SyncController } from './sync.controller';
     ReportsController,
     ProjectController,
     SyncController,
+    AIController,
   ],
   providers: [
     AppService,
