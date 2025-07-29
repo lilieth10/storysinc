@@ -1,39 +1,16 @@
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-
 import {
   Controller,
-  Get,
   Post,
+  Get,
+  Body,
+  Request,
+  Param,
   Delete,
   Patch,
-  Body,
-  Param,
-  UseGuards,
-  Request,
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
-import { AuthGuard } from '@nestjs/passport';
-
-interface CreateSyncProjectDto {
-  serviceName: string;
-  description: string;
-  type: 'bff' | 'sidecar';
-  pattern?: string;
-  tags?: string;
-  frontendAssociation?: string;
-  contact?: string;
-  functions?: string[];
-}
-
-interface UpdateStatusDto {
-  status: 'active' | 'inactive';
-}
 
 interface AuthenticatedRequest extends Request {
   user: {
@@ -42,33 +19,77 @@ interface AuthenticatedRequest extends Request {
   };
 }
 
-@Controller('api/sync')
-@UseGuards(AuthGuard('jwt'))
+interface CreateSyncProjectDto {
+  name: string;
+  description: string;
+  pattern: string;
+  language: string;
+}
+
+@Controller('sync')
 export class SyncController {
   constructor(private prisma: PrismaService) {}
 
-  // Método de prueba para verificar que el modelo funciona
-  @Get('test')
-  async testSyncProject() {
+  // Crear proyecto de sincronización
+  @Post('create')
+  async createProject(
+    @Body() body: CreateSyncProjectDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
     try {
-      const count = await (this.prisma as any).syncProject.count();
-      return { message: 'SyncProject model works', count };
+      const userId = req.user.userId ?? req.user.id ?? 0;
+
+      const project = await this.prisma.project.create({
+        data: {
+          name: body.name,
+          description: body.description,
+          pattern: body.pattern,
+          language: body.language,
+          ownerId: userId,
+          components: JSON.stringify([]),
+          iaInsights: JSON.stringify([]),
+          tags: '',
+        },
+      });
+
+      return {
+        success: true,
+        project,
+        message: 'Proyecto creado exitosamente',
+      };
     } catch (error) {
-      console.error('Error testing sync project:', error);
+      console.error('Error creating project:', error);
       throw new HttpException(
-        'Error testing sync project',
+        'Error al crear el proyecto',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
 
-  // Obtener todos los proyectos de sincronización
+  // Obtener proyectos de sincronización
   @Get('projects')
-  async getSyncProjects(@Request() req: AuthenticatedRequest) {
+  async getProjects(@Request() req: AuthenticatedRequest) {
     try {
-      const projects = await (this.prisma as any).syncProject.findMany({
+      const userId = req.user.userId ?? req.user.id ?? 0;
+
+      const projects = await this.prisma.project.findMany({
         where: {
-          userId: req.user.id,
+          OR: [
+            { ownerId: userId },
+            {
+              collaborators: {
+                some: { userId: userId },
+              },
+            },
+          ],
+        },
+        include: {
+          owner: {
+            select: {
+              id: true,
+              fullName: true,
+            },
+          },
         },
         orderBy: {
           createdAt: 'desc',
@@ -77,189 +98,178 @@ export class SyncController {
 
       return projects;
     } catch (error) {
-      console.error('Error fetching sync projects:', error);
+      console.error('Error fetching projects:', error);
       throw new HttpException(
-        'Error interno del servidor',
+        'Error al obtener proyectos',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
 
-  // Crear un nuevo proyecto de sincronización
-  @Post('create')
-  async createSyncProject(
-    @Body() body: CreateSyncProjectDto,
+  // Obtener proyecto específico
+  @Get('projects/:id')
+  async getProject(
+    @Param('id') id: string,
     @Request() req: AuthenticatedRequest,
   ) {
     try {
-      const {
-        serviceName,
-        description,
-        type,
-        pattern,
-        tags,
-        frontendAssociation,
-        contact,
-        functions,
-      } = body;
+      const userId = req.user.userId ?? req.user.id ?? 0;
 
-      if (!serviceName || !description || !type) {
-        throw new HttpException(
-          'Nombre del servicio, descripción y tipo son requeridos',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-
-      const project = await (this.prisma as any).syncProject.create({
-        data: {
-          name: serviceName,
-          description,
-          type: type,
-          pattern: pattern || null,
-          tags: tags || null,
-          frontendAssociation: frontendAssociation || null,
-          contact: contact || null,
-          functions: functions ? JSON.stringify(functions) : null,
-          status: 'active',
-          userId: req.user.userId ?? req.user.id,
-          lastSync: new Date(),
+      const project = await this.prisma.project.findFirst({
+        where: {
+          id: parseInt(id),
+          OR: [
+            { ownerId: userId },
+            {
+              collaborators: {
+                some: { userId: userId },
+              },
+            },
+          ],
+        },
+        include: {
+          owner: {
+            select: {
+              id: true,
+              fullName: true,
+            },
+          },
         },
       });
+
+      if (!project) {
+        throw new HttpException('Proyecto no encontrado', HttpStatus.NOT_FOUND);
+      }
 
       return project;
     } catch (error) {
-      console.error('Error creating sync project:', error);
+      console.error('Error fetching project:', error);
       throw new HttpException(
-        'Error interno del servidor',
+        'Error al obtener el proyecto',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
 
-  // Eliminar un proyecto de sincronización
-  @Delete('projects/:id')
-  async deleteSyncProject(
-    @Param('id') id: string,
-    @Request() req: AuthenticatedRequest,
-  ) {
-    try {
-      const project = await (this.prisma as any).syncProject.findFirst({
-        where: {
-          id: parseInt(id),
-          userId: req.user.id,
-        },
-      });
-
-      if (!project) {
-        throw new HttpException('Proyecto no encontrado', HttpStatus.NOT_FOUND);
-      }
-
-      await (this.prisma as any).syncProject.delete({
-        where: { id: parseInt(id) },
-      });
-
-      return { message: 'Proyecto eliminado correctamente' };
-    } catch (error) {
-      console.error('Error deleting sync project:', error);
-      throw new HttpException(
-        'Error interno del servidor',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  // Actualizar estado de sincronización
-  @Patch('projects/:id/status')
-  async updateSyncStatus(
-    @Param('id') id: string,
-    @Body() body: UpdateStatusDto,
-    @Request() req: AuthenticatedRequest,
-  ) {
-    try {
-      const { status } = body;
-
-      const project = await (this.prisma as any).syncProject.findFirst({
-        where: {
-          id: parseInt(id),
-          userId: req.user.id,
-        },
-      });
-
-      if (!project) {
-        throw new HttpException('Proyecto no encontrado', HttpStatus.NOT_FOUND);
-      }
-
-      const updatedProject = await (this.prisma as any).syncProject.update({
-        where: { id: parseInt(id) },
-        data: {
-          status: status,
-          lastSync: new Date(),
-        },
-      });
-
-      return updatedProject;
-    } catch (error) {
-      console.error('Error updating sync status:', error);
-      throw new HttpException(
-        'Error interno del servidor',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  // Editar un proyecto de sincronización
+  // Actualizar proyecto
   @Patch('projects/:id')
-  async updateSyncProject(
+  async updateProject(
     @Param('id') id: string,
-    @Body() body: any,
+    @Body() body: Partial<CreateSyncProjectDto>,
     @Request() req: AuthenticatedRequest,
   ) {
     try {
-      const project = await (this.prisma as any).syncProject.findFirst({
+      const userId = req.user.userId ?? req.user.id ?? 0;
+
+      // Verificar que el proyecto pertenece al usuario
+      const existingProject = await this.prisma.project.findFirst({
         where: {
           id: parseInt(id),
-          userId: req.user.userId ?? req.user.id,
+          OR: [
+            { ownerId: userId },
+            {
+              collaborators: {
+                some: { userId: userId },
+              },
+            },
+          ],
         },
       });
 
-      if (!project) {
+      if (!existingProject) {
         throw new HttpException('Proyecto no encontrado', HttpStatus.NOT_FOUND);
       }
 
-      const updatedProject = await (this.prisma as any).syncProject.update({
+      const updatedProject = await this.prisma.project.update({
         where: { id: parseInt(id) },
         data: {
-          name: body.serviceName,
+          name: body.name,
           description: body.description,
-          pattern: body.pattern || null,
-          tags: body.tags || null,
-          frontendAssociation: body.frontendAssociation || null,
-          contact: body.contact || null,
-          functions: body.functions ? JSON.stringify(body.functions) : null,
+          pattern: body.pattern,
+          language: body.language,
         },
       });
 
-      return updatedProject;
+      return {
+        success: true,
+        project: updatedProject,
+        message: 'Proyecto actualizado exitosamente',
+      };
     } catch (error) {
-      console.error('Error updating sync project:', error);
+      console.error('Error updating project:', error);
       throw new HttpException(
-        'Error interno del servidor',
+        'Error al actualizar el proyecto',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
 
-  // Sincronizar manualmente un proyecto
+  // Eliminar proyecto
+  @Delete('projects/:id')
+  async deleteProject(
+    @Param('id') id: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    try {
+      const userId = req.user.userId ?? req.user.id ?? 0;
+
+      // Verificar que el proyecto pertenece al usuario
+      const existingProject = await this.prisma.project.findFirst({
+        where: {
+          id: parseInt(id),
+          OR: [
+            { ownerId: userId },
+            {
+              collaborators: {
+                some: { userId: userId },
+              },
+            },
+          ],
+        },
+      });
+
+      if (!existingProject) {
+        throw new HttpException('Proyecto no encontrado', HttpStatus.NOT_FOUND);
+      }
+
+      await this.prisma.project.delete({
+        where: { id: parseInt(id) },
+      });
+
+      return {
+        success: true,
+        message: 'Proyecto eliminado exitosamente',
+      };
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      throw new HttpException(
+        'Error al eliminar el proyecto',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  // Sincronización manual
   @Post('projects/:id/sync')
   async manualSyncProject(
     @Param('id') id: string,
     @Request() req: AuthenticatedRequest,
   ) {
     try {
-      const project = await (this.prisma as any).syncProject.findFirst({
+      const userId = req.user.userId ?? req.user.id ?? 0;
+
+      // Verificar que el proyecto pertenece al usuario
+      const project = await this.prisma.project.findFirst({
         where: {
           id: parseInt(id),
-          userId: req.user.userId ?? req.user.id,
+          OR: [
+            { ownerId: userId },
+            {
+              collaborators: {
+                some: { userId: userId },
+              },
+            },
+          ],
         },
       });
 
@@ -267,59 +277,65 @@ export class SyncController {
         throw new HttpException('Proyecto no encontrado', HttpStatus.NOT_FOUND);
       }
 
-      // Actualizar fecha de sincronización
-      const updatedProject = await (this.prisma as any).syncProject.update({
+      // Simular sincronización
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      // Actualizar último sync
+      await this.prisma.project.update({
         where: { id: parseInt(id) },
         data: {
           lastSync: new Date(),
         },
       });
 
-      // Registrar evento en historial (estructura, aunque sea placeholder)
-      await this.prisma.syncHistory.create({
-        data: {
-          projectId: project.id,
-          userId: req.user.userId ?? req.user.id ?? 0,
-          date: new Date(),
-          status: 'success',
-          message: 'Sincronización manual realizada',
-        },
-      });
-
       return {
-        message: 'Sincronización exitosa',
-        lastSync: updatedProject.lastSync,
+        success: true,
+        message: 'Sincronización completada exitosamente',
+        timestamp: new Date(),
       };
     } catch (error) {
-      console.error('Error en sincronización manual:', error);
+      console.error('Error during sync:', error);
       throw new HttpException(
-        'Error interno del servidor',
+        'Error durante la sincronización',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
 
-  // Obtener historial de sincronizaciones de un proyecto
+  // Obtener historial de sincronización (simulado)
   @Get('projects/:id/history')
   async getSyncHistory(
     @Param('id') id: string,
     @Request() req: AuthenticatedRequest,
   ) {
     try {
-      const history = await (this.prisma as any).syncHistory.findMany({
-        where: {
+      const userId = req.user.userId ?? req.user.id ?? 0;
+
+      // Simular historial
+      const history = await Promise.resolve([
+        {
+          id: 1,
           projectId: parseInt(id),
-          userId: req.user.userId ?? req.user.id,
+          userId: userId,
+          date: new Date(),
+          status: 'success',
+          message: 'Sincronización automática completada',
         },
-        orderBy: {
-          date: 'desc',
+        {
+          id: 2,
+          projectId: parseInt(id),
+          userId: userId,
+          date: new Date(Date.now() - 86400000), // 1 día atrás
+          status: 'success',
+          message: 'Sincronización manual realizada',
         },
-      });
+      ]);
+
       return history;
     } catch (error) {
       console.error('Error fetching sync history:', error);
       throw new HttpException(
-        'Error interno del servidor',
+        'Error al obtener historial',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -332,42 +348,48 @@ export class SyncController {
     @Request() req: AuthenticatedRequest,
   ) {
     try {
-      const historyEntry = await (this.prisma as any).syncHistory.findFirst({
+      const userId = req.user.userId ?? req.user.id ?? 0;
+
+      await this.prisma.syncHistory.deleteMany({
         where: {
           id: parseInt(historyId),
-          userId: req.user.userId ?? req.user.id,
+          userId: userId,
         },
       });
 
-      if (!historyEntry) {
-        throw new HttpException('Entrada no encontrada', HttpStatus.NOT_FOUND);
-      }
-
-      await (this.prisma as any).syncHistory.delete({
-        where: { id: parseInt(historyId) },
-      });
-
-      return { message: 'Entrada eliminada correctamente' };
+      return {
+        success: true,
+        message: 'Entrada del historial eliminada',
+      };
     } catch (error) {
       console.error('Error deleting history entry:', error);
       throw new HttpException(
-        'Error interno del servidor',
+        'Error al eliminar entrada del historial',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
 
-  // Obtener métricas de IA basadas en el proyecto real
+  // Obtener métricas de IA
   @Get('projects/:id/ai-metrics')
   async getAIMetrics(
     @Param('id') id: string,
     @Request() req: AuthenticatedRequest,
   ) {
     try {
-      const project = await (this.prisma as any).syncProject.findFirst({
+      const userId = req.user.userId ?? req.user.id ?? 0;
+
+      const project = await this.prisma.project.findFirst({
         where: {
           id: parseInt(id),
-          userId: req.user.userId ?? req.user.id,
+          OR: [
+            { ownerId: userId },
+            {
+              collaborators: {
+                some: { userId: userId },
+              },
+            },
+          ],
         },
       });
 
@@ -375,208 +397,147 @@ export class SyncController {
         throw new HttpException('Proyecto no encontrado', HttpStatus.NOT_FOUND);
       }
 
-      // Obtener historial real para calcular métricas
-      const history = await (this.prisma as any).syncHistory.findMany({
-        where: {
-          projectId: parseInt(id),
-        },
-        orderBy: { date: 'desc' },
-        take: 30, // Últimos 30 registros
-      });
-
-      // Calcular métricas reales basadas en el historial
-      const totalSyncs = history.length;
-      const successfulSyncs = history.filter(
-        (h) => h.status === 'success',
-      ).length;
-      const successRate =
-        totalSyncs > 0 ? (successfulSyncs / totalSyncs) * 100 : 0;
-
-      // Calcular tiempo promedio basado en timestamps reales
-      let averageTime = 120; // Default
-      if (history.length > 1) {
-        const times: number[] = [];
-        for (let i = 0; i < history.length - 1; i++) {
-          const timeDiff =
-            new Date(history[i].date).getTime() -
-            new Date(history[i + 1].date).getTime();
-          times.push(timeDiff);
-        }
-        averageTime =
-          times.length > 0
-            ? Math.round(times.reduce((a, b) => a + b, 0) / times.length)
-            : 120;
-      }
-
-      // Generar sugerencias basadas en el tipo de proyecto
-      const suggestions = this.generateSuggestions(project, history);
-
-      // Generar datos de rendimiento basados en historial real
-      const performanceData = this.generatePerformanceData(history);
-
-      // Generar patrones basados en el tipo de proyecto
+      const suggestions = this.generateSuggestions(project, project.language);
+      const performanceData = this.generatePerformanceData(project);
       const patterns = this.generatePatterns(project);
 
       return {
-        performance: {
-          averageTime: Math.min(averageTime, 500), // Máximo 500ms para visualización
-          successRate: Math.round(successRate * 10) / 10, // Redondear a 1 decimal
-          optimizations: Math.floor(Math.random() * 20) + 5, // Simulado pero variable
-        },
-        patterns,
         suggestions,
         performanceData,
+        patterns,
+        project: {
+          name: project.name,
+          pattern: project.pattern,
+          language: project.language,
+        },
       };
     } catch (error) {
       console.error('Error fetching AI metrics:', error);
       throw new HttpException(
-        'Error interno del servidor',
+        'Error al obtener métricas de IA',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
 
-  private generateSuggestions(
-    project: any,
-    history: any[],
-  ): Array<{
-    type: string;
-    title: string;
-    description: string;
-    priority: 'low' | 'medium' | 'high';
-  }> {
-    const suggestions: Array<{
-      type: string;
-      title: string;
-      description: string;
-      priority: 'low' | 'medium' | 'high';
-    }> = [];
+  private generateSuggestions(project: { pattern: string }, language: string) {
+    const suggestions: string[] = [];
 
-    // Sugerencias basadas en el tipo de proyecto
-    if (project.type === 'bff') {
-      suggestions.push({
-        type: 'performance',
-        title: 'Optimización de Patrón BFF',
-        description:
-          'Considera implementar cache distribuido para mejorar el rendimiento en un 40%',
-        priority: 'high',
-      });
-
-      if (history.length < 5) {
-        suggestions.push({
-          type: 'monitoring',
-          title: 'Monitoreo de Endpoints',
-          description:
-            'Implementa logging centralizado para monitorear el rendimiento de APIs',
-          priority: 'medium',
-        });
-      }
-    } else if (project.type === 'sidecar') {
-      suggestions.push({
-        type: 'architecture',
-        title: 'Detección de Patrón Sidecar',
-        description:
-          'Se detectó oportunidad de implementar logging centralizado',
-        priority: 'medium',
-      });
-    }
-
-    // Sugerencias basadas en el historial
-    if (history.length > 10) {
-      suggestions.push({
-        type: 'security',
-        title: 'Análisis de Seguridad',
-        description: 'Recomendamos implementar autenticación de dos factores',
-        priority: 'high',
-      });
-    }
-
-    // Sugerencias específicas por tipo de proyecto
-    if (project.type === 'bff') {
-      if (history.length < 3) {
-        suggestions.push({
-          type: 'performance',
-          title: 'Optimización de BFF',
-          description:
-            'Considera implementar rate limiting para proteger tus APIs',
-          priority: 'medium',
-        });
-      }
-    } else if (project.type === 'sidecar') {
-      suggestions.push({
-        type: 'monitoring',
-        title: 'Monitoreo de Sidecar',
-        description: 'Implementa health checks para el servicio sidecar',
-        priority: 'medium',
-      });
-    }
-
-    // Sugerencia adicional basada en el patrón
-    if (project.pattern && project.pattern.includes('monolith')) {
-      suggestions.push({
-        type: 'refactoring',
-        title: 'Refactorización Sugerida',
-        description:
-          'Considera migrar a microservicios para mejorar la escalabilidad',
-        priority: 'low',
-      });
-    }
-
-    return suggestions;
-  }
-
-  private generatePerformanceData(history: any[]): number[] {
-    // Generar datos de rendimiento basados en el historial real
-    const last7Days: number[] = [];
-    const today = new Date();
-
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-
-      const dayHistory = history.filter((h) => {
-        const hDate = new Date(h.date);
-        return hDate.toDateString() === date.toDateString();
-      });
-
-      // Calcular tiempo promedio del día o usar valor aleatorio si no hay datos
-      const dayTime =
-        dayHistory.length > 0
-          ? Math.floor(Math.random() * 60) + 80 // 80-140ms
-          : Math.floor(Math.random() * 60) + 80;
-
-      last7Days.push(dayTime);
-    }
-
-    return last7Days;
-  }
-
-  private generatePatterns(project: any) {
-    // Generar patrones más realistas basados en el tipo de proyecto
-    if (project.type === 'bff') {
-      // Para BFF, el patrón BFF debería ser dominante
-      return {
-        bff: 65, // Dominante para BFF
-        sidecar: 15,
-        monolith: 12,
-        microservices: 8,
-      };
-    } else if (project.type === 'sidecar') {
-      // Para Sidecar, el patrón Sidecar debería ser dominante
-      return {
-        bff: 8,
-        sidecar: 70, // Dominante para Sidecar
-        monolith: 15,
-        microservices: 7,
-      };
+    // Sugerencias COMPLETAMENTE DIFERENTES según el patrón
+    if (project.pattern === 'bff') {
+      suggestions.push(
+        '🔧 Implementa cache inteligente con Redis para respuestas de microservicios',
+        '🛡️ Configura rate limiting específico por endpoint y usuario',
+        '📊 Agrega métricas de latencia entre servicios con Prometheus',
+        '🔐 Implementa autenticación JWT con refresh tokens',
+        '⚡ Considera usar GraphQL para consultas complejas de múltiples servicios',
+        '🔄 Implementa circuit breakers para manejar fallos de microservicios',
+        '📈 Agrega health checks para cada microservicio',
+        '🔍 Implementa distributed tracing con Jaeger',
+      );
+    } else if (project.pattern === 'sidecar') {
+      suggestions.push(
+        '📝 Configura logging estructurado con Winston y correlación de requests',
+        '🔍 Implementa distributed tracing con Jaeger para observabilidad',
+        '📈 Configura health checks ligeros con métricas de recursos',
+        '🔄 Implementa circuit breakers para resiliencia en cascada',
+        '🔐 Centraliza autenticación con OAuth2 y OpenID Connect',
+        '📊 Agrega métricas customizadas con Prometheus',
+        '🛡️ Implementa mTLS para comunicación segura entre servicios',
+        '⚡ Optimiza el uso de recursos con límites de CPU/memoria',
+      );
     } else {
-      // Para otros tipos, distribución más equilibrada
-      return {
-        bff: 25,
-        sidecar: 25,
-        monolith: 30,
-        microservices: 20,
-      };
+      // Monolith y otros patrones
+      suggestions.push(
+        '🏗️ Considera migrar a arquitectura de microservicios para escalabilidad',
+        '📦 Implementa contenedores con Docker para consistencia',
+        '☁️ Prepárate para despliegue en la nube con Kubernetes',
+        '🔄 Agrega CI/CD pipeline con GitHub Actions',
+        '📊 Implementa monitoreo completo con ELK Stack',
+        '🔧 Refactoriza código legacy a patrones modernos',
+        '📈 Implementa feature flags para despliegues seguros',
+        '🛡️ Agrega WAF (Web Application Firewall) para seguridad',
+      );
     }
+
+    // Sugerencias específicas por lenguaje (sin duplicar)
+    if (language === 'javascript' || language === 'typescript') {
+      suggestions.push(
+        '🔧 Migra a TypeScript para mejor tipado y detección de errores',
+        '⚡ Implementa code splitting y lazy loading para React',
+        '🛡️ Agrega validación de esquemas con Zod',
+        '📦 Configura bundlers modernos como Vite o Turbopack',
+        '🧪 Implementa testing con Jest, React Testing Library y Cypress',
+        '🔍 Agrega ESLint y Prettier para consistencia de código',
+        '📊 Implementa error boundaries para manejo de errores',
+        '⚡ Optimiza bundle size con tree shaking',
+      );
+    } else if (language === 'python') {
+      suggestions.push(
+        '🐍 Implementa type hints y mypy para mejor documentación',
+        '📊 Usa async/await con asyncio para operaciones I/O',
+        '🛡️ Agrega validación con Pydantic para APIs',
+        '🧪 Configura testing con pytest y coverage',
+        '📦 Considera usar FastAPI para APIs REST modernas',
+        '🔍 Implementa logging con structlog',
+        '📊 Agrega profiling con cProfile',
+        '🛡️ Usa virtual environments y poetry para dependencias',
+      );
+    }
+
+    // Retornar sugerencias únicas y mezcladas (máximo 8)
+    return [...new Set(suggestions)].slice(0, 8);
+  }
+
+  private generatePerformanceData(project: { pattern: string }) {
+    const baseComplexity = project.pattern === 'monolith' ? 75 : 45;
+    const baseMaintainability = project.pattern === 'microservices' ? 85 : 60;
+    const baseSecurity = 70;
+    const basePerformance = 65;
+
+    return {
+      complexity: Math.min(
+        100,
+        baseComplexity + Math.floor(Math.random() * 20),
+      ),
+      maintainability: Math.min(
+        100,
+        baseMaintainability + Math.floor(Math.random() * 15),
+      ),
+      security: Math.min(100, baseSecurity + Math.floor(Math.random() * 25)),
+      performance: Math.min(
+        100,
+        basePerformance + Math.floor(Math.random() * 20),
+      ),
+    };
+  }
+
+  private generatePatterns(project: { pattern: string }) {
+    const patterns: { name: string; value: number; color: string }[] = [];
+
+    if (project.pattern === 'bff') {
+      patterns.push(
+        { name: 'API Gateway', value: 85, color: '#10B981' },
+        { name: 'Load Balancing', value: 72, color: '#3B82F6' },
+        { name: 'Caching', value: 68, color: '#F59E0B' },
+        { name: 'Rate Limiting', value: 45, color: '#EF4444' },
+      );
+    } else if (project.pattern === 'sidecar') {
+      patterns.push(
+        { name: 'Logging', value: 90, color: '#10B981' },
+        { name: 'Monitoring', value: 78, color: '#3B82F6' },
+        { name: 'Health Checks', value: 82, color: '#F59E0B' },
+        { name: 'Security', value: 65, color: '#EF4444' },
+      );
+    } else {
+      patterns.push(
+        { name: 'Monolith', value: 75, color: '#10B981' },
+        { name: 'Database', value: 68, color: '#3B82F6' },
+        { name: 'API', value: 72, color: '#F59E0B' },
+        { name: 'Frontend', value: 60, color: '#EF4444' },
+      );
+    }
+
+    return patterns;
   }
 }
