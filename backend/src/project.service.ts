@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
 import { Prisma } from '@prisma/client';
@@ -51,7 +53,6 @@ export class ProjectService {
       data: {
         ...data,
         components: defaultComponents,
-        collaborators: defaultCollaborators,
         iaInsights: defaultIaInsights,
         tags: data.tags || '',
       },
@@ -64,8 +65,8 @@ export class ProjectService {
         OR: [
           { ownerId: userId },
           {
-            collaborators_users: {
-              some: { id: userId },
+            collaborators: {
+              some: { userId: userId },
             },
           },
         ],
@@ -73,6 +74,11 @@ export class ProjectService {
       include: {
         owner: {
           select: { id: true, fullName: true, email: true },
+        },
+        collaborators: {
+          include: {
+            user: { select: { id: true, fullName: true, email: true } },
+          },
         },
       },
       orderBy: { updatedAt: 'desc' },
@@ -83,8 +89,11 @@ export class ProjectService {
     return this.prisma.project.findUnique({
       where: { id },
       include: {
-        owner: {
-          select: { id: true, fullName: true, email: true },
+        owner: { select: { id: true, fullName: true, email: true } },
+        collaborators: {
+          include: {
+            user: { select: { id: true, fullName: true, email: true } },
+          },
         },
       },
     });
@@ -103,9 +112,9 @@ export class ProjectService {
     });
   }
 
-  async analyzeProjectIA(id: number) {
+  async analyzeProjectIA(projectId: number) {
     const project = await this.prisma.project.findUnique({
-      where: { id },
+      where: { id: projectId },
     });
 
     if (!project) {
@@ -155,7 +164,7 @@ export class ProjectService {
     };
 
     return this.prisma.project.update({
-      where: { id },
+      where: { id: projectId },
       data: {
         iaInsights: JSON.stringify(iaInsights),
       },
@@ -200,8 +209,8 @@ export class ProjectService {
         OR: [
           { ownerId: userId },
           {
-            collaborators_users: {
-              some: { id: userId },
+            collaborators: {
+              some: { userId: userId },
             },
           },
         ],
@@ -256,7 +265,7 @@ export const Button: React.FC<ButtonProps> = ({
     </button>
   );
 };`,
-                language: 'typescript'
+                language: 'typescript',
               },
               {
                 id: '4',
@@ -278,9 +287,9 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle }) => {
     </header>
   );
 };`,
-                language: 'typescript'
-              }
-            ]
+                language: 'typescript',
+              },
+            ],
           },
           {
             id: '5',
@@ -335,9 +344,9 @@ export class ApiClient {
 }
 
 export const apiClient = new ApiClient();`,
-                language: 'typescript'
-              }
-            ]
+                language: 'typescript',
+              },
+            ],
           },
           {
             id: '7',
@@ -375,11 +384,11 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
 
   return [storedValue, setValue] as const;
 }`,
-                language: 'typescript'
-              }
-            ]
-          }
-        ]
+                language: 'typescript',
+              },
+            ],
+          },
+        ],
       },
       {
         id: '9',
@@ -413,7 +422,7 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
     "jest": "^29.0.0"
   }
 }`,
-        language: 'json'
+        language: 'json',
       },
       {
         id: '10',
@@ -457,14 +466,19 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 4. Push to the branch (\`git push origin feature/AmazingFeature\`)
 5. Open a Pull Request
 `,
-        language: 'markdown'
-      }
+        language: 'markdown',
+      },
     ];
 
     return fileTree;
   }
 
-  async saveFile(projectId: number, filePath: string, content: string, userId: number) {
+  async saveFile(
+    projectId: number,
+    filePath: string,
+    content: string,
+    userId: number,
+  ) {
     // Verificar acceso al proyecto
     const project = await this.prisma.project.findFirst({
       where: {
@@ -472,8 +486,8 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
         OR: [
           { ownerId: userId },
           {
-            collaborators_users: {
-              some: { id: userId },
+            collaborators: {
+              some: { userId: userId },
             },
           },
         ],
@@ -486,7 +500,10 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
     // En un caso real, aquí guardarías el archivo en el sistema de archivos o base de datos
     // Por ahora, simularemos que se guardó correctamente
-    console.log(`Saving file ${filePath} in project ${projectId}:`, content.substring(0, 100) + '...');
+    console.log(
+      `Saving file ${filePath} in project ${projectId}:`,
+      content.substring(0, 100) + '...',
+    );
 
     // Actualizar la fecha de modificación del proyecto
     await this.prisma.project.update({
@@ -502,7 +519,13 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
     };
   }
 
-  async executeCode(projectId: number, filePath: string, content: string, language: string, userId: number) {
+  async executeCode(
+    projectId: number,
+    filePath: string,
+    content: string,
+    language: string,
+    userId: number,
+  ) {
     // Verificar acceso al proyecto
     const project = await this.prisma.project.findFirst({
       where: {
@@ -510,8 +533,8 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
         OR: [
           { ownerId: userId },
           {
-            collaborators_users: {
-              some: { id: userId },
+            collaborators: {
+              some: { userId: userId },
             },
           },
         ],
@@ -532,12 +555,18 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
         case 'javascript':
         case 'typescript':
           if (content.includes('console.log')) {
-            const logMatches = content.match(/console\.log\(['"`]([^'"`]*)['"`]\)/g);
+            const logMatches = content.match(
+              /console\.log\(['"`]([^'"`]*)['"`]\)/g,
+            );
             if (logMatches) {
-              output = logMatches.map(match => {
-                const textMatch = match.match(/console\.log\(['"`]([^'"`]*)['"`]\)/);
-                return textMatch ? textMatch[1] : '';
-              }).join('\n');
+              output = logMatches
+                .map((match) => {
+                  const textMatch = match.match(
+                    /console\.log\(['"`]([^'"`]*)['"`]\)/,
+                  );
+                  return textMatch ? textMatch[1] : '';
+                })
+                .join('\n');
             } else {
               output = 'Código ejecutado correctamente\n';
             }
@@ -552,10 +581,12 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
           if (content.includes('print(')) {
             const printMatches = content.match(/print\(['"`]([^'"`]*)['"`]\)/g);
             if (printMatches) {
-              output = printMatches.map(match => {
-                const textMatch = match.match(/print\(['"`]([^'"`]*)['"`]\)/);
-                return textMatch ? textMatch[1] : '';
-              }).join('\n');
+              output = printMatches
+                .map((match) => {
+                  const textMatch = match.match(/print\(['"`]([^'"`]*)['"`]\)/);
+                  return textMatch ? textMatch[1] : '';
+                })
+                .join('\n');
             } else {
               output = 'Código Python ejecutado\n';
             }
@@ -575,7 +606,6 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
       // Agregar timestamp
       output += `\n--- Ejecutado a las ${new Date().toLocaleTimeString()} ---`;
-
     } catch (e) {
       success = false;
       error = `Error de sintaxis: ${e instanceof Error ? e.message : 'Error desconocido'}`;
@@ -591,7 +621,13 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
     };
   }
 
-  async analyzeCode(projectId: number, filePath: string, content: string, language: string, userId: number) {
+  async analyzeCode(
+    projectId: number,
+    filePath: string,
+    content: string,
+    language: string,
+    userId: number,
+  ) {
     // Verificar acceso al proyecto
     const project = await this.prisma.project.findFirst({
       where: {
@@ -599,8 +635,8 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
         OR: [
           { ownerId: userId },
           {
-            collaborators_users: {
-              some: { id: userId },
+            collaborators: {
+              some: { userId: userId },
             },
           },
         ],
@@ -614,9 +650,14 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
     // Simular análisis de IA (en un caso real, usarías OpenAI, Claude, etc.)
     const lines = content.split('\n').length;
     const hasComments = content.includes('//') || content.includes('/*');
-    const hasTypeScript = language === 'typescript' || filePath.endsWith('.ts') || filePath.endsWith('.tsx');
-    const hasConsoleLog = content.includes('console.log') || content.includes('console.warn');
-    const hasErrorHandling = content.includes('try') || content.includes('catch');
+    const hasTypeScript =
+      language === 'typescript' ||
+      filePath.endsWith('.ts') ||
+      filePath.endsWith('.tsx');
+    const hasConsoleLog =
+      content.includes('console.log') || content.includes('console.warn');
+    const hasErrorHandling =
+      content.includes('try') || content.includes('catch');
 
     // Generar puntuaciones basadas en el análisis
     let performanceScore = 85;
@@ -630,21 +671,29 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
     // Análisis de rendimiento
     if (lines > 100) {
       performanceScore -= 10;
-      performanceSuggestions.push('Considera dividir este archivo en módulos más pequeños');
+      performanceSuggestions.push(
+        'Considera dividir este archivo en módulos más pequeños',
+      );
     }
     if (content.includes('for (') && !content.includes('const ')) {
       performanceScore -= 5;
-      performanceSuggestions.push('Usa for...of o métodos de array como map/filter para mejor rendimiento');
+      performanceSuggestions.push(
+        'Usa for...of o métodos de array como map/filter para mejor rendimiento',
+      );
     }
     if (!hasTypeScript && language === 'javascript') {
       performanceScore -= 15;
-      performanceSuggestions.push('Migrar a TypeScript mejorará el rendimiento y mantenibilidad');
+      performanceSuggestions.push(
+        'Migrar a TypeScript mejorará el rendimiento y mantenibilidad',
+      );
     }
 
     // Análisis de seguridad
     if (content.includes('eval(')) {
       securityScore -= 20;
-      securityRisks.push('Uso de eval() detectado - riesgo de ejecución de código malicioso');
+      securityRisks.push(
+        'Uso de eval() detectado - riesgo de ejecución de código malicioso',
+      );
     }
     if (content.includes('innerHTML') && !content.includes('sanitize')) {
       securityScore -= 10;
@@ -652,25 +701,38 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
     }
     if (content.includes('localStorage') && !content.includes('JSON.parse')) {
       securityScore -= 5;
-      securityRisks.push('Datos en localStorage podrían necesitar validación adicional');
+      securityRisks.push(
+        'Datos en localStorage podrían necesitar validación adicional',
+      );
     }
 
     // Análisis de mejores prácticas
     if (!hasComments && lines > 20) {
       bestPracticesScore -= 15;
-      bestPracticesIssues.push('Agregar comentarios para mejorar la legibilidad del código');
+      bestPracticesIssues.push(
+        'Agregar comentarios para mejorar la legibilidad del código',
+      );
     }
     if (hasConsoleLog) {
       bestPracticesScore -= 10;
-      bestPracticesIssues.push('Remover console.log antes de producción o usar un logger apropiado');
+      bestPracticesIssues.push(
+        'Remover console.log antes de producción o usar un logger apropiado',
+      );
     }
-    if (!hasErrorHandling && (content.includes('fetch') || content.includes('api'))) {
+    if (
+      !hasErrorHandling &&
+      (content.includes('fetch') || content.includes('api'))
+    ) {
       bestPracticesScore -= 15;
-      bestPracticesIssues.push('Agregar manejo de errores para llamadas asíncronas');
+      bestPracticesIssues.push(
+        'Agregar manejo de errores para llamadas asíncronas',
+      );
     }
     if (content.includes('any') && hasTypeScript) {
       bestPracticesScore -= 10;
-      bestPracticesIssues.push('Evitar el uso de "any" - definir tipos específicos');
+      bestPracticesIssues.push(
+        'Evitar el uso de "any" - definir tipos específicos',
+      );
     }
 
     // Agregar sugerencias positivas si el código está bien
@@ -706,5 +768,47 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
         analyzedAt: new Date().toISOString(),
       },
     };
+  }
+
+  async addCollaborator(projectId: number, email: string, name: string) {
+    let user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      user = await this.prisma.user.create({
+        data: {
+          email,
+          fullName: name,
+          username: email.split('@')[0],
+          password: 'changeme',
+        },
+      });
+    }
+    let collaborator = await this.prisma.projectCollaborator.findFirst({
+      where: { projectId, userId: user.id },
+      include: { user: true },
+    });
+    if (!collaborator) {
+      collaborator = await this.prisma.projectCollaborator.create({
+        data: { projectId, userId: user.id, role: 'Usuario' },
+        include: { user: true },
+      });
+    }
+    return collaborator;
+  }
+
+  async updateCollaboratorRole(
+    projectId: number,
+    userId: number,
+    role: string,
+  ) {
+    await this.prisma.projectCollaborator.updateMany({
+      where: { projectId, userId },
+      data: { role },
+    });
+  }
+
+  async removeCollaborator(projectId: number, userId: number) {
+    await this.prisma.projectCollaborator.deleteMany({
+      where: { projectId, userId },
+    });
   }
 }

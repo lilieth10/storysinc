@@ -8,6 +8,8 @@ import {
   Param,
   UseGuards,
   Req,
+  HttpException,
+  Patch,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ProjectService } from './project.service';
@@ -67,6 +69,7 @@ export class ProjectController {
 
   @Get()
   async getProjects(@Req() req: AuthRequest) {
+    console.log('getProjects called, userId:', req.user.userId);
     return this.projectService.getProjectsForUser(req.user.userId);
   }
 
@@ -91,7 +94,18 @@ export class ProjectController {
   // Nuevos endpoints para el editor de código
   @Get(':id/files')
   async getProjectFiles(@Param('id') id: string, @Req() req: AuthRequest) {
-    return this.projectService.getProjectFiles(parseInt(id), req.user.userId);
+    try {
+      return await this.projectService.getProjectFiles(
+        parseInt(id),
+        req.user.userId,
+      );
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Error obteniendo archivos del proyecto';
+      throw new HttpException(message, 404);
+    }
   }
 
   @Put(':id/files')
@@ -100,12 +114,18 @@ export class ProjectController {
     @Body() saveFileDto: SaveFileDto,
     @Req() req: AuthRequest,
   ) {
-    return this.projectService.saveFile(
-      parseInt(id),
-      saveFileDto.filePath,
-      saveFileDto.content,
-      req.user.userId,
-    );
+    try {
+      return await this.projectService.saveFile(
+        parseInt(id),
+        saveFileDto.filePath,
+        saveFileDto.content,
+        req.user.userId,
+      );
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : 'Error guardando archivo';
+      throw new HttpException(message, 400);
+    }
   }
 
   @Post(':id/execute')
@@ -114,13 +134,19 @@ export class ProjectController {
     @Body() executeCodeDto: ExecuteCodeDto,
     @Req() req: AuthRequest,
   ) {
-    return this.projectService.executeCode(
-      parseInt(id),
-      executeCodeDto.filePath,
-      executeCodeDto.content,
-      executeCodeDto.language,
-      req.user.userId,
-    );
+    try {
+      return await this.projectService.executeCode(
+        parseInt(id),
+        executeCodeDto.filePath,
+        executeCodeDto.content,
+        executeCodeDto.language,
+        req.user.userId,
+      );
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : 'Error ejecutando código';
+      throw new HttpException(message, 400);
+    }
   }
 
   @Post(':id/analyze')
@@ -129,13 +155,19 @@ export class ProjectController {
     @Body() analyzeCodeDto: AnalyzeCodeDto,
     @Req() req: AuthRequest,
   ) {
-    return this.projectService.analyzeCode(
-      parseInt(id),
-      analyzeCodeDto.filePath,
-      analyzeCodeDto.content,
-      analyzeCodeDto.language,
-      req.user.userId,
-    );
+    try {
+      return await this.projectService.analyzeCode(
+        parseInt(id),
+        analyzeCodeDto.filePath,
+        analyzeCodeDto.content,
+        analyzeCodeDto.language,
+        req.user.userId,
+      );
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : 'Error analizando código';
+      throw new HttpException(message, 400);
+    }
   }
 
   @Post(':id/analyze-ia')
@@ -146,5 +178,44 @@ export class ProjectController {
   @Post(':id/sync')
   async sync(@Param('id') id: string) {
     return this.projectService.syncProject(parseInt(id));
+  }
+
+  @Post(':id/collaborators')
+  async addCollaborator(
+    @Param('id') id: string,
+    @Body() body: { email: string; name: string },
+  ) {
+    const collaborator = await this.projectService.addCollaborator(
+      parseInt(id),
+      body.email,
+      body.name,
+    );
+    return { message: 'Colaborador agregado', collaborator };
+  }
+
+  @Patch(':id/collaborators/:userId')
+  async updateCollaboratorRole(
+    @Param('id') id: string,
+    @Param('userId') userId: string,
+    @Body() body: { role: string },
+  ) {
+    await this.projectService.updateCollaboratorRole(
+      parseInt(id),
+      parseInt(userId),
+      body.role,
+    );
+    return { message: 'Rol actualizado' };
+  }
+
+  @Delete(':id/collaborators/:userId')
+  async removeCollaborator(
+    @Param('id') id: string,
+    @Param('userId') userId: string,
+  ) {
+    await this.projectService.removeCollaborator(
+      parseInt(id),
+      parseInt(userId),
+    );
+    return { message: 'Colaborador eliminado' };
   }
 }

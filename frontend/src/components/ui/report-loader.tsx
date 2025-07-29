@@ -6,14 +6,17 @@ interface ReportLoaderProps {
   text?: string;
 }
 
-export function ReportLoader({ isGenerating, text = "Generando reporte con IA..." }: ReportLoaderProps) {
+export function ReportLoader({
+  isGenerating,
+  text = "Generando reporte con IA...",
+}: ReportLoaderProps) {
   const [dots, setDots] = useState("");
 
   useEffect(() => {
     if (!isGenerating) return;
 
     const interval = setInterval(() => {
-      setDots(prev => prev.length >= 3 ? "" : prev + ".");
+      setDots((prev) => (prev.length >= 3 ? "" : prev + "."));
     }, 500);
 
     return () => clearInterval(interval);
@@ -160,11 +163,9 @@ export function ReportLoader({ isGenerating, text = "Generando reporte con IA...
           </div>
 
           {/* Solo texto simple */}
-          <p className="text-gray-600 font-medium">
-            Generando...
-          </p>
+          <p className="text-gray-600 font-medium">Generando...</p>
         </div>
       </div>
     </div>
   );
-} 
+}

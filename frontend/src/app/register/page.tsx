@@ -11,7 +11,7 @@ export default function RegisterPage() {
   const { register, loading, error } = useAuth();
   const router = useRouter();
   const [form, setForm] = useState<
-    Omit<User, "id" | "createdAt" | "avatar"> & { 
+    Omit<User, "id" | "createdAt" | "avatar"> & {
       password: string;
       confirmPassword: string;
       gender: string;
@@ -31,26 +31,28 @@ export default function RegisterPage() {
   });
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
   ) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validar que las contraseñas coincidan
     if (form.password !== form.confirmPassword) {
       toast.error("Las contraseñas no coinciden");
       return;
     }
-    
+
     // Validar que la contraseña tenga al menos 6 caracteres
     if (form.password.length < 6) {
       toast.error("La contraseña debe tener al menos 6 caracteres");
       return;
     }
-    
+
     // Preparar datos para enviar al backend (excluir campos que no están en la BD)
     const { confirmPassword, gender, identityNumber, ...dataToSend } = form;
     console.log("Enviando datos:", dataToSend);

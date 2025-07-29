@@ -20,7 +20,12 @@ interface ReportModalProps {
   onDownload: (reportId: number, format: string) => void;
 }
 
-export function ReportModal({ report, isOpen, onClose, onDownload }: ReportModalProps) {
+export function ReportModal({
+  report,
+  isOpen,
+  onClose,
+  onDownload,
+}: ReportModalProps) {
   const [downloadFormat, setDownloadFormat] = useState("pdf");
   const [showDownloadModal, setShowDownloadModal] = useState(false);
 
@@ -48,10 +53,11 @@ export function ReportModal({ report, isOpen, onClose, onDownload }: ReportModal
                   {report.title}
                 </h2>
                 <p className="text-gray-600">
-                  Generado el {new Date(report.createdAt).toLocaleDateString('es-ES', { 
-                    year: 'numeric', 
-                    month: '2-digit', 
-                    day: '2-digit' 
+                  Generado el{" "}
+                  {new Date(report.createdAt).toLocaleDateString("es-ES", {
+                    year: "numeric",
+                    month: "2-digit",
+                    day: "2-digit",
                   })}
                 </p>
               </div>
@@ -83,16 +89,28 @@ export function ReportModal({ report, isOpen, onClose, onDownload }: ReportModal
                 <div className="bg-gray-50 rounded-lg p-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-blue-600">CPU</div>
-                      <div className="text-sm text-gray-600">50% de utilización</div>
+                      <div className="text-2xl font-bold text-blue-600">
+                        CPU
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        50% de utilización
+                      </div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-green-600">RAM</div>
-                      <div className="text-sm text-gray-600">25% de utilización</div>
+                      <div className="text-2xl font-bold text-green-600">
+                        RAM
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        25% de utilización
+                      </div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-purple-600">GPU</div>
-                      <div className="text-sm text-gray-600">30% de utilización</div>
+                      <div className="text-2xl font-bold text-purple-600">
+                        GPU
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        30% de utilización
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -106,52 +124,69 @@ export function ReportModal({ report, isOpen, onClose, onDownload }: ReportModal
                 <div className="space-y-4">
                   {/* Recomendaciones */}
                   <div>
-                    <h4 className="font-medium text-gray-800 mb-2">Recomendaciones:</h4>
+                    <h4 className="font-medium text-gray-800 mb-2">
+                      Recomendaciones:
+                    </h4>
                     <ul className="list-disc list-inside space-y-1 text-gray-700">
-                      {parsedIaResults.recommendations?.map((rec: any, index: number) => (
-                        <li key={index} className="text-sm">
-                          {rec.message}
-                        </li>
-                      ))}
+                      {parsedIaResults.recommendations?.map(
+                        (rec: any, index: number) => (
+                          <li key={index} className="text-sm">
+                            {rec.message}
+                          </li>
+                        ),
+                      )}
                     </ul>
                   </div>
 
                   {/* Alertas */}
-                  {parsedIaResults.alerts && parsedIaResults.alerts.length > 0 && (
-                    <div>
-                      <h4 className="font-medium text-gray-800 mb-2">Alertas:</h4>
-                      <ul className="list-disc list-inside space-y-1 text-gray-700">
-                        {parsedIaResults.alerts.map((alert: any, index: number) => (
-                          <li key={index} className="text-sm">
-                            {alert.message}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+                  {parsedIaResults.alerts &&
+                    parsedIaResults.alerts.length > 0 && (
+                      <div>
+                        <h4 className="font-medium text-gray-800 mb-2">
+                          Alertas:
+                        </h4>
+                        <ul className="list-disc list-inside space-y-1 text-gray-700">
+                          {parsedIaResults.alerts.map(
+                            (alert: any, index: number) => (
+                              <li key={index} className="text-sm">
+                                {alert.message}
+                              </li>
+                            ),
+                          )}
+                        </ul>
+                      </div>
+                    )}
 
                   {/* Insights */}
                   {parsedIaResults.insights && (
                     <div>
-                      <h4 className="font-medium text-gray-800 mb-2">Insights:</h4>
+                      <h4 className="font-medium text-gray-800 mb-2">
+                        Insights:
+                      </h4>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="text-center">
                           <div className="text-lg font-bold text-blue-600">
                             {parsedIaResults.insights.performanceScore}%
                           </div>
-                          <div className="text-xs text-gray-600">Performance Score</div>
+                          <div className="text-xs text-gray-600">
+                            Performance Score
+                          </div>
                         </div>
                         <div className="text-center">
                           <div className="text-lg font-bold text-green-600">
                             {parsedIaResults.insights.securityScore}%
                           </div>
-                          <div className="text-xs text-gray-600">Security Score</div>
+                          <div className="text-xs text-gray-600">
+                            Security Score
+                          </div>
                         </div>
                         <div className="text-center">
                           <div className="text-lg font-bold text-purple-600">
                             {parsedIaResults.insights.recommendations}
                           </div>
-                          <div className="text-xs text-gray-600">Recomendaciones</div>
+                          <div className="text-xs text-gray-600">
+                            Recomendaciones
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -180,7 +215,7 @@ export function ReportModal({ report, isOpen, onClose, onDownload }: ReportModal
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               Seleccionar formato de descarga
             </h3>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -216,4 +251,4 @@ export function ReportModal({ report, isOpen, onClose, onDownload }: ReportModal
       )}
     </>
   );
-} 
+}

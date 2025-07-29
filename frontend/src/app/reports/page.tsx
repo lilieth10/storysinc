@@ -51,7 +51,7 @@ export default function ReportsPage() {
   const loadReportsData = async () => {
     try {
       setLoading(true);
-      
+
       // Cargar reportes
       const reportsRes = await api.get("/reports");
       setReports(reportsRes.data);
@@ -70,25 +70,25 @@ export default function ReportsPage() {
   const generateReport = async () => {
     try {
       setGeneratingReport(true);
-      
+
       // Simular generación de reporte con IA
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+
       const reportData = {
         type: "dashboard",
         title: "Reporte de rendimiento",
         description: "Análisis completo del rendimiento de la plataforma",
         metrics: {
-          subscriptions: metrics?.subscriptions || {}
+          subscriptions: metrics?.subscriptions || {},
         },
         dateRange: {
           start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-          end: new Date().toISOString()
-        }
+          end: new Date().toISOString(),
+        },
       };
-      
+
       await api.post("/reports", reportData);
-      
+
       toast.success("Reporte generado exitosamente");
       await loadReportsData(); // Recargar datos
     } catch (error) {
@@ -106,18 +106,22 @@ export default function ReportsPage() {
 
   const handleDownloadReport = async (reportId: number, format: string) => {
     try {
-      const response = await api.post("/reports/download", {
-        reportId,
-        format
-      }, {
-        responseType: 'blob'
-      });
+      const response = await api.post(
+        "/reports/download",
+        {
+          reportId,
+          format,
+        },
+        {
+          responseType: "blob",
+        },
+      );
 
       // Crear URL del blob y descargar
       const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
-      link.setAttribute('download', `reporte_${reportId}.${format}`);
+      link.setAttribute("download", `reporte_${reportId}.${format}`);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -133,41 +137,42 @@ export default function ReportsPage() {
   const handleDeleteReport = async (reportId: number) => {
     // Confirmación elegante con toast
     const confirmed = await new Promise((resolve) => {
-      toast((t) => (
-        <div className="flex flex-col gap-3">
-          <div className="font-medium text-gray-900">
-            ¿Eliminar reporte?
+      toast(
+        (t) => (
+          <div className="flex flex-col gap-3">
+            <div className="font-medium text-gray-900">¿Eliminar reporte?</div>
+            <div className="text-sm text-gray-600">
+              Esta acción no se puede deshacer
+            </div>
+            <div className="flex gap-2 mt-2">
+              <button
+                onClick={() => {
+                  toast.dismiss(t.id);
+                  resolve(false);
+                }}
+                className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  toast.dismiss(t.id);
+                  resolve(true);
+                }}
+                className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
+              >
+                Eliminar
+              </button>
+            </div>
           </div>
-          <div className="text-sm text-gray-600">
-            Esta acción no se puede deshacer
-          </div>
-          <div className="flex gap-2 mt-2">
-            <button
-              onClick={() => {
-                toast.dismiss(t.id);
-                resolve(false);
-              }}
-              className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={() => {
-                toast.dismiss(t.id);
-                resolve(true);
-              }}
-              className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
-            >
-              Eliminar
-            </button>
-          </div>
-        </div>
-      ), {
-        duration: 10000,
-        position: 'top-center',
-      });
+        ),
+        {
+          duration: 10000,
+          position: "top-center",
+        },
+      );
     });
-    
+
     if (!confirmed) return;
 
     try {
@@ -183,92 +188,107 @@ export default function ReportsPage() {
   // Configuración del gráfico de estadísticas (igual al de suscripciones)
   const statisticsChartOptions = {
     chart: {
-      type: 'bar' as const,
+      type: "bar" as const,
       stacked: true,
       toolbar: {
-        show: false
+        show: false,
       },
-      fontFamily: 'Inter, sans-serif'
+      fontFamily: "Inter, sans-serif",
     },
     plotOptions: {
       bar: {
         horizontal: false,
-        columnWidth: '70%',
-        borderRadius: 4
-      }
+        columnWidth: "70%",
+        borderRadius: 4,
+      },
     },
     dataLabels: {
-      enabled: false
+      enabled: false,
     },
     stroke: {
-      width: 0
+      width: 0,
     },
     xaxis: {
-      categories: metrics?.subscriptions?.categories || ['ENG', 'FEB', 'MAR', 'APR', 'MAY', 'JUN'],
+      categories: metrics?.subscriptions?.categories || [
+        "ENG",
+        "FEB",
+        "MAR",
+        "APR",
+        "MAY",
+        "JUN",
+      ],
       labels: {
         style: {
-          colors: '#6B7280',
-          fontSize: '12px'
-        }
-      }
+          colors: "#6B7280",
+          fontSize: "12px",
+        },
+      },
     },
     yaxis: {
       labels: {
-        formatter: function(val: number) {
+        formatter: function (val: number) {
           if (val >= 1000000) {
-            return (val / 1000000).toFixed(0) + 'M';
+            return (val / 1000000).toFixed(0) + "M";
           } else if (val >= 1000) {
-            return (val / 1000).toFixed(0) + 'K';
+            return (val / 1000).toFixed(0) + "K";
           }
           return val.toString();
         },
         style: {
-          colors: '#6B7280',
-          fontSize: '12px'
-        }
-      }
+          colors: "#6B7280",
+          fontSize: "12px",
+        },
+      },
     },
-    colors: ['#8B5CF6', '#A855F7', '#C084FC', '#DDD6FE'],
+    colors: ["#8B5CF6", "#A855F7", "#C084FC", "#DDD6FE"],
     legend: {
-      position: 'top' as const,
-      horizontalAlign: 'center' as const,
-      fontSize: '14px',
-      fontFamily: 'Inter, sans-serif',
+      position: "top" as const,
+      horizontalAlign: "center" as const,
+      fontSize: "14px",
+      fontFamily: "Inter, sans-serif",
       labels: {
-        colors: '#374151'
-      }
+        colors: "#374151",
+      },
     },
     tooltip: {
       y: {
-        formatter: function(val: number) {
+        formatter: function (val: number) {
           if (val >= 1000000) {
-            return (val / 1000000).toFixed(1) + 'M';
+            return (val / 1000000).toFixed(1) + "M";
           } else if (val >= 1000) {
-            return (val / 1000).toFixed(1) + 'K';
+            return (val / 1000).toFixed(1) + "K";
           }
           return val.toString();
-        }
-      }
-    }
+        },
+      },
+    },
   };
 
   const statisticsChartSeries = [
     {
-      name: 'Gratis',
-      data: metrics?.subscriptions?.Gratis || [5000, 8000, 12000, 15000, 18000, 22000]
+      name: "Gratis",
+      data: metrics?.subscriptions?.Gratis || [
+        5000, 8000, 12000, 15000, 18000, 22000,
+      ],
     },
     {
-      name: 'Básico',
-      data: metrics?.subscriptions?.Basico || [3000, 5000, 8000, 10000, 12000, 15000]
+      name: "Básico",
+      data: metrics?.subscriptions?.Basico || [
+        3000, 5000, 8000, 10000, 12000, 15000,
+      ],
     },
     {
-      name: 'Pro',
-      data: metrics?.subscriptions?.Pro || [2000, 3000, 5000, 7000, 9000, 12000]
+      name: "Pro",
+      data: metrics?.subscriptions?.Pro || [
+        2000, 3000, 5000, 7000, 9000, 12000,
+      ],
     },
     {
-      name: 'Empresa',
-      data: metrics?.subscriptions?.Empresa || [1000, 1500, 2500, 3500, 4500, 6000]
-    }
+      name: "Empresa",
+      data: metrics?.subscriptions?.Empresa || [
+        1000, 1500, 2500, 3500, 4500, 6000,
+      ],
+    },
   ];
 
   if (loading) {
@@ -291,7 +311,10 @@ export default function ReportsPage() {
           <div className="max-w-7xl mx-auto">
             {/* Breadcrumb */}
             <div className="mb-6">
-              <Link href="/reports" className="text-blue-600 hover:text-blue-800 font-medium">
+              <Link
+                href="/reports"
+                className="text-blue-600 hover:text-blue-800 font-medium"
+              >
                 ← Reportes
               </Link>
             </div>
@@ -354,38 +377,41 @@ export default function ReportsPage() {
                           {report.title}
                         </h3>
                         <span className="text-xs text-gray-500">
-                          {new Date(report.createdAt).toLocaleDateString('es-ES', { 
-                            year: 'numeric', 
-                            month: '2-digit', 
-                            day: '2-digit' 
-                          })}
+                          {new Date(report.createdAt).toLocaleDateString(
+                            "es-ES",
+                            {
+                              year: "numeric",
+                              month: "2-digit",
+                              day: "2-digit",
+                            },
+                          )}
                         </span>
                       </div>
                       <p className="text-sm text-gray-600 mb-2">
                         Tipo: {report.type}
                       </p>
-                                              <div className="flex gap-2">
-                          <button 
-                            onClick={() => handleViewReport(report)}
-                            className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200"
-                          >
-                            Ver
-                          </button>
-                          <button 
-                            onClick={() => handleDownloadReport(report.id, 'pdf')}
-                            className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200"
-                          >
-                            Descargar
-                          </button>
-                          <button 
-                            onClick={() => handleDeleteReport(report.id)}
-                            className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200 flex items-center gap-1"
-                            title="Eliminar reporte"
-                          >
-                            <Trash2 size={12} />
-                            Eliminar
-                          </button>
-                        </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleViewReport(report)}
+                          className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200"
+                        >
+                          Ver
+                        </button>
+                        <button
+                          onClick={() => handleDownloadReport(report.id, "pdf")}
+                          className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200"
+                        >
+                          Descargar
+                        </button>
+                        <button
+                          onClick={() => handleDeleteReport(report.id)}
+                          className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200 flex items-center gap-1"
+                          title="Eliminar reporte"
+                        >
+                          <Trash2 size={12} />
+                          Eliminar
+                        </button>
+                      </div>
                     </div>
                   ))
                 )}
@@ -429,4 +455,4 @@ export default function ReportsPage() {
       <Footer />
     </div>
   );
-} 
+}

@@ -10,6 +10,8 @@ import { ReportsController } from './reports.controller';
 import { ProjectController } from './project.controller';
 import { ProjectService } from './project.service';
 import { NotificationService } from './notification.service';
+import { SyncController } from './sync.controller';
+import { AIController } from './ai.controller';
 
 @Module({
   imports: [AuthModule, UserModule, PrismaModule],
@@ -18,6 +20,8 @@ import { NotificationService } from './notification.service';
     DashboardController,
     ReportsController,
     ProjectController,
+    SyncController,
+    AIController,
   ],
   providers: [
     AppService,

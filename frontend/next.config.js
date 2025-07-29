@@ -67,4 +67,15 @@ const nextConfig = {
   },
 };
 
+nextConfig.rewrites = async () => [
+  {
+    source: "/api/:path*",
+    destination: "http://localhost:3001/api/:path*",
+  },
+  {
+    source: "/sync/:path*",
+    destination: "http://localhost:3001/sync/:path*",
+  },
+];
+
 module.exports = nextConfig;

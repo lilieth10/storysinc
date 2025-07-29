@@ -73,7 +73,7 @@ export class ReportsController {
     @Query('limit') limit?: string,
   ) {
     const take = limit ? parseInt(limit) : 10;
-    
+
     return this.prisma.report.findMany({
       where: { userId: req.user.userId },
       orderBy: { createdAt: 'desc' },
@@ -171,7 +171,7 @@ export class ReportsController {
         try {
           const PDFDocument = require('pdfkit');
           const doc = new PDFDocument();
-          
+
           res.setHeader('Content-Type', 'application/pdf');
           res.setHeader(
             'Content-Disposition',
@@ -179,21 +179,23 @@ export class ReportsController {
           );
 
           // Agregar contenido al PDF
-          doc.fontSize(20).text(`Reporte: ${report.title}`, { align: 'center' });
+          doc
+            .fontSize(20)
+            .text(`Reporte: ${report.title}`, { align: 'center' });
           doc.moveDown();
           doc.fontSize(12).text(`Tipo: ${report.type}`);
           doc.text(`Fecha: ${new Date(report.createdAt).toLocaleString()}`);
           doc.moveDown();
           doc.text('---');
           doc.moveDown();
-          
+
           // Métricas
           doc.fontSize(14).text('Métricas del Sistema:');
           doc.moveDown();
           const metrics = JSON.parse(report.metrics);
           doc.fontSize(10).text(JSON.stringify(metrics, null, 2));
           doc.moveDown();
-          
+
           // Resultados IA
           doc.fontSize(14).text('Análisis de IA:');
           doc.moveDown();
@@ -203,9 +205,9 @@ export class ReportsController {
           doc.pipe(res);
           doc.end();
         } catch (pdfError) {
-          return res.status(500).json({ 
-            success: false, 
-            message: 'Error generando PDF'
+          return res.status(500).json({
+            success: false,
+            message: 'Error generando PDF',
           });
         }
       } else {
@@ -215,14 +217,14 @@ export class ReportsController {
           'Content-Disposition',
           `attachment; filename="reporte_${report.id}.csv"`,
         );
-        
+
         const csvContent = `titulo,tipo,fecha,descripcion\n"${report.title}","${report.type}","${new Date(report.createdAt).toLocaleString()}","${report.description || ''}"`;
         res.send(csvContent);
       }
     } catch (error) {
-      return res.status(500).json({ 
-        success: false, 
-        message: 'Error en la descarga'
+      return res.status(500).json({
+        success: false,
+        message: 'Error en la descarga',
       });
     }
   }

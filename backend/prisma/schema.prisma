@@ -28,8 +28,11 @@ model User {
   // Relations
   reports         Report[]
   projectsOwned   Project[] @relation("ProjectOwner")
-  projectsCollab  Project[] @relation("ProjectCollaborator")
   notifications   Notification[]
+  syncProjects    SyncProject[]
+  syncHistory     SyncHistory[]
+  collaborations  ProjectCollaborator[]
+  aiChatHistory   AIChatMessage[]
 }
 
 model Report {
@@ -55,17 +58,44 @@ model Project {
   pattern     String   @default("monolith")
   status      String   @default("active")
   ownerId     Int
-  collaborators String // JSON string
+  language    String   @default("javascript") // javascript, typescript, python, etc.
   components  String   // JSON string
   lastSync    DateTime @default(now())
   iaInsights  String   // JSON string
   tags        String   // Comma-separated tags due to SQLite limitation
+  license     String?  // MIT, Apache, GPL, BSD, etc.
+  visibility  String   @default("public") // public, private
+  addReadme   Boolean  @default(true)
+  addGitignore Boolean @default(true)
+  chooseLicense Boolean @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   // Relations
   owner       User     @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  collaborators_users User[] @relation("ProjectCollaborator")
+  collaborators ProjectCollaborator[]
+  aiChatHistory AIChatMessage[]
+}
+
+model SyncProject {
+  id                 Int      @id @default(autoincrement())
+  name               String
+  description        String
+  type               String   // 'bff' or 'sidecar'
+  pattern            String?  // For BFF projects
+  tags               String?  // Comma-separated tags
+  frontendAssociation String? // Associated frontends
+  contact            String?  // Contact information
+  functions          String?  // JSON string for Sidecar functions
+  status             String   @default("active") // 'active' or 'inactive'
+  lastSync           DateTime @default(now())
+  userId             Int
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  syncHistory SyncHistory[]
 }
 
 model Notification {
@@ -79,4 +109,38 @@ model Notification {
 
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model SyncHistory {
+  id        Int      @id @default(autoincrement())
+  project   SyncProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  date      DateTime @default(now())
+  status    String   // success, error
+  message   String?
+}
+
+model ProjectCollaborator {
+  id        Int     @id @default(autoincrement())
+  project   Project @relation(fields: [projectId], references: [id])
+  projectId Int
+  user      User    @relation(fields: [userId], references: [id])
+  userId    Int
+  role      String  @default("Usuario")
+  @@unique([projectId, userId])
+}
+
+model AIChatMessage {
+  id        Int      @id @default(autoincrement())
+  projectId Int
+  userId    Int
+  message   String   // User message or AI response
+  isAI      Boolean  @default(false) // true if AI response, false if user message
+  timestamp DateTime @default(now())
+  
+  // Relations
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 } 

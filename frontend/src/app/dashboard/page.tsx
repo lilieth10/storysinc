@@ -1,4 +1,3 @@
-
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -53,7 +52,7 @@ export default function DashboardPage() {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      
+
       // Cargar métricas del dashboard
       const metricsRes = await api.get("/dashboard/metrics");
       setMetrics(metricsRes.data);
@@ -74,24 +73,24 @@ export default function DashboardPage() {
   const generateReport = async () => {
     try {
       setGeneratingReport(true);
-      
+
       // Simular generación de reporte con IA
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+
       await api.post("/reports", {
         type: "dashboard",
         title: "Reporte de rendimiento",
         description: "Análisis completo del rendimiento de la plataforma",
         metrics: {
           subscriptions: metrics?.subscriptions || {},
-          summary: metrics?.summary || {}
+          summary: metrics?.summary || {},
         },
         dateRange: {
           start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-          end: new Date().toISOString()
-        }
+          end: new Date().toISOString(),
+        },
       });
-      
+
       toast.success("Reporte generado exitosamente");
       router.push("/reports"); // Redirigir a reportes
     } catch (error) {
@@ -105,139 +104,154 @@ export default function DashboardPage() {
   // Configuración del gráfico de suscripciones
   const subscriptionChartOptions = {
     chart: {
-      type: 'bar' as const,
+      type: "bar" as const,
       stacked: true,
       toolbar: {
-        show: false
+        show: false,
       },
-      fontFamily: 'Inter, sans-serif'
+      fontFamily: "Inter, sans-serif",
     },
     plotOptions: {
       bar: {
         horizontal: false,
-        columnWidth: '70%',
-        borderRadius: 4
-      }
+        columnWidth: "70%",
+        borderRadius: 4,
+      },
     },
     dataLabels: {
-      enabled: false
+      enabled: false,
     },
     stroke: {
-      width: 0
+      width: 0,
     },
     xaxis: {
-      categories: metrics?.subscriptions?.categories || ['ENG', 'FEB', 'MAR', 'APR', 'MAY', 'JUN'],
+      categories: metrics?.subscriptions?.categories || [
+        "ENG",
+        "FEB",
+        "MAR",
+        "APR",
+        "MAY",
+        "JUN",
+      ],
       labels: {
         style: {
-          colors: '#6B7280',
-          fontSize: '12px'
-        }
-      }
+          colors: "#6B7280",
+          fontSize: "12px",
+        },
+      },
     },
     yaxis: {
       labels: {
-        formatter: function(val: number) {
+        formatter: function (val: number) {
           if (val >= 1000000) {
-            return (val / 1000000).toFixed(0) + 'M';
+            return (val / 1000000).toFixed(0) + "M";
           } else if (val >= 1000) {
-            return (val / 1000).toFixed(0) + 'K';
+            return (val / 1000).toFixed(0) + "K";
           }
           return val.toString();
         },
         style: {
-          colors: '#6B7280',
-          fontSize: '12px'
-        }
-      }
+          colors: "#6B7280",
+          fontSize: "12px",
+        },
+      },
     },
-    colors: ['#8B5CF6', '#A855F7', '#C084FC', '#DDD6FE'],
+    colors: ["#8B5CF6", "#A855F7", "#C084FC", "#DDD6FE"],
     legend: {
-      position: 'top' as const,
-      horizontalAlign: 'center' as const,
-      fontSize: '14px',
-      fontFamily: 'Inter, sans-serif',
+      position: "top" as const,
+      horizontalAlign: "center" as const,
+      fontSize: "14px",
+      fontFamily: "Inter, sans-serif",
       labels: {
-        colors: '#374151'
-      }
+        colors: "#374151",
+      },
     },
     tooltip: {
       y: {
-        formatter: function(val: number) {
+        formatter: function (val: number) {
           if (val >= 1000000) {
-            return (val / 1000000).toFixed(1) + 'M';
+            return (val / 1000000).toFixed(1) + "M";
           } else if (val >= 1000) {
-            return (val / 1000).toFixed(1) + 'K';
+            return (val / 1000).toFixed(1) + "K";
           }
           return val.toString();
-        }
-      }
-    }
+        },
+      },
+    },
   };
 
   const subscriptionChartSeries = [
     {
-      name: 'Gratis',
-      data: metrics?.subscriptions?.Gratis || [5000, 8000, 12000, 15000, 18000, 22000]
+      name: "Gratis",
+      data: metrics?.subscriptions?.Gratis || [
+        5000, 8000, 12000, 15000, 18000, 22000,
+      ],
     },
     {
-      name: 'Básico',
-      data: metrics?.subscriptions?.Basico || [3000, 5000, 8000, 10000, 12000, 15000]
+      name: "Básico",
+      data: metrics?.subscriptions?.Basico || [
+        3000, 5000, 8000, 10000, 12000, 15000,
+      ],
     },
     {
-      name: 'Pro',
-      data: metrics?.subscriptions?.Pro || [2000, 3000, 5000, 7000, 9000, 12000]
+      name: "Pro",
+      data: metrics?.subscriptions?.Pro || [
+        2000, 3000, 5000, 7000, 9000, 12000,
+      ],
     },
     {
-      name: 'Empresa',
-      data: metrics?.subscriptions?.Empresa || [1000, 1500, 2500, 3500, 4500, 6000]
-    }
+      name: "Empresa",
+      data: metrics?.subscriptions?.Empresa || [
+        1000, 1500, 2500, 3500, 4500, 6000,
+      ],
+    },
   ];
 
   // Configuración del gráfico de resumen (donut) - Uso de recursos
   const summaryChartOptions = {
     chart: {
-      type: 'donut' as const,
-      fontFamily: 'Inter, sans-serif'
+      type: "donut" as const,
+      fontFamily: "Inter, sans-serif",
     },
-    labels: ['CPU', 'GPU', 'RAM'],
-    colors: ['#1F2937', '#3B82F6', '#60A5FA'],
+    labels: ["CPU", "GPU", "RAM"],
+    colors: ["#1F2937", "#3B82F6", "#60A5FA"],
     legend: {
-      position: 'bottom' as const,
-      fontSize: '14px',
-      fontFamily: 'Inter, sans-serif',
+      position: "bottom" as const,
+      fontSize: "14px",
+      fontFamily: "Inter, sans-serif",
       labels: {
-        colors: '#374151'
-      }
+        colors: "#374151",
+      },
     },
     dataLabels: {
       enabled: true,
-      formatter: function(val: number) {
-        return val + '%';
+      formatter: function (val: number) {
+        return val + "%";
       },
       style: {
-        fontSize: '14px',
-        fontFamily: 'Inter, sans-serif',
-        fontWeight: '600'
-      }
+        fontSize: "14px",
+        fontFamily: "Inter, sans-serif",
+        fontWeight: "600",
+      },
     },
     plotOptions: {
       pie: {
         donut: {
-          size: '60%',
+          size: "60%",
           labels: {
             show: true,
             total: {
               show: true,
-              label: 'Total',
-              fontSize: '16px',
-              fontFamily: 'Inter, sans-serif',
-              fontWeight: '600',
-              color: '#374151'
-            }
-          }
-        }
-      }
-    }
+              label: "Total",
+              fontSize: "16px",
+              fontFamily: "Inter, sans-serif",
+              fontWeight: "600",
+              color: "#374151",
+            },
+          },
+        },
+      },
+    },
   };
 
   const summaryChartSeries = [50, 30, 20]; // CPU 50%, GPU 30%, RAM 20%
@@ -262,7 +276,10 @@ export default function DashboardPage() {
           <div className="max-w-7xl mx-auto">
             {/* Breadcrumb */}
             <div className="mb-6">
-              <Link href="/dashboard" className="text-blue-600 hover:text-blue-800 font-medium">
+              <Link
+                href="/dashboard"
+                className="text-blue-600 hover:text-blue-800 font-medium"
+              >
                 ← Dashboard
               </Link>
             </div>
@@ -273,8 +290,6 @@ export default function DashboardPage() {
                 Resumen de rendimiento de la plataforma
               </h1>
             </div>
-
-
 
             {/* Layout de dos columnas */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
@@ -324,8 +339,6 @@ export default function DashboardPage() {
               </div>
             </div>
 
-
-
             {/* Botón Generar Reporte */}
             <div className="flex justify-start">
               <button
@@ -352,4 +365,4 @@ export default function DashboardPage() {
       <Footer />
     </div>
   );
-} 
+}

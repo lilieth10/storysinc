@@ -1,0 +1,11 @@
+-- CreateTable
+CREATE TABLE "AIChatMessage" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "projectId" INTEGER NOT NULL,
+    "userId" INTEGER NOT NULL,
+    "message" TEXT NOT NULL,
+    "isAI" BOOLEAN NOT NULL DEFAULT false,
+    "timestamp" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "AIChatMessage_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "AIChatMessage_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);

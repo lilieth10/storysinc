@@ -35,7 +35,7 @@ export function NotificationsDropdown() {
         <NotificationsBadge />
       </button>
       {open && (
-        <div className="absolute right-0 mt-2 w-96 max-w-full z-50 bg-white rounded-xl shadow-lg border border-gray-200 animate-fade-in">
+        <div className="absolute right-0 mt-2 w-[500px] max-w-[90vw] z-50 bg-white rounded-xl shadow-xl border border-gray-200 animate-fade-in">
           <NotificationsList />
         </div>
       )}
