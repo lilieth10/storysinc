@@ -15,64 +15,88 @@ export interface NotificationPayload {
 export class NotificationService {
   constructor(private readonly prisma: PrismaService) {}
 
-  createNotification(data: {
+  async createNotification(data: {
     userId: number;
     title: string;
     message: string;
     type?: string;
-  }): NotificationPayload {
-    // Simular creación de notificación por ahora
-    const notification = {
-      id: Date.now(),
-      userId: data.userId,
-      title: data.title,
-      message: data.message,
-      type: data.type || 'info',
-      read: false,
-      createdAt: new Date().toISOString(),
-    };
-
-    return notification;
-  }
-
-  getNotificationsForUser(userId: number): NotificationPayload[] {
-    // Simular notificaciones por ahora
-    return [
-      {
-        id: 1,
-        userId,
-        title: 'Bienvenido a Proogia',
-        message: 'Tu cuenta ha sido creada exitosamente',
-        type: 'success',
+  }): Promise<NotificationPayload> {
+    // Crear notificación real en la DB
+    const notification = await this.prisma.notification.create({
+      data: {
+        userId: data.userId,
+        title: data.title,
+        message: data.message,
+        type: data.type || 'info',
         read: false,
-        createdAt: new Date().toISOString(),
       },
-    ];
-  }
+    });
 
-  markAsRead(notificationId: number): NotificationPayload {
-    // Simular marcar como leída
     return {
-      id: notificationId,
-      userId: 1,
-      title: 'Notificación',
-      message: 'Mensaje de prueba',
-      type: 'info',
-      read: true,
-      createdAt: new Date().toISOString(),
+      id: notification.id,
+      userId: notification.userId,
+      title: notification.title,
+      message: notification.message,
+      type: notification.type,
+      read: notification.read,
+      createdAt: notification.createdAt.toISOString(),
     };
   }
 
-  deleteNotification(notificationId: number): NotificationPayload {
-    // Simular eliminación
+  async getNotificationsForUser(
+    userId: number,
+  ): Promise<NotificationPayload[]> {
+    // Obtener notificaciones reales de la DB
+    const notifications = await this.prisma.notification.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return notifications.map((notification) => ({
+      id: notification.id,
+      userId: notification.userId,
+      title: notification.title,
+      message: notification.message,
+      type: notification.type,
+      read: notification.read,
+      createdAt: notification.createdAt.toISOString(),
+    }));
+  }
+
+  async markAsRead(
+    notificationId: number,
+  ): Promise<NotificationPayload> {
+    // Marcar como leída en la DB
+    const notification = await this.prisma.notification.update({
+      where: { id: notificationId },
+      data: { read: true },
+    });
+
     return {
-      id: notificationId,
-      userId: 1,
-      title: 'Notificación eliminada',
-      message: 'Esta notificación fue eliminada',
-      type: 'info',
-      read: false,
-      createdAt: new Date().toISOString(),
+      id: notification.id,
+      userId: notification.userId,
+      title: notification.title,
+      message: notification.message,
+      type: notification.type,
+      read: notification.read,
+      createdAt: notification.createdAt.toISOString(),
+    };
+  }
+
+  async deleteNotification(notificationId: number): Promise<NotificationPayload> {
+    // Eliminar de la DB
+    const notification = await this.prisma.notification.delete({
+      where: { id: notificationId },
+    });
+
+    return {
+      id: notification.id,
+      userId: notification.userId,
+      title: notification.title,
+      message: notification.message,
+      type: notification.type,
+      read: notification.read,
+      createdAt: notification.createdAt.toISOString(),
     };
   }
 

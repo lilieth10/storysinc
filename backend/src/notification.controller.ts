@@ -26,12 +26,12 @@ export class NotificationController {
   constructor(private readonly notificationService: NotificationService) {}
 
   @Get()
-  list(@Req() req: AuthRequest): NotificationPayload[] {
-    return this.notificationService.getNotificationsForUser(req.user.userId);
+  async list(@Req() req: AuthRequest): Promise<NotificationPayload[]> {
+    return await this.notificationService.getNotificationsForUser(req.user.userId);
   }
 
   @Post()
-  create(
+  async create(
     @Req() req: AuthRequest,
     @Body()
     data: {
@@ -39,20 +39,20 @@ export class NotificationController {
       message: string;
       type?: string;
     },
-  ): NotificationPayload {
-    return this.notificationService.createNotification({
+  ): Promise<NotificationPayload> {
+    return await this.notificationService.createNotification({
       userId: req.user.userId,
       ...data,
     });
   }
 
   @Patch(':id/read')
-  markAsRead(@Param('id') id: string): NotificationPayload {
-    return this.notificationService.markAsRead(Number(id));
+  async markAsRead(@Param('id') id: string): Promise<NotificationPayload> {
+    return await this.notificationService.markAsRead(Number(id));
   }
 
   @Delete(':id')
-  delete(@Param('id') id: string): NotificationPayload {
-    return this.notificationService.deleteNotification(Number(id));
+  async delete(@Param('id') id: string): Promise<NotificationPayload> {
+    return await this.notificationService.deleteNotification(Number(id));
   }
 }
