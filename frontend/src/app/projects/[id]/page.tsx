@@ -28,6 +28,7 @@ import {
   PlusIcon,
   MagnifyingGlassIcon,
   LockClosedIcon,
+  EyeIcon,
 } from "@heroicons/react/24/outline";
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
@@ -134,6 +135,8 @@ export default function ProjectDetailPage() {
   >("code");
   const [currentBranch, setCurrentBranch] = useState("main");
   const [isEditingConfig, setIsEditingConfig] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewContent, setPreviewContent] = useState<string>("");
 
   // Estado para edición de configuración
   const [editConfig, setEditConfig] = useState({
@@ -271,23 +274,35 @@ export default function ProjectDetailPage() {
     if (!selectedFile) return;
 
     setExecuting(true);
+    setExecutionOutput("Ejecutando código...");
+
     try {
+      const language = getLanguageFromFile(selectedFile.name, editorContent);
       const response = await api.post(
         `/projects/${projectId}/execute`,
         {
           filePath: selectedFile.path,
           content: editorContent,
+          language: language,
         },
         {
           headers: { Authorization: `Bearer ${token}` },
         },
       );
 
-      setExecutionOutput(response.data.output);
-      toast.success("Código ejecutado correctamente");
-    } catch (error) {
-      setExecutionOutput("Error al ejecutar el código");
-      toast.error("Error al ejecutar el código");
+      if (response.data.success) {
+        setExecutionOutput(response.data.output);
+        toast.success("Código ejecutado correctamente");
+      } else {
+        setExecutionOutput(
+          `Error: ${response.data.error || "Error desconocido"}`,
+        );
+        toast.error("Error al ejecutar el código");
+      }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Error al ejecutar el código";
+      setExecutionOutput(`Error: ${errorMessage}`);
+      toast.error(errorMessage);
     } finally {
       setExecuting(false);
     }
@@ -334,7 +349,7 @@ export default function ProjectDetailPage() {
     setEditorContent(file.content || "");
   };
 
-  const getLanguageFromFile = (filename: string): string => {
+  const getLanguageFromFile = (filename: string, content?: string): string => {
     const ext = filename.split(".").pop()?.toLowerCase();
     const languageMap: { [key: string]: string } = {
       js: "javascript",
@@ -350,12 +365,130 @@ export default function ProjectDetailPage() {
       cpp: "cpp",
       c: "c",
     };
+
+    // Si tenemos contenido, intentar detectar el lenguaje por contenido
+    if (content) {
+      const firstLine = content.trim().split('\n')[0].toLowerCase();
+      
+      // Detectar archivos de proyecto React/TypeScript PRIMERO
+      if (content.includes('import React') || content.includes('ReactDOM.render') ||
+          content.includes('export default') || content.includes('from \'react') ||
+          content.includes('from "react') || content.includes('<React.StrictMode>') ||
+          content.includes('document.getElementById') || content.includes('JSX.Element')) {
+        return "typescript"; // Para archivos .tsx/.ts
+      }
+      
+      // Detectar Python por palabras clave (solo si NO es React)
+      if ((content.includes('def ') || content.includes('print(') || 
+          content.includes('import ') || content.includes('from ') ||
+          firstLine.includes('python') || content.includes('if __name__')) &&
+          !content.includes('import React') && !content.includes('ReactDOM')) {
+        return "python";
+      }
+      
+      // Detectar JavaScript puro (solo si NO es React)
+      if ((content.includes('function ') || content.includes('const ') || 
+          content.includes('let ') || content.includes('var ') ||
+          content.includes('console.log')) &&
+          !content.includes('import React') && !content.includes('ReactDOM')) {
+        return ext === 'ts' || ext === 'tsx' ? "typescript" : "javascript";
+      }
+      
+      // Detectar HTML
+      if (content.includes('<!DOCTYPE html>') || content.includes('<html>') ||
+          content.includes('<head>') || content.includes('<body>')) {
+        return "html";
+      }
+      
+      // Detectar CSS
+      if (content.includes('{') && content.includes('}') && 
+          (content.includes(':') || content.includes('@media'))) {
+        return "css";
+      }
+      
+      // Detectar JSON
+      if (content.trim().startsWith('{') || content.trim().startsWith('[')) {
+        try {
+          JSON.parse(content);
+          return "json";
+        } catch {
+          // No es JSON válido
+        }
+      }
+    }
+
     return languageMap[ext || ""] || "plaintext";
   };
 
   const copyCode = () => {
     navigator.clipboard.writeText(editorContent);
     toast.success("Código copiado al portapapeles");
+  };
+
+  const createExecutableFile = () => {
+    const language = getLanguageFromFile(selectedFile?.name || "", editorContent);
+    let template = "";
+    
+    switch (language) {
+      case "javascript":
+        template = `// Código JavaScript ejecutable
+console.log("¡Hola mundo!");
+const suma = 2 + 2;
+console.log("Resultado:", suma);
+
+// Función simple
+function saludar(nombre) {
+  return \`¡Hola \${nombre}!\`;
+}
+
+console.log(saludar("Desarrollador"));`;
+        break;
+      case "python":
+        template = `# Código Python ejecutable
+print("¡Hola desde Python!")
+
+# Calculadora simple
+def suma(a, b):
+    return a + b
+
+resultado = suma(10, 5)
+print(f"10 + 5 = {resultado}")
+
+# Lista de números
+numeros = [1, 2, 3, 4, 5]
+print(f"Suma de números: {sum(numeros)}")`;
+        break;
+      case "html":
+        template = `<!DOCTYPE html>
+<html>
+<head>
+    <title>Mi Página</title>
+</head>
+<body>
+    <h1>¡Hola Mundo!</h1>
+    <p>Esta es una página HTML simple.</p>
+    <button onclick="alert('¡Funciona!')">Click me</button>
+</body>
+</html>`;
+        break;
+      default:
+        template = `// Código ejecutable
+console.log("¡Hola mundo!");`;
+    }
+    
+    setEditorContent(template);
+    toast.success("Plantilla de código ejecutable creada");
+  };
+
+  const togglePreview = () => {
+    if (getLanguageFromFile(selectedFile?.name || "", editorContent) === "html") {
+      setPreviewContent(editorContent);
+      setShowPreview(!showPreview);
+    } else {
+      toast("Previsualización solo disponible para archivos HTML", {
+        icon: "ℹ️",
+      });
+    }
   };
 
   const handleBackToProjects = () => {
@@ -710,12 +843,33 @@ export default function ProjectDetailPage() {
                             <Button
                               variant="outline"
                               size="sm"
+                              onClick={createExecutableFile}
+                              className="bg-blue-50 hover:bg-blue-100 text-blue-700"
+                            >
+                              <CodeBracketIcon className="w-4 h-4 mr-1" />
+                              Crear Ejecutable
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
                               onClick={saveFile}
                               disabled={saving}
                             >
                               <BookmarkIcon className="w-4 h-4 mr-1" />
                               {saving ? "Guardando..." : "Guardar"}
                             </Button>
+                            {getLanguageFromFile(selectedFile.name, editorContent) ===
+                              "html" && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={togglePreview}
+                                disabled={!editorContent}
+                              >
+                                <EyeIcon className="w-4 h-4 mr-1" />
+                                {showPreview ? "Ocultar" : "Vista Previa"}
+                              </Button>
+                            )}
                             <Button
                               variant="outline"
                               size="sm"
@@ -746,6 +900,7 @@ export default function ProjectDetailPage() {
                                 height="100%"
                                 language={getLanguageFromFile(
                                   selectedFile.name,
+                                  editorContent,
                                 )}
                                 value={editorContent}
                                 onChange={(value) =>
@@ -774,15 +929,54 @@ export default function ProjectDetailPage() {
                           {/* Output Section */}
                           <div className="flex-1 border-b border-gray-200">
                             <div className="p-4">
-                              <h3 className="text-sm font-medium text-gray-900 mb-3">
-                                Salida del Código
-                              </h3>
-                              <div className="bg-gray-50 rounded-lg p-3 h-48 overflow-y-auto">
-                                <pre className="text-xs text-gray-700 whitespace-pre-wrap">
-                                  {executionOutput ||
-                                    "Ejecuta el código para ver la salida..."}
-                                </pre>
+                              <div className="flex items-center justify-between mb-3">
+                                <h3 className="text-sm font-medium text-gray-900">
+                                  Salida del Código
+                                </h3>
+                                <div className="flex items-center space-x-2">
+                                  {getLanguageFromFile(
+                                    selectedFile?.name || "",
+                                    editorContent,
+                                  ) === "html" && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={togglePreview}
+                                      className="text-xs px-2 py-1"
+                                    >
+                                      {showPreview ? "Ocultar" : "Vista Previa"}
+                                    </Button>
+                                  )}
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setExecutionOutput("")}
+                                    className="text-xs px-2 py-1"
+                                  >
+                                    Limpiar
+                                  </Button>
+                                </div>
                               </div>
+
+                              {showPreview &&
+                              getLanguageFromFile(selectedFile?.name || "") ===
+                                "html" ? (
+                                <div className="bg-white border border-gray-200 rounded-lg h-48 overflow-hidden">
+                                  <iframe
+                                    srcDoc={previewContent}
+                                    className="w-full h-full"
+                                    title="HTML Preview"
+                                    sandbox="allow-scripts allow-same-origin"
+                                  />
+                                </div>
+                              ) : (
+                                <div className="bg-gray-50 rounded-lg p-3 h-48 overflow-y-auto">
+                                  <pre className="text-xs text-gray-700 whitespace-pre-wrap">
+                                    {executionOutput ||
+                                      "Ejecuta el código para ver la salida..."}
+                                  </pre>
+                                </div>
+                              )}
                             </div>
                           </div>
 

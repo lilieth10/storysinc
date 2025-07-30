@@ -1,8 +1,17 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-base-to-string */
+/* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
 import { Prisma } from '@prisma/client';
+import { VM } from 'vm2';
+import { spawn } from 'child_process';
+import { writeFileSync, unlinkSync } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
 
 // Definir el tipo para los componentes del proyecto
 interface ProjectComponent {
@@ -439,7 +448,6 @@ ReactDOM.render(
       throw new Error('Proyecto no encontrado o sin acceso');
     }
 
-    // Simular ejecución de código (en un caso real, usarías un sandbox)
     let output = '';
     let success = true;
     let error = '';
@@ -448,61 +456,34 @@ ReactDOM.render(
       switch (language.toLowerCase()) {
         case 'javascript':
         case 'typescript':
-          if (content.includes('console.log')) {
-            const logMatches = content.match(
-              /console\.log\(['"`]([^'"`]*)['"`]\)/g,
-            );
-            if (logMatches) {
-              output = logMatches
-                .map((match) => {
-                  const textMatch = match.match(
-                    /console\.log\(['"`]([^'"`]*)['"`]\)/,
-                  );
-                  return textMatch ? textMatch[1] : '';
-                })
-                .join('\n');
-            } else {
-              output = 'Código ejecutado correctamente\n';
-            }
-          } else if (content.includes('function')) {
-            output = 'Función definida correctamente\n';
-          } else {
-            output = 'Código JavaScript ejecutado\n';
-          }
+          output = await this.executeJavaScript(content);
           break;
 
         case 'python':
-          if (content.includes('print(')) {
-            const printMatches = content.match(/print\(['"`]([^'"`]*)['"`]\)/g);
-            if (printMatches) {
-              output = printMatches
-                .map((match) => {
-                  const textMatch = match.match(/print\(['"`]([^'"`]*)['"`]\)/);
-                  return textMatch ? textMatch[1] : '';
-                })
-                .join('\n');
-            } else {
-              output = 'Código Python ejecutado\n';
-            }
-          } else {
-            output = 'Script Python ejecutado correctamente\n';
-          }
+          output = await this.executePython(content);
+          break;
+
+        case 'html':
+          output = await this.executeHTML(content);
+          break;
+
+        case 'css':
+          output = await this.executeCSS(content);
           break;
 
         case 'json':
-          JSON.parse(content);
-          output = 'JSON válido\n';
+          output = await this.executeJSON(content);
           break;
 
         default:
-          output = `Código ${language} procesado correctamente\n`;
+          output = `Lenguaje ${language} no soportado aún. Código procesado correctamente.\n`;
       }
 
       // Agregar timestamp
       output += `\n--- Ejecutado a las ${new Date().toLocaleTimeString()} ---`;
     } catch (e) {
       success = false;
-      error = `Error de sintaxis: ${e instanceof Error ? e.message : 'Error desconocido'}`;
+      error = `Error de ejecución: ${e instanceof Error ? e.message : 'Error desconocido'}`;
       output = error;
     }
 
@@ -513,6 +494,172 @@ ReactDOM.render(
       language,
       executedAt: new Date().toISOString(),
     };
+  }
+
+  private async executeJavaScript(code: string): Promise<string> {
+    // Verificar si es código ejecutable o archivo de proyecto
+    if (this.isProjectFile(code)) {
+      return 'Este archivo contiene código de proyecto (React/TypeScript) y no se puede ejecutar directamente.\n\nPara ejecutar código JavaScript puro, crea un archivo .js con código como:\n\nconsole.log("¡Hola mundo!");\nconst suma = 2 + 2;\nconsole.log("Resultado:", suma);';
+    }
+
+    let output = '';
+
+    const vm = new VM({
+      timeout: 5000, // 5 segundos máximo
+      sandbox: {
+        console: {
+          log: (...args: unknown[]) => {
+            const message = args
+              .map((arg) =>
+                typeof arg === 'object'
+                  ? JSON.stringify(arg, null, 2)
+                  : String(arg),
+              )
+              .join(' ');
+            output += message + '\n';
+          },
+          warn: (...args: unknown[]) => {
+            const message = `WARN: ${args.join(' ')}`;
+            output += message + '\n';
+          },
+          error: (...args: unknown[]) => {
+            const message = `ERROR: ${args.join(' ')}`;
+            output += message + '\n';
+          },
+        },
+        setTimeout: setTimeout,
+        setInterval: setInterval,
+        clearTimeout: clearTimeout,
+        clearInterval: clearInterval,
+        Buffer: Buffer,
+        process: {
+          env: {},
+          platform: 'node',
+          version: process.version,
+        },
+      },
+    });
+
+    try {
+      vm.run(code);
+    } catch (error) {
+      output += `Error de ejecución: ${error instanceof Error ? error.message : 'Error desconocido'}\n`;
+    }
+
+    return output || 'Código JavaScript ejecutado sin salida visible.';
+  }
+
+  private isProjectFile(code: string): boolean {
+    // Detectar archivos de proyecto React/TypeScript de manera más específica
+    const projectPatterns = [
+      /import\s+React\s+from/,
+      /import\s+.*\s+from\s+['"]react/,
+      /ReactDOM\.render/,
+      /export\s+default/,
+      /<React\.StrictMode>/,
+      /document\.getElementById/,
+      /JSX\.Element/,
+      /from\s+['"]\.\/[A-Z]/,
+      /import\s+.*\s+from\s+['"]\./,
+    ];
+
+    // Si contiene patrones de React/TypeScript, es un archivo de proyecto
+    if (projectPatterns.some((pattern) => pattern.test(code))) {
+      return true;
+    }
+
+    // También verificar si es código puro ejecutable
+    const executablePatterns = [
+      /console\.log\(/,
+      /print\(/,
+      /def\s+\w+\s*\(/,
+      /function\s+\w+\s*\(/,
+      /const\s+\w+\s*=/,
+      /let\s+\w+\s*=/,
+      /var\s+\w+\s*=/,
+    ];
+
+    // Si NO contiene patrones ejecutables, probablemente es un archivo de proyecto
+    return !executablePatterns.some((pattern) => pattern.test(code));
+  }
+
+  private async executePython(code: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const tempFile = join(tmpdir(), `python_${Date.now()}.py`);
+
+      try {
+        writeFileSync(tempFile, code);
+
+        const pythonProcess = spawn('python', [tempFile], {
+          timeout: 10000, // 10 segundos máximo
+        });
+
+        let output = '';
+        let errorOutput = '';
+
+        pythonProcess.stdout.on('data', (data) => {
+          output += data.toString();
+        });
+
+        pythonProcess.stderr.on('data', (data) => {
+          errorOutput += data.toString();
+        });
+
+        pythonProcess.on('close', (code) => {
+          // Limpiar archivo temporal
+          try {
+            unlinkSync(tempFile);
+          } catch (e) {
+            // Ignorar errores de limpieza
+          }
+
+          if (code === 0) {
+            resolve(output || 'Código Python ejecutado sin salida visible.');
+          } else {
+            resolve(`Error de Python:\n${errorOutput}`);
+          }
+        });
+
+        pythonProcess.on('error', (err) => {
+          try {
+            unlinkSync(tempFile);
+          } catch (e) {
+            // Ignorar errores de limpieza
+          }
+          resolve(`Error ejecutando Python: ${err.message}`);
+        });
+      } catch (err) {
+        resolve(`Error creando archivo temporal: ${err.message}`);
+      }
+    });
+  }
+
+  private async executeHTML(code: string): Promise<string> {
+    // Para HTML, devolvemos el código con un mensaje de previsualización
+    return `HTML generado correctamente.\n\nPara previsualizar, copia este código en un archivo .html:\n\n${code}\n\n--- Previsualización disponible en el editor ---`;
+  }
+
+  private async executeCSS(code: string): Promise<string> {
+    // Para CSS, validamos la sintaxis básica
+    try {
+      // Validación básica de CSS
+      if (code.includes('{') && code.includes('}')) {
+        return `CSS válido generado.\n\nEstilos definidos:\n${code}\n\n--- Aplicar a un archivo HTML para ver resultados ---`;
+      } else {
+        return 'CSS procesado. Asegúrate de incluir reglas CSS válidas con llaves {}.';
+      }
+    } catch (e) {
+      return `Error en CSS: ${e instanceof Error ? e.message : 'Error desconocido'}`;
+    }
+  }
+
+  private async executeJSON(code: string): Promise<string> {
+    try {
+      const parsed = JSON.parse(code);
+      return `JSON válido:\n${JSON.stringify(parsed, null, 2)}`;
+    } catch (e) {
+      return `Error de sintaxis JSON: ${e instanceof Error ? e.message : 'Error desconocido'}`;
+    }
   }
 
   async analyzeCode(
