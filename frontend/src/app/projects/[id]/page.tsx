@@ -799,9 +799,9 @@ console.log("¡Hola mundo!");`;
               </div>
 
               {/* Área principal del editor */}
-              <div className="flex-1 flex mb-6">
+              <div className="flex-1 flex flex-col lg:flex-row mb-6">
                 {/* Sidebar - File Explorer en card */}
-                <div className="w-80 bg-white border-r border-gray-200 overflow-y-auto">
+                <div className="w-full lg:w-80 bg-white border-r border-gray-200 overflow-y-auto">
                   <div className="p-4">
                     <div className="bg-gray-50 rounded-lg p-4 mb-4">
                       <h3 className="text-sm font-medium text-gray-900 mb-3">
@@ -830,33 +830,35 @@ console.log("¡Hola mundo!");`;
                               {selectedFile.path}
                             </span>
                           </div>
-                          <div className="flex items-center space-x-2">
+                          <div className="flex flex-wrap items-center gap-2">
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={copyCode}
                               disabled={!editorContent}
+                              className="text-xs"
                             >
                               <ClipboardDocumentIcon className="w-4 h-4 mr-1" />
-                              Copiar
+                              <span className="hidden sm:inline">Copiar</span>
                             </Button>
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={createExecutableFile}
-                              className="bg-blue-50 hover:bg-blue-100 text-blue-700"
+                              className="bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs"
                             >
                               <CodeBracketIcon className="w-4 h-4 mr-1" />
-                              Crear Ejecutable
+                              <span className="hidden sm:inline">Crear Ejecutable</span>
                             </Button>
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={saveFile}
                               disabled={saving}
+                              className="text-xs"
                             >
                               <BookmarkIcon className="w-4 h-4 mr-1" />
-                              {saving ? "Guardando..." : "Guardar"}
+                              <span className="hidden sm:inline">{saving ? "Guardando..." : "Guardar"}</span>
                             </Button>
                             {getLanguageFromFile(selectedFile.name, editorContent) ===
                               "html" && (
@@ -865,9 +867,10 @@ console.log("¡Hola mundo!");`;
                                 size="sm"
                                 onClick={togglePreview}
                                 disabled={!editorContent}
+                                className="text-xs"
                               >
                                 <EyeIcon className="w-4 h-4 mr-1" />
-                                {showPreview ? "Ocultar" : "Vista Previa"}
+                                <span className="hidden sm:inline">{showPreview ? "Ocultar" : "Vista Previa"}</span>
                               </Button>
                             )}
                             <Button
@@ -875,17 +878,18 @@ console.log("¡Hola mundo!");`;
                               size="sm"
                               onClick={executeCode}
                               disabled={executing}
+                              className="text-xs"
                             >
                               <PlayIcon className="w-4 h-4 mr-1" />
-                              {executing ? "Ejecutando..." : "Ejecutar"}
+                              <span className="hidden sm:inline">{executing ? "Ejecutando..." : "Ejecutar"}</span>
                             </Button>
                             <Button
                               size="sm"
                               onClick={analyzeWithIA}
                               disabled={loadingIA}
-                              className="bg-green-500 hover:bg-green-600 text-white"
+                              className="bg-green-500 hover:bg-green-600 text-white text-xs"
                             >
-                              {loadingIA ? "Analizando..." : "Analizar con IA"}
+                              <span className="hidden sm:inline">{loadingIA ? "Analizando..." : "Analizar con IA"}</span>
                             </Button>
                           </div>
                         </div>
@@ -925,7 +929,7 @@ console.log("¡Hola mundo!");`;
                         </div>
 
                         {/* Right Panel - Output & IA Analysis */}
-                        <div className="w-96 bg-white border-l border-gray-200 flex flex-col">
+                        <div className="w-full lg:w-96 bg-white border-l border-gray-200 flex flex-col">
                           {/* Output Section */}
                           <div className="flex-1 border-b border-gray-200">
                             <div className="p-4">

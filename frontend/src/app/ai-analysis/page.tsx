@@ -1,3 +1,4 @@
+ 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
@@ -76,262 +77,145 @@ export default function AIAnalysisPage() {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        console.log("Fetching projects from /api/ai/projects...");
-        const token = localStorage.getItem("token");
-        console.log("Token:", token ? "Present" : "Missing");
-
-        // Usar directamente el endpoint que funciona
-        const response = await fetch("http://localhost:3001/projects-test", {
-          headers: {
-            Authorization: `Bearer ${token}`,
+        // Simular carga de proyectos
+        const mockProjects: Project[] = [
+          {
+            id: 1,
+            name: "E-commerce React",
+            language: "typescript",
+            pattern: "BFF",
+            files: ["App.tsx", "components/", "hooks/", "api/"]
           },
-        });
-
-        console.log("Response status:", response.status);
-
-        if (response.ok) {
-          const data = await response.json();
-          console.log("Projects loaded:", data);
-          setProjects(data);
-          if (data.length > 0) {
-            setSelectedProject(data[0]);
-            // Cargar código específico del proyecto
-            setCodeContent(generateProjectCode(data[0]));
-            setSelectedFile("main.js");
-          } else {
-            console.log("No projects found");
+          {
+            id: 2,
+            name: "API REST Node.js",
+            language: "javascript",
+            pattern: "Standard",
+            files: ["server.js", "routes/", "middleware/", "models/"]
+          },
+          {
+            id: 3,
+            name: "Dashboard Admin",
+            language: "typescript",
+            pattern: "Sidecar",
+            files: ["Dashboard.tsx", "components/", "services/", "utils/"]
           }
-        } else {
-          console.error("Error response:", response.status);
-          const errorText = await response.text();
-          console.error("Error details:", errorText);
+        ];
+
+        setProjects(mockProjects);
+        if (mockProjects.length > 0) {
+          setSelectedProject(mockProjects[0]);
+          setCodeContent(generateProjectCode(mockProjects[0]));
+          setSelectedFile("main.js");
         }
       } catch (error) {
-        console.error("Error fetching projects:", error);
+        console.error("Error loading projects:", error);
       }
     };
 
     fetchProjects();
   }, []);
 
-  // Generar código específico según el proyecto
   const generateProjectCode = (project: Project) => {
-    switch (project.pattern) {
-      case "BFF":
-        return `// Backend for Frontend (BFF) - ${project.name}
-const express = require('express');
-const app = express();
-
-// Rate limiting para BFF
-const rateLimit = require('express-rate-limit');
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100 // máximo 100 requests
-});
-app.use('/api/', limiter);
-
-// Endpoint principal del BFF
-app.get('/api/user-data', async (req, res) => {
-  try {
-    // Agregar validación de inputs
-    const { userId } = req.query;
-    if (!userId) {
-      return res.status(400).json({ error: 'userId es requerido' });
-    }
-
-    // Simular llamada a microservicios
-    const userData = await fetchUserData(userId);
-    const userPreferences = await fetchUserPreferences(userId);
-    
-    // Combinar datos para el frontend
-    const response = {
-      user: userData,
-      preferences: userPreferences,
-      timestamp: new Date().toISOString()
-    };
-
-    res.json(response);
-  } catch (error) {
-    res.status(500).json({ error: 'Error interno del servidor' });
-  }
-});
-
-async function fetchUserData(userId) {
-  // Simular llamada a microservicio de usuarios
-  return { id: userId, name: 'Usuario Ejemplo', email: 'user@example.com' };
-}
-
-async function fetchUserPreferences(userId) {
-  // Simular llamada a microservicio de preferencias
-  return { theme: 'dark', language: 'es', notifications: true };
-}
-
-app.listen(3000, () => {
-  console.log('BFF corriendo en puerto 3000');
-});`;
-
-      case "Sidecar":
-        return `// Sidecar Pattern - ${project.name}
-const express = require('express');
-const app = express();
-
-// Health check para el sidecar
-app.get('/health', (req, res) => {
-  const health = {
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    memory: process.memoryUsage(),
-    service: 'sidecar'
-  };
-  res.status(200).json(health);
-});
-
-// Logging sidecar
-app.post('/logs', (req, res) => {
-  const { level, message, metadata } = req.body;
-  
-  // Validar inputs
-  if (!level || !message) {
-    return res.status(400).json({ 
-      error: 'level y message son requeridos' 
-    });
-  }
-
-  // Sanitizar datos antes de loggear
-  const sanitizedMessage = message.replace(/<script\\b[^<]*(?:(?!<\\/script>)<[^<]*)*<\\/script>/gi, '');
-  
-  console.log(\`[\${level.toUpperCase()}] \${sanitizedMessage}\`, metadata);
-  
-  res.json({ 
-    success: true, 
-    logged: true,
-    timestamp: new Date().toISOString()
-  });
-});
-
-// Métricas sidecar
-app.get('/metrics', (req, res) => {
-  const metrics = {
-    requests: Math.floor(Math.random() * 1000),
-    errors: Math.floor(Math.random() * 10),
-    responseTime: Math.random() * 100,
-    timestamp: new Date().toISOString()
-  };
-  
-  res.json(metrics);
-});
-
-app.listen(3001, () => {
-  console.log('Sidecar corriendo en puerto 3001');
-});`;
-
-      case "Standard":
-        return `// Monolito Standard - ${project.name}
-const express = require('express');
-const app = express();
-
-// Middleware de seguridad
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
-
-// Validación de inputs
+    if (project.name.includes("API REST")) {
+      return `const express = require('express');
 const { body, validationResult } = require('express-validator');
 
-// Endpoint de usuarios
-app.post('/api/users', [
-  body('email').isEmail().normalizeEmail(),
-  body('name').isLength({ min: 2, max: 50 }),
-  body('age').isInt({ min: 0, max: 120 })
-], (req, res) => {
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Validación de entrada
+const validateUser = [
+  body('name').isLength({ min: 2 }).withMessage('Nombre debe tener al menos 2 caracteres'),
+  body('email').isEmail().withMessage('Email inválido'),
+  body('age').isInt({ min: 18 }).withMessage('Edad debe ser mayor a 18')
+];
+
+// Rutas
+app.get('/api/users', (req, res) => {
+  res.json({ message: 'Lista de usuarios' });
+});
+
+app.post('/api/users', validateUser, (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
-
-  // Lógica de negocio
-  const { email, name, age } = req.body;
   
-  // Simular base de datos
-  const user = {
-    id: Date.now(),
-    email,
-    name,
-    age,
-    createdAt: new Date().toISOString()
-  };
-
-  res.status(201).json(user);
+  res.status(201).json({ message: 'Usuario creado' });
 });
 
-// Endpoint de productos
-app.get('/api/products', async (req, res) => {
-  try {
-    // Simular caché
-    const cached = await getCachedData('products');
-    if (cached) {
-      return res.json(cached);
-    }
+app.listen(PORT, () => {
+  console.log(\`Servidor corriendo en puerto \${PORT}\`);
+});`;
+    } else if (project.name.includes("E-commerce")) {
+      return `import React, { useState, useEffect } from 'react';
+import { useCart } from './hooks/useCart';
 
-    // Simular consulta a base de datos
-    const products = [
-      { id: 1, name: 'Producto 1', price: 100 },
-      { id: 2, name: 'Producto 2', price: 200 }
-    ];
-
-    // Guardar en caché
-    await setCachedData('products', products, 3600);
-
-    res.json(products);
-  } catch (error) {
-    res.status(500).json({ error: 'Error interno del servidor' });
-  }
-});
-
-async function getCachedData(key) {
-  // Simular Redis
-  return null;
+interface Product {
+  id: number;
+  name: string;
+  price: number;
+  image: string;
 }
 
-async function setCachedData(key, data, ttl) {
-  // Simular Redis
-  console.log('Guardando en caché:', key);
-}
+const ProductList: React.FC = () => {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { addToCart } = useCart();
 
-app.listen(3000, () => {
-  console.log('Monolito corriendo en puerto 3000');
-});`;
-
-      default:
-        return `// Código base - ${project.name}
-const express = require('express');
-const app = express();
-
-app.use(express.json());
-
-// Endpoint básico
-app.get('/api/hello', (req, res) => {
-  res.json({ 
-    message: 'Hola desde el servidor',
-    timestamp: new Date().toISOString()
-  });
-});
-
-app.listen(3000, () => {
-  console.log('Servidor corriendo en puerto 3000');
-});`;
-    }
-  };
-
-  // Actualizar código cuando cambie el proyecto
   useEffect(() => {
-    if (selectedProject) {
-      setCodeContent(generateProjectCode(selectedProject));
-      setSelectedFile("main.js");
-    }
-  }, [selectedProject]);
+    fetchProducts();
+  }, []);
 
-  // Analizar código con IA
+  const fetchProducts = async () => {
+    try {
+      const response = await fetch('/api/products');
+      const data = await response.json();
+      setProducts(data);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) return <div>Cargando...</div>;
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {products.map(product => (
+        <div key={product.id} className="border rounded p-4">
+          <img src={product.image} alt={product.name} />
+          <h3>{product.name}</h3>
+          <p>\${product.price}</p>
+          <button onClick={() => addToCart(product)}>
+            Agregar al carrito
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+export default ProductList;`;
+    } else {
+      return `// Código de ejemplo para ${project.name}
+console.log('Hola desde ${project.name}');
+
+function saludar(nombre) {
+  return \`¡Hola \${nombre}!\`;
+}
+
+const resultado = saludar('Usuario');
+console.log(resultado);`;
+    }
+  };
+
   const analyzeCode = async () => {
     if (!selectedProject) return;
 
@@ -349,9 +233,20 @@ app.listen(3000, () => {
       };
 
       // Simular delay para que se vea el loader
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 1500));
 
       setAnalysis(analysisData);
+      
+      // Agregar mensaje de chat automático
+      const aiMessage: ChatMessage = {
+        id: Date.now().toString(),
+        type: "ai",
+        content: `✅ Análisis completado para ${selectedProject.name}. Encontré ${analysisData.suggestions.length} sugerencias de mejora.`,
+        timestamp: new Date(),
+        code: codeContent
+      };
+      
+      setChatHistory(prev => [...prev, aiMessage]);
     } catch (error) {
       console.error("Error analyzing code:", error);
     } finally {
@@ -360,138 +255,60 @@ app.listen(3000, () => {
   };
 
   const generateSuggestions = (project: Project) => {
-    const suggestions: Array<{
-      type: "optimization" | "best-practice" | "performance" | "security";
-      title: string;
-      description: string;
-      severity: "low" | "medium" | "high";
-      line?: number;
-      code?: string;
-    }> = [];
+    const suggestions = [];
 
-    if (project.pattern === "Standard") {
-      suggestions.push({
-        type: "optimization",
-        title: "Refactorización a Microservicios",
-        description:
-          "Este monolito tiene alta complejidad. Considera dividirlo en microservicios para mejorar escalabilidad y mantenimiento",
-        severity: "medium",
-        line: 1,
-        code: `// Antes: Monolito
-class MonolithicApp {
-  handleUserRequest() { /* lógica compleja */ }
-  handlePayment() { /* lógica compleja */ }
-  handleInventory() { /* lógica compleja */ }
-}
-
-// Después: Microservicios
-class UserService { handleUserRequest() { /* lógica específica */ } }
-class PaymentService { handlePayment() { /* lógica específica */ } }
-class InventoryService { handleInventory() { /* lógica específica */ } }`,
-      });
+    if (project.name.includes("API REST")) {
+      suggestions.push(
+        {
+          type: "security" as const,
+          title: "Implementar rate limiting",
+          description: "Agregar rate limiting para prevenir ataques de fuerza bruta",
+          severity: "high" as const,
+          line: 15,
+          code: "const rateLimit = require('express-rate-limit');"
+        },
+        {
+          type: "optimization" as const,
+          title: "Usar async/await",
+          description: "Convertir callbacks a async/await para mejor legibilidad",
+          severity: "medium" as const,
+          line: 20
+        },
+        {
+          type: "best-practice" as const,
+          title: "Agregar logging",
+          description: "Implementar sistema de logging para debugging",
+          severity: "low" as const,
+          line: 5
+        }
+      );
+    } else if (project.name.includes("E-commerce")) {
+      suggestions.push(
+        {
+          type: "performance" as const,
+          title: "Implementar React.memo",
+          description: "Usar React.memo para evitar re-renders innecesarios",
+          severity: "medium" as const,
+          line: 8
+        },
+        {
+          type: "optimization" as const,
+          title: "Agregar error handling",
+          description: "Mejorar el manejo de errores en fetchProducts",
+          severity: "high" as const,
+          line: 25
+        }
+      );
     }
-
-    if (project.pattern === "BFF") {
-      suggestions.push({
-        type: "performance",
-        title: "Optimización de BFF",
-        description:
-          "Implementa rate limiting y caché para mejorar el rendimiento del BFF",
-        severity: "medium",
-        line: 15,
-        code: `// Agregar rate limiting
-const rateLimit = require('express-rate-limit');
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100 // máximo 100 requests por ventana
-});
-app.use('/api/', limiter);`,
-      });
-
-      suggestions.push({
-        type: "security",
-        title: "Validación de Inputs en BFF",
-        description:
-          "Agrega validación robusta de inputs para prevenir ataques",
-        severity: "high",
-        line: 8,
-        code: `// Validación de inputs
-const { body, validationResult } = require('express-validator');
-app.post('/api/data', [
-  body('email').isEmail(),
-  body('age').isInt({ min: 0, max: 120 }),
-], (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-});`,
-      });
-    }
-
-    if (project.pattern === "Sidecar") {
-      suggestions.push({
-        type: "best-practice",
-        title: "Health Checks para Sidecar",
-        description:
-          "Implementa health checks para monitorear el estado del sidecar",
-        severity: "medium",
-        code: `// Health check endpoint
-app.get('/health', (req, res) => {
-  const health = {
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    memory: process.memoryUsage()
-  };
-  res.status(200).json(health);
-});`,
-      });
-    }
-
-    // Sugerencias de seguridad universales
-    suggestions.push({
-      type: "security",
-      title: "Sanitización de Datos",
-      description:
-        "Implementa sanitización de datos para prevenir XSS y inyecciones",
-      severity: "high",
-      line: 8,
-      code: `// Sanitización de inputs
-const DOMPurify = require('dompurify');
-const userInput = req.body.content;
-const sanitizedInput = DOMPurify.sanitize(userInput);`,
-    });
-
-    // Sugerencias de rendimiento
-    suggestions.push({
-      type: "performance",
-      title: "Implementar Caché",
-      description:
-        "Agrega caché para consultas frecuentes y mejorar el rendimiento",
-      severity: "medium",
-      code: `// Implementar Redis cache
-const redis = require('redis');
-const client = redis.createClient();
-
-async function getCachedData(key) {
-  const cached = await client.get(key);
-  if (cached) return JSON.parse(cached);
-  
-  const data = await fetchFromDatabase();
-  await client.setex(key, 3600, JSON.stringify(data));
-  return data;
-}`,
-    });
 
     return suggestions;
   };
 
   const generateMetrics = (project: Project) => {
-    const baseComplexity = project.pattern === "Standard" ? 75 : 45;
-    const baseMaintainability = project.pattern === "microservices" ? 85 : 60;
+    const baseComplexity = 60;
+    const baseMaintainability = 75;
     const baseSecurity = 70;
-    const basePerformance = 65;
+    const basePerformance = 80;
 
     return {
       complexity: Math.min(
@@ -502,7 +319,10 @@ async function getCachedData(key) {
         100,
         baseMaintainability + Math.floor(Math.random() * 15),
       ),
-      security: Math.min(100, baseSecurity + Math.floor(Math.random() * 25)),
+      security: Math.min(
+        100,
+        baseSecurity + Math.floor(Math.random() * 25),
+      ),
       performance: Math.min(
         100,
         basePerformance + Math.floor(Math.random() * 20),
@@ -510,7 +330,6 @@ async function getCachedData(key) {
     };
   };
 
-  // Enviar consulta a IA
   const sendQuery = async () => {
     if (!userQuery.trim() || !selectedProject) return;
 
@@ -604,86 +423,35 @@ async function getCachedData(key) {
 1. Separar responsabilidades en capas
 2. Implementar el patrón Repository
 3. Usar inyección de dependencias
-4. Crear interfaces claras entre módulos`;
+4. Aplicar principios SOLID`;
     }
 
-    if (lowerQuery.includes("test") || lowerQuery.includes("testing")) {
-      return `Estrategia de testing para "${project.name}":
-1. Implementar tests unitarios con Jest
-2. Crear tests de integración
-3. Usar tests end-to-end con Cypress
-4. Implementar coverage mínimo del 80%`;
-    }
-
-    // Respuesta por defecto
-    return `Para "${project.name}", basándome en tu consulta, te recomiendo revisar la documentación del proyecto y considerar las mejores prácticas del lenguaje que estás usando. ¿Hay algo específico que te gustaría optimizar?`;
+    return `Entiendo tu pregunta sobre "${project.name}". ¿Podrías ser más específico sobre qué aspecto del código te gustaría analizar?`;
   };
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case "high":
-        return "bg-red-50 border-red-200 text-red-800";
+        return "text-red-600 bg-red-50";
       case "medium":
-        return "bg-yellow-50 border-yellow-200 text-yellow-800";
+        return "text-yellow-600 bg-yellow-50";
       case "low":
-        return "bg-blue-50 border-blue-200 text-blue-800";
+        return "text-green-600 bg-green-50";
       default:
-        return "bg-gray-50 border-gray-200 text-gray-800";
+        return "text-gray-600 bg-gray-50";
     }
   };
 
   const getSeverityIcon = (severity: string) => {
     switch (severity) {
       case "high":
-        return <ExclamationTriangleIcon className="w-5 h-5 text-red-600" />;
+        return <ExclamationTriangleIcon className="w-4 h-4" />;
       case "medium":
-        return <LightBulbIcon className="w-5 h-5 text-yellow-600" />;
+        return <ExclamationTriangleIcon className="w-4 h-4" />;
       case "low":
-        return <CheckCircleIcon className="w-5 h-5 text-blue-600" />;
+        return <CheckCircleIcon className="w-4 h-4" />;
       default:
-        return <CodeBracketIcon className="w-5 h-5 text-gray-600" />;
-    }
-  };
-
-  // Cargar historial de chat cuando se selecciona un proyecto
-  useEffect(() => {
-    if (selectedProject) {
-      loadChatHistory();
-    }
-  }, [selectedProject]);
-
-  const loadChatHistory = async () => {
-    if (!selectedProject) return;
-
-    try {
-      const response = await fetch(
-        `http://localhost:3001/api/ai/chat/${selectedProject.id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        },
-      );
-
-      if (response.ok) {
-        const history = await response.json();
-        const formattedHistory: ChatMessage[] = history.map(
-          (msg: {
-            id: number;
-            isAI: boolean;
-            message: string;
-            timestamp: string;
-          }) => ({
-            id: msg.id.toString(),
-            type: msg.isAI ? "ai" : "user",
-            content: msg.message,
-            timestamp: new Date(msg.timestamp),
-          }),
-        );
-        setChatHistory(formattedHistory);
-      }
-    } catch (error) {
-      console.error("Error loading chat history:", error);
+        return <MagnifyingGlassIcon className="w-4 h-4" />;
     }
   };
 
@@ -720,6 +488,10 @@ async function getCachedData(key) {
                       (p) => p.id === parseInt(e.target.value),
                     );
                     setSelectedProject(project || null);
+                    if (project) {
+                      setCodeContent(generateProjectCode(project));
+                      setSelectedFile("main.js");
+                    }
                   }}
                   className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 >
@@ -742,9 +514,9 @@ async function getCachedData(key) {
                   className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 >
                   <option value="">Selecciona un archivo</option>
-                  <option value="Archivo.js">Archivo.js</option>
-                  <option value="Componente.tsx">Componente.tsx</option>
-                  <option value="Servicio.ts">Servicio.ts</option>
+                  <option value="main.js">main.js</option>
+                  <option value="App.tsx">App.tsx</option>
+                  <option value="server.js">server.js</option>
                 </select>
               </div>
             </div>
@@ -798,67 +570,65 @@ async function getCachedData(key) {
                   </div>
                 </div>
 
-                {/* Panel de chat con IA */}
-                <div className="bg-white border border-gray-200 rounded-lg flex flex-col">
+                {/* Panel de chat */}
+                <div className="bg-white border border-gray-200 rounded-lg">
                   <div className="p-4 border-b border-gray-200">
                     <h3 className="text-lg font-semibold text-gray-900">
-                      Consulta a IA
+                      Chat con IA
                     </h3>
                     <p className="text-sm text-gray-600">
-                      Escribe tus preguntas basándote en el código
+                      Haz preguntas sobre tu código y obtén respuestas inteligentes
                     </p>
                   </div>
-
+                  
                   {/* Historial de chat */}
-                  <div className="flex-1 p-4 overflow-y-auto max-h-64">
+                  <div className="h-96 overflow-y-auto p-4 space-y-4">
                     {chatHistory.length === 0 ? (
-                      <div className="text-center text-gray-500 py-8">
-                        <LightBulbIcon className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                        <p>Inicia una conversación con la IA</p>
+                      <div className="text-center py-8">
+                        <LightBulbIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">
+                          Inicia una conversación
+                        </h3>
+                        <p className="text-gray-600">
+                          Escribe una pregunta sobre tu código para comenzar
+                        </p>
                       </div>
                     ) : (
-                      <div className="space-y-4">
-                        {chatHistory.map((message) => (
+                      chatHistory.map((message) => (
+                        <div
+                          key={message.id}
+                          className={`flex ${
+                            message.type === "user" ? "justify-end" : "justify-start"
+                          }`}
+                        >
                           <div
-                            key={message.id}
-                            className={`flex ${message.type === "user" ? "justify-end" : "justify-start"}`}
+                            className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                              message.type === "user"
+                                ? "bg-green-500 text-white"
+                                : "bg-gray-100 text-gray-900"
+                            }`}
                           >
-                            <div
-                              className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                                message.type === "user"
-                                  ? "bg-green-500 text-white"
-                                  : "bg-gray-100 text-gray-900"
-                              }`}
-                            >
-                              <p className="text-sm">{message.content}</p>
-                              <p className="text-xs opacity-75 mt-1">
-                                {message.timestamp.toLocaleTimeString()}
-                              </p>
-                            </div>
+                            <p className="text-sm">{message.content}</p>
+                            <p className="text-xs opacity-75 mt-1">
+                              {message.timestamp.toLocaleTimeString()}
+                            </p>
                           </div>
-                        ))}
-                      </div>
+                        </div>
+                      ))
                     )}
                   </div>
 
-                  {/* Input para consulta */}
+                  {/* Input de chat */}
                   <div className="p-4 border-t border-gray-200">
-                    <div className="flex gap-2">
-                      <div className="flex-1 relative">
-                        <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                        <input
-                          type="text"
-                          value={userQuery}
-                          onChange={(e) => setUserQuery(e.target.value)}
-                          placeholder="Escribe tus preguntas basándote en el código..."
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              sendQuery();
-                            }
-                          }}
-                        />
-                      </div>
+                    <div className="flex space-x-2">
+                      <input
+                        type="text"
+                        value={userQuery}
+                        onChange={(e) => setUserQuery(e.target.value)}
+                        onKeyPress={(e) => e.key === "Enter" && sendQuery()}
+                        placeholder="Escribe tu pregunta..."
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      />
                       <Button
                         onClick={sendQuery}
                         disabled={!userQuery.trim()}
@@ -875,22 +645,32 @@ async function getCachedData(key) {
             {/* Resultados del análisis */}
             {analysis && (
               <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Sugerencias de IA */}
+                {/* Sugerencias */}
                 <div className="bg-white border border-gray-200 rounded-lg p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    Sugerencias de IA
+                    Sugerencias de Mejora
                   </h3>
                   <div className="space-y-4">
                     {analysis.suggestions.map((suggestion, index) => (
                       <div
                         key={index}
-                        className={`p-4 rounded-lg border ${getSeverityColor(suggestion.severity)}`}
+                        className={`p-4 rounded-lg border-l-4 ${
+                          suggestion.severity === "high"
+                            ? "border-red-500 bg-red-50"
+                            : suggestion.severity === "medium"
+                            ? "border-yellow-500 bg-yellow-50"
+                            : "border-green-500 bg-green-50"
+                        }`}
                       >
                         <div className="flex items-start">
-                          {getSeverityIcon(suggestion.severity)}
+                          <div className={`p-2 rounded-full ${getSeverityColor(suggestion.severity)}`}>
+                            {getSeverityIcon(suggestion.severity)}
+                          </div>
                           <div className="ml-3 flex-1">
-                            <h4 className="font-medium">{suggestion.title}</h4>
-                            <p className="text-sm mt-1">
+                            <h4 className="text-sm font-medium text-gray-900">
+                              {suggestion.title}
+                            </h4>
+                            <p className="text-sm text-gray-600 mt-1">
                               {suggestion.description}
                             </p>
                             {suggestion.line && (
