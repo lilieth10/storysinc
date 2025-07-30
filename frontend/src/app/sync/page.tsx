@@ -23,8 +23,8 @@ const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 interface SyncProject {
   id: number;
   name: string;
-  pattern: string;  // Cambiado de 'type' a 'pattern' para coincidir con el backend
-  language: string;  // Agregado para coincidir con el backend
+  pattern: string; // Cambiado de 'type' a 'pattern' para coincidir con el backend
+  language: string; // Agregado para coincidir con el backend
   lastSync: string;
   description: string;
   tags?: string;
@@ -128,7 +128,7 @@ export default function SyncPage() {
       fetchAIMetrics();
       fetchSyncHistory();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [syncProjects]);
 
   // Cargar métricas de IA cuando se selecciona un proyecto
@@ -137,7 +137,7 @@ export default function SyncPage() {
       fetchAIMetrics();
       fetchSyncHistory();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedProject]);
 
   const fetchAIMetrics = async () => {
@@ -203,7 +203,9 @@ export default function SyncPage() {
         <div className="flex items-center space-x-3">
           <div className="flex-1">
             <p className="font-medium">¿Eliminar entrada del historial?</p>
-            <p className="text-sm text-gray-600">Esta acción no se puede deshacer</p>
+            <p className="text-sm text-gray-600">
+              Esta acción no se puede deshacer
+            </p>
           </div>
           <div className="flex space-x-2">
             <button
@@ -226,8 +228,8 @@ export default function SyncPage() {
       ),
       {
         duration: 5000,
-        position: 'top-center',
-      }
+        position: "top-center",
+      },
     );
   };
 
@@ -301,7 +303,11 @@ export default function SyncPage() {
         console.log("Proyectos recibidos:", projects); // Debug
         setSyncProjects(projects);
       } else {
-        console.error("Error en la respuesta:", response.status, response.statusText);
+        console.error(
+          "Error en la respuesta:",
+          response.status,
+          response.statusText,
+        );
       }
     } catch (error) {
       console.error("Error fetching sync projects:", error);
@@ -878,7 +884,13 @@ export default function SyncPage() {
                       className="w-24 h-24 mx-auto"
                     >
                       {/* Central "Brain" Node - Pulsing */}
-                      <circle cx="50" cy="50" r="15" fill="#4CAF50" opacity="0.8">
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r="15"
+                        fill="#4CAF50"
+                        opacity="0.8"
+                      >
                         <animate
                           attributeName="r"
                           values="15;18;15"
@@ -913,7 +925,13 @@ export default function SyncPage() {
                         />
 
                         {/* Node 1 */}
-                        <circle cx="50" cy="25" r="6" fill="#8BC34A" opacity="0.9">
+                        <circle
+                          cx="50"
+                          cy="25"
+                          r="6"
+                          fill="#8BC34A"
+                          opacity="0.9"
+                        >
                           <animate
                             attributeName="opacity"
                             values="0.9;0.6;0.9"
@@ -941,7 +959,13 @@ export default function SyncPage() {
                         </line>
 
                         {/* Node 2 */}
-                        <circle cx="71.65" cy="62.5" r="6" fill="#8BC34A" opacity="0.9">
+                        <circle
+                          cx="71.65"
+                          cy="62.5"
+                          r="6"
+                          fill="#8BC34A"
+                          opacity="0.9"
+                        >
                           <animate
                             attributeName="opacity"
                             values="0.9;0.6;0.9"
@@ -970,7 +994,13 @@ export default function SyncPage() {
                         </line>
 
                         {/* Node 3 */}
-                        <circle cx="28.35" cy="62.5" r="6" fill="#8BC34A" opacity="0.9">
+                        <circle
+                          cx="28.35"
+                          cy="62.5"
+                          r="6"
+                          fill="#8BC34A"
+                          opacity="0.9"
+                        >
                           <animate
                             attributeName="opacity"
                             values="0.9;0.6;0.9"
@@ -1002,7 +1032,9 @@ export default function SyncPage() {
                   </div>
 
                   {/* Solo texto simple */}
-                  <p className="text-gray-600 font-medium text-lg">Sincronizando...</p>
+                  <p className="text-gray-600 font-medium text-lg">
+                    Sincronizando...
+                  </p>
                 </div>
               </div>
             )}
@@ -1086,7 +1118,11 @@ export default function SyncPage() {
                 <div>
                   <div className="mb-2">
                     <span className="font-semibold">Tipo:</span>{" "}
-                    {selectedProject.pattern === "monolito" ? "Monolito" : selectedProject.pattern === "microservicio" ? "Microservicio" : selectedProject.pattern}
+                    {selectedProject.pattern === "monolito"
+                      ? "Monolito"
+                      : selectedProject.pattern === "microservicio"
+                        ? "Microservicio"
+                        : selectedProject.pattern}
                   </div>
                   <div className="mb-2">
                     <span className="font-semibold">Descripción:</span>{" "}
@@ -1161,22 +1197,22 @@ export default function SyncPage() {
 
               {/* Historial de sincronizaciones */}
               <div className="mt-10">
-                                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-bold text-green-700">
-                      Historial de sincronizaciones
-                    </h3>
-                    <button
-                      onClick={() =>
-                        setExpandedSections((prev) => ({
-                          ...prev,
-                          history: !prev.history,
-                        }))
-                      }
-                      className="text-sm text-green-600 hover:text-green-800 px-3 py-1 rounded-md hover:bg-green-50 transition-colors"
-                    >
-                      {expandedSections.history ? "Ocultar" : "Mostrar"}
-                    </button>
-                  </div>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-bold text-green-700">
+                    Historial de sincronizaciones
+                  </h3>
+                  <button
+                    onClick={() =>
+                      setExpandedSections((prev) => ({
+                        ...prev,
+                        history: !prev.history,
+                      }))
+                    }
+                    className="text-sm text-green-600 hover:text-green-800 px-3 py-1 rounded-md hover:bg-green-50 transition-colors"
+                  >
+                    {expandedSections.history ? "Ocultar" : "Mostrar"}
+                  </button>
+                </div>
                 {loadingHistory ? (
                   <div className="text-green-600">Cargando historial...</div>
                 ) : historyError ? (
@@ -1316,9 +1352,9 @@ export default function SyncPage() {
                               series={[
                                 {
                                   name: "Tiempo de Sincronización (ms)",
-                                  data: Array.isArray(aiMetrics.performanceData) ? aiMetrics.performanceData : [
-                                    120, 95, 140, 110, 85, 130, 105,
-                                  ],
+                                  data: Array.isArray(aiMetrics.performanceData)
+                                    ? aiMetrics.performanceData
+                                    : [120, 95, 140, 110, 85, 130, 105],
                                 },
                               ]}
                               type="line"
@@ -1378,7 +1414,7 @@ export default function SyncPage() {
                                 aiMetrics.patterns?.sidecar || 0,
                                 aiMetrics.patterns?.monolith || 0,
                                 aiMetrics.patterns?.microservices || 0,
-                              ].map(val => Number(val))}
+                              ].map((val) => Number(val))}
                               type="donut"
                               height="100%"
                             />
@@ -1392,36 +1428,38 @@ export default function SyncPage() {
                           Sugerencias de IA
                         </h4>
                         <div className="space-y-3">
-                          {(aiMetrics.suggestions || []).map((suggestion, index) => (
-                            <div
-                              key={index}
-                              className={`flex items-start space-x-3 p-3 rounded-lg ${
-                                suggestion.priority === "high"
-                                  ? "bg-red-50"
-                                  : suggestion.priority === "medium"
-                                    ? "bg-green-100"
-                                    : "bg-green-50"
-                              }`}
-                            >
+                          {(aiMetrics.suggestions || []).map(
+                            (suggestion, index) => (
                               <div
-                                className={`w-2 h-2 rounded-full mt-2 ${
+                                key={index}
+                                className={`flex items-start space-x-3 p-3 rounded-lg ${
                                   suggestion.priority === "high"
-                                    ? "bg-red-500"
+                                    ? "bg-red-50"
                                     : suggestion.priority === "medium"
-                                      ? "bg-green-600"
-                                      : "bg-green-500"
+                                      ? "bg-green-100"
+                                      : "bg-green-50"
                                 }`}
-                              ></div>
-                              <div>
-                                <p className="text-sm font-medium text-gray-900">
-                                  {suggestion.title}
-                                </p>
-                                <p className="text-xs text-gray-600">
-                                  {suggestion.description}
-                                </p>
+                              >
+                                <div
+                                  className={`w-2 h-2 rounded-full mt-2 ${
+                                    suggestion.priority === "high"
+                                      ? "bg-red-500"
+                                      : suggestion.priority === "medium"
+                                        ? "bg-green-600"
+                                        : "bg-green-500"
+                                  }`}
+                                ></div>
+                                <div>
+                                  <p className="text-sm font-medium text-gray-900">
+                                    {suggestion.title}
+                                  </p>
+                                  <p className="text-xs text-gray-600">
+                                    {suggestion.description}
+                                  </p>
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            ),
+                          )}
                         </div>
                       </div>
 
@@ -1546,7 +1584,11 @@ export default function SyncPage() {
                               {project.name}
                             </h3>
                             <p className="text-sm text-gray-500 capitalize">
-                              {project.pattern === "monolito" ? "Monolito" : project.pattern === "microservicio" ? "Microservicio" : project.pattern}
+                              {project.pattern === "monolito"
+                                ? "Monolito"
+                                : project.pattern === "microservicio"
+                                  ? "Microservicio"
+                                  : project.pattern}
                             </p>
                             <p className="text-xs text-gray-400">
                               Última sincronización:{" "}
@@ -1564,12 +1606,16 @@ export default function SyncPage() {
                       <div className="mt-3">
                         <span
                           className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                            project.pattern === "monolito" || project.pattern === "microservicio"
+                            project.pattern === "monolito" ||
+                            project.pattern === "microservicio"
                               ? "bg-green-100 text-green-800"
                               : "bg-gray-100 text-gray-800"
                           }`}
                         >
-                          {project.pattern === "monolito" || project.pattern === "microservicio" ? "Activo" : "Inactivo"}
+                          {project.pattern === "monolito" ||
+                          project.pattern === "microservicio"
+                            ? "Activo"
+                            : "Inactivo"}
                         </span>
                       </div>
                     </div>

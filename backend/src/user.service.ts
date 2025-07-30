@@ -32,6 +32,7 @@ export class UserService {
         birthdate: true,
         address: true,
         avatar: true,
+        role: true,
         createdAt: true,
       },
     });
@@ -69,6 +70,7 @@ export class UserService {
         id: true,
         fullName: true,
         email: true,
+        role: true,
         createdAt: true,
       },
     });

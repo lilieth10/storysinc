@@ -1,8 +1,17 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-base-to-string */
+/* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
 import { Prisma } from '@prisma/client';
+import { VM } from 'vm2';
+import { spawn } from 'child_process';
+import { writeFileSync, unlinkSync } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
 
 // Definir el tipo para los componentes del proyecto
 interface ProjectComponent {
@@ -86,17 +95,50 @@ export class ProjectService {
   }
 
   async getProjectById(id: number) {
-    return this.prisma.project.findUnique({
+    // Optimización: Consulta más simple y rápida
+    const project = await this.prisma.project.findUnique({
       where: { id },
-      include: {
-        owner: { select: { id: true, fullName: true, email: true } },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        pattern: true,
+        status: true,
+        tags: true,
+        lastSync: true,
+        iaInsights: true,
+        components: true,
+        createdAt: true,
+        updatedAt: true,
+        owner: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+          },
+        },
+        // Cargar colaboradores solo si es necesario
         collaborators: {
-          include: {
-            user: { select: { id: true, fullName: true, email: true } },
+          select: {
+            id: true,
+            role: true,
+            user: {
+              select: {
+                id: true,
+                fullName: true,
+                email: true,
+              },
+            },
           },
         },
       },
     });
+
+    if (!project) {
+      throw new Error('Proyecto no encontrado');
+    }
+
+    return project;
   }
 
   async updateProject(id: number, data: any) {
@@ -202,7 +244,7 @@ export class ProjectService {
 
   // Nuevos métodos para el editor de código
   async getProjectFiles(projectId: number, userId: number) {
-    // Verificar que el usuario tenga acceso al proyecto
+    // Optimización: Verificación más rápida de acceso
     const project = await this.prisma.project.findFirst({
       where: {
         id: projectId,
@@ -215,13 +257,17 @@ export class ProjectService {
           },
         ],
       },
+      select: {
+        id: true,
+        name: true,
+      },
     });
 
     if (!project) {
       throw new Error('Proyecto no encontrado o sin acceso');
     }
 
-    // Estructura de archivos ejemplo (en un caso real, esto vendría de un sistema de archivos o base de datos)
+    // Estructura de archivos optimizada (menos contenido inicial)
     const fileTree = [
       {
         id: '1',
@@ -269,204 +315,61 @@ export const Button: React.FC<ButtonProps> = ({
               },
               {
                 id: '4',
-                name: 'Header.tsx',
+                name: 'App.tsx',
                 type: 'file',
-                path: '/src/components/Header.tsx',
+                path: '/src/App.tsx',
                 content: `import React from 'react';
+import { Button } from './components/Button';
 
-interface HeaderProps {
-  title: string;
-  subtitle?: string;
+function App() {
+  return (
+    <div className="App">
+      <h1>Mi Aplicación</h1>
+      <Button variant="primary">
+        Hacer clic
+      </Button>
+    </div>
+  );
 }
 
-export const Header: React.FC<HeaderProps> = ({ title, subtitle }) => {
-  return (
-    <header className="header">
-      <h1>{title}</h1>
-      {subtitle && <p className="subtitle">{subtitle}</p>}
-    </header>
-  );
-};`,
+export default App;`,
                 language: 'typescript',
               },
             ],
           },
           {
             id: '5',
-            name: 'utils',
-            type: 'folder',
-            path: '/src/utils',
-            children: [
-              {
-                id: '6',
-                name: 'api.ts',
-                type: 'file',
-                path: '/src/utils/api.ts',
-                content: `export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+            name: 'index.tsx',
+            type: 'file',
+            path: '/src/index.tsx',
+            content: `import React from 'react';
+import ReactDOM from 'react-dom';
+import App from './App';
 
-export class ApiClient {
-  private baseURL: string;
-
-  constructor(baseURL: string = API_BASE_URL) {
-    this.baseURL = baseURL;
-  }
-
-  async get<T>(endpoint: string, options?: RequestInit): Promise<T> {
-    const response = await fetch(\`\${this.baseURL}\${endpoint}\`, {
-      method: 'GET',
-      ...options,
-    });
-    
-    if (!response.ok) {
-      throw new Error(\`HTTP error! status: \${response.status}\`);
-    }
-    
-    return response.json();
-  }
-
-  async post<T>(endpoint: string, data: any, options?: RequestInit): Promise<T> {
-    const response = await fetch(\`\${this.baseURL}\${endpoint}\`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...options?.headers,
-      },
-      body: JSON.stringify(data),
-      ...options,
-    });
-    
-    if (!response.ok) {
-      throw new Error(\`HTTP error! status: \${response.status}\`);
-    }
-    
-    return response.json();
-  }
-}
-
-export const apiClient = new ApiClient();`,
-                language: 'typescript',
-              },
-            ],
-          },
-          {
-            id: '7',
-            name: 'hooks',
-            type: 'folder',
-            path: '/src/hooks',
-            children: [
-              {
-                id: '8',
-                name: 'useLocalStorage.ts',
-                type: 'file',
-                path: '/src/hooks/useLocalStorage.ts',
-                content: `import { useState, useEffect } from 'react';
-
-export function useLocalStorage<T>(key: string, initialValue: T) {
-  const [storedValue, setStoredValue] = useState<T>(() => {
-    try {
-      const item = window.localStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
-    } catch (error) {
-      console.warn(\`Error reading localStorage key "\${key}":\`, error);
-      return initialValue;
-    }
-  });
-
-  const setValue = (value: T | ((val: T) => T)) => {
-    try {
-      const valueToStore = value instanceof Function ? value(storedValue) : value;
-      setStoredValue(valueToStore);
-      window.localStorage.setItem(key, JSON.stringify(valueToStore));
-    } catch (error) {
-      console.warn(\`Error setting localStorage key "\${key}":\`, error);
-    }
-  };
-
-  return [storedValue, setValue] as const;
-}`,
-                language: 'typescript',
-              },
-            ],
+ReactDOM.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+  document.getElementById('root')
+);`,
+            language: 'typescript',
           },
         ],
       },
       {
-        id: '9',
+        id: '6',
         name: 'package.json',
         type: 'file',
         path: '/package.json',
         content: `{
-  "name": "${project.name.toLowerCase().replace(/\s+/g, '-')}",
+  "name": "mi-proyecto",
   "version": "1.0.0",
-  "description": "${project.description || 'Project description'}",
-  "main": "index.js",
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "test": "jest"
-  },
   "dependencies": {
-    "next": "^14.0.0",
     "react": "^18.0.0",
-    "react-dom": "^18.0.0",
-    "typescript": "^5.0.0"
-  },
-  "devDependencies": {
-    "@types/node": "^20.0.0",
-    "@types/react": "^18.0.0",
-    "@types/react-dom": "^18.0.0",
-    "eslint": "^8.0.0",
-    "eslint-config-next": "^14.0.0",
-    "jest": "^29.0.0"
+    "react-dom": "^18.0.0"
   }
 }`,
         language: 'json',
-      },
-      {
-        id: '10',
-        name: 'README.md',
-        type: 'file',
-        path: '/README.md',
-        content: `# ${project.name}
-
-${project.description || 'Project description'}
-
-## Getting Started
-
-First, run the development server:
-
-\`\`\`bash
-npm run dev
-# or
-yarn dev
-\`\`\`
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-## Project Structure
-
-- \`src/components/\` - React components
-- \`src/utils/\` - Utility functions
-- \`src/hooks/\` - Custom React hooks
-
-## Technologies Used
-
-- Next.js
-- React
-- TypeScript
-- ESLint
-
-## Contributing
-
-1. Fork the project
-2. Create your feature branch (\`git checkout -b feature/AmazingFeature\`)
-3. Commit your changes (\`git commit -m 'Add some AmazingFeature'\`)
-4. Push to the branch (\`git push origin feature/AmazingFeature\`)
-5. Open a Pull Request
-`,
-        language: 'markdown',
       },
     ];
 
@@ -545,7 +448,6 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
       throw new Error('Proyecto no encontrado o sin acceso');
     }
 
-    // Simular ejecución de código (en un caso real, usarías un sandbox)
     let output = '';
     let success = true;
     let error = '';
@@ -554,61 +456,34 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
       switch (language.toLowerCase()) {
         case 'javascript':
         case 'typescript':
-          if (content.includes('console.log')) {
-            const logMatches = content.match(
-              /console\.log\(['"`]([^'"`]*)['"`]\)/g,
-            );
-            if (logMatches) {
-              output = logMatches
-                .map((match) => {
-                  const textMatch = match.match(
-                    /console\.log\(['"`]([^'"`]*)['"`]\)/,
-                  );
-                  return textMatch ? textMatch[1] : '';
-                })
-                .join('\n');
-            } else {
-              output = 'Código ejecutado correctamente\n';
-            }
-          } else if (content.includes('function')) {
-            output = 'Función definida correctamente\n';
-          } else {
-            output = 'Código JavaScript ejecutado\n';
-          }
+          output = await this.executeJavaScript(content);
           break;
 
         case 'python':
-          if (content.includes('print(')) {
-            const printMatches = content.match(/print\(['"`]([^'"`]*)['"`]\)/g);
-            if (printMatches) {
-              output = printMatches
-                .map((match) => {
-                  const textMatch = match.match(/print\(['"`]([^'"`]*)['"`]\)/);
-                  return textMatch ? textMatch[1] : '';
-                })
-                .join('\n');
-            } else {
-              output = 'Código Python ejecutado\n';
-            }
-          } else {
-            output = 'Script Python ejecutado correctamente\n';
-          }
+          output = await this.executePython(content);
+          break;
+
+        case 'html':
+          output = await this.executeHTML(content);
+          break;
+
+        case 'css':
+          output = await this.executeCSS(content);
           break;
 
         case 'json':
-          JSON.parse(content);
-          output = 'JSON válido\n';
+          output = await this.executeJSON(content);
           break;
 
         default:
-          output = `Código ${language} procesado correctamente\n`;
+          output = `Lenguaje ${language} no soportado aún. Código procesado correctamente.\n`;
       }
 
       // Agregar timestamp
       output += `\n--- Ejecutado a las ${new Date().toLocaleTimeString()} ---`;
     } catch (e) {
       success = false;
-      error = `Error de sintaxis: ${e instanceof Error ? e.message : 'Error desconocido'}`;
+      error = `Error de ejecución: ${e instanceof Error ? e.message : 'Error desconocido'}`;
       output = error;
     }
 
@@ -619,6 +494,172 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
       language,
       executedAt: new Date().toISOString(),
     };
+  }
+
+  private async executeJavaScript(code: string): Promise<string> {
+    // Verificar si es código ejecutable o archivo de proyecto
+    if (this.isProjectFile(code)) {
+      return 'Este archivo contiene código de proyecto (React/TypeScript) y no se puede ejecutar directamente.\n\nPara ejecutar código JavaScript puro, crea un archivo .js con código como:\n\nconsole.log("¡Hola mundo!");\nconst suma = 2 + 2;\nconsole.log("Resultado:", suma);';
+    }
+
+    let output = '';
+
+    const vm = new VM({
+      timeout: 5000, // 5 segundos máximo
+      sandbox: {
+        console: {
+          log: (...args: unknown[]) => {
+            const message = args
+              .map((arg) =>
+                typeof arg === 'object'
+                  ? JSON.stringify(arg, null, 2)
+                  : String(arg),
+              )
+              .join(' ');
+            output += message + '\n';
+          },
+          warn: (...args: unknown[]) => {
+            const message = `WARN: ${args.join(' ')}`;
+            output += message + '\n';
+          },
+          error: (...args: unknown[]) => {
+            const message = `ERROR: ${args.join(' ')}`;
+            output += message + '\n';
+          },
+        },
+        setTimeout: setTimeout,
+        setInterval: setInterval,
+        clearTimeout: clearTimeout,
+        clearInterval: clearInterval,
+        Buffer: Buffer,
+        process: {
+          env: {},
+          platform: 'node',
+          version: process.version,
+        },
+      },
+    });
+
+    try {
+      vm.run(code);
+    } catch (error) {
+      output += `Error de ejecución: ${error instanceof Error ? error.message : 'Error desconocido'}\n`;
+    }
+
+    return output || 'Código JavaScript ejecutado sin salida visible.';
+  }
+
+  private isProjectFile(code: string): boolean {
+    // Detectar archivos de proyecto React/TypeScript de manera más específica
+    const projectPatterns = [
+      /import\s+React\s+from/,
+      /import\s+.*\s+from\s+['"]react/,
+      /ReactDOM\.render/,
+      /export\s+default/,
+      /<React\.StrictMode>/,
+      /document\.getElementById/,
+      /JSX\.Element/,
+      /from\s+['"]\.\/[A-Z]/,
+      /import\s+.*\s+from\s+['"]\./,
+    ];
+
+    // Si contiene patrones de React/TypeScript, es un archivo de proyecto
+    if (projectPatterns.some((pattern) => pattern.test(code))) {
+      return true;
+    }
+
+    // También verificar si es código puro ejecutable
+    const executablePatterns = [
+      /console\.log\(/,
+      /print\(/,
+      /def\s+\w+\s*\(/,
+      /function\s+\w+\s*\(/,
+      /const\s+\w+\s*=/,
+      /let\s+\w+\s*=/,
+      /var\s+\w+\s*=/,
+    ];
+
+    // Si NO contiene patrones ejecutables, probablemente es un archivo de proyecto
+    return !executablePatterns.some((pattern) => pattern.test(code));
+  }
+
+  private async executePython(code: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const tempFile = join(tmpdir(), `python_${Date.now()}.py`);
+
+      try {
+        writeFileSync(tempFile, code);
+
+        const pythonProcess = spawn('python', [tempFile], {
+          timeout: 10000, // 10 segundos máximo
+        });
+
+        let output = '';
+        let errorOutput = '';
+
+        pythonProcess.stdout.on('data', (data) => {
+          output += data.toString();
+        });
+
+        pythonProcess.stderr.on('data', (data) => {
+          errorOutput += data.toString();
+        });
+
+        pythonProcess.on('close', (code) => {
+          // Limpiar archivo temporal
+          try {
+            unlinkSync(tempFile);
+          } catch (e) {
+            // Ignorar errores de limpieza
+          }
+
+          if (code === 0) {
+            resolve(output || 'Código Python ejecutado sin salida visible.');
+          } else {
+            resolve(`Error de Python:\n${errorOutput}`);
+          }
+        });
+
+        pythonProcess.on('error', (err) => {
+          try {
+            unlinkSync(tempFile);
+          } catch (e) {
+            // Ignorar errores de limpieza
+          }
+          resolve(`Error ejecutando Python: ${err.message}`);
+        });
+      } catch (err) {
+        resolve(`Error creando archivo temporal: ${err.message}`);
+      }
+    });
+  }
+
+  private async executeHTML(code: string): Promise<string> {
+    // Para HTML, devolvemos el código con un mensaje de previsualización
+    return `HTML generado correctamente.\n\nPara previsualizar, copia este código en un archivo .html:\n\n${code}\n\n--- Previsualización disponible en el editor ---`;
+  }
+
+  private async executeCSS(code: string): Promise<string> {
+    // Para CSS, validamos la sintaxis básica
+    try {
+      // Validación básica de CSS
+      if (code.includes('{') && code.includes('}')) {
+        return `CSS válido generado.\n\nEstilos definidos:\n${code}\n\n--- Aplicar a un archivo HTML para ver resultados ---`;
+      } else {
+        return 'CSS procesado. Asegúrate de incluir reglas CSS válidas con llaves {}.';
+      }
+    } catch (e) {
+      return `Error en CSS: ${e instanceof Error ? e.message : 'Error desconocido'}`;
+    }
+  }
+
+  private async executeJSON(code: string): Promise<string> {
+    try {
+      const parsed = JSON.parse(code);
+      return `JSON válido:\n${JSON.stringify(parsed, null, 2)}`;
+    } catch (e) {
+      return `Error de sintaxis JSON: ${e instanceof Error ? e.message : 'Error desconocido'}`;
+    }
   }
 
   async analyzeCode(

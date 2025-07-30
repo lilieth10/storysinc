@@ -446,3 +446,31 @@ export interface Notification {
   createdAt: string;
   type: string; // success, info, warning, etc.
 }
+
+export interface AIConfig {
+  analysisInterval: number; // en minutos
+  confidenceThreshold: number; // 0-100
+  maxRecommendations: number; // máximo de recomendaciones por análisis
+  autoAnalysis: boolean; // análisis automático
+  performanceAnalysis: boolean; // análisis de rendimiento
+  securityAnalysis: boolean; // análisis de seguridad
+  codeQualityAnalysis: boolean; // análisis de calidad de código
+  accessibilityAnalysis: boolean; // análisis de accesibilidad
+  patternDetection: boolean; // detección de patrones
+  aiModel: string; // modelo de IA a usar
+  maxTokens: number; // máximo de tokens por análisis
+  temperature: number; // temperatura del modelo (0-1)
+}
+
+export interface AIModel {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export interface AIStats {
+  totalAnalyses: number;
+  averageConfidence: number;
+  mostCommonIssues: Array<{ issue: string; count: number }>;
+  performanceScore: number;
+}
