@@ -11,6 +11,8 @@ import {
   AcademicCapIcon,
   ChartBarIcon,
   ArrowRightOnRectangleIcon,
+  Bars3Icon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { useAuth } from "@/store/auth";
 
@@ -26,6 +28,7 @@ const navItems = [
 export function Sidebar() {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
   const { logout } = useAuth();
 
   // Detectar si estamos en páginas principales donde el sidebar debe estar completo
@@ -47,69 +50,85 @@ export function Sidebar() {
     logout();
   };
 
+  const toggleMobileMenu = () => {
+    setIsMobileOpen(!isMobileOpen);
+  };
+
   return (
-    <aside 
-      className={cn(
-        "hidden md:flex flex-col min-h-screen bg-white border-r border-gray-200 py-8 transition-all duration-300 ease-in-out",
-        isCollapsed ? "w-16 px-2" : "w-64 px-4"
+    <>
+      {/* Mobile Menu Button */}
+      <button
+        onClick={toggleMobileMenu}
+        className="md:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-lg border border-gray-200"
+      >
+        {isMobileOpen ? (
+          <XMarkIcon className="w-6 h-6 text-gray-700" />
+        ) : (
+          <Bars3Icon className="w-6 h-6 text-gray-700" />
+        )}
+      </button>
+
+      {/* Mobile Overlay */}
+      {isMobileOpen && (
+        <div 
+          className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+          onClick={toggleMobileMenu}
+        />
       )}
-    >
-      {/* Logo */}
-      <div className={cn(
-        "mb-8 transition-all duration-300",
-        isCollapsed ? "text-center" : "text-left"
-      )}>
-        <div className={cn(
-          "font-bold text-green-600 transition-all duration-300",
-          isCollapsed ? "text-2xl" : "text-xl"
-        )}>
-          {isCollapsed ? "P" : "Próògia"}
+
+      {/* Sidebar */}
+      <aside 
+        className={cn(
+          "fixed md:relative z-40 flex flex-col min-h-screen bg-white border-r border-gray-200 py-8 transition-all duration-300 ease-in-out",
+          isCollapsed ? "w-16 px-2" : "w-64 px-4",
+          isMobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        )}
+      >
+        {/* Navigation */}
+        <nav className="flex flex-col gap-1 flex-1 mt-8 md:mt-0">
+          {navItems.map((item) => {
+            const isActive =
+              pathname === item.href ||
+              (item.href === "/projects" && pathname.startsWith("/projects"));
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setIsMobileOpen(false)}
+                className={cn(
+                  "flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-green-50 transition-all duration-200",
+                  isActive && "bg-green-500 text-white font-bold",
+                  isCollapsed && "justify-center px-2"
+                )}
+                title={isCollapsed ? item.label : undefined}
+              >
+                <item.icon className="w-5 h-5 flex-shrink-0" />
+                {!isCollapsed && (
+                  <span className="truncate">{item.label}</span>
+                )}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Logout Button */}
+        <div className="mt-auto">
+          <button
+            onClick={handleLogout}
+            className={cn(
+              "flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-red-600 hover:bg-red-50 transition-all duration-200 w-full",
+              isCollapsed && "justify-center px-2"
+            )}
+            title={isCollapsed ? "Cerrar sesión" : undefined}
+          >
+            <ArrowRightOnRectangleIcon className="w-5 h-5 flex-shrink-0" />
+            {!isCollapsed && (
+              <span className="truncate">Cerrar sesión</span>
+            )}
+          </button>
         </div>
-      </div>
-
-      {/* Navigation */}
-      <nav className="flex flex-col gap-1 flex-1">
-        {navItems.map((item) => {
-          const isActive =
-            pathname === item.href ||
-            (item.href === "/projects" && pathname.startsWith("/projects"));
-
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 px-4 py-2 rounded-lg font-medium text-gray-700 hover:bg-green-50 transition-all duration-200",
-                isActive && "bg-green-500 text-white font-bold",
-                isCollapsed && "justify-center px-2"
-              )}
-              title={isCollapsed ? item.label : undefined}
-            >
-              <item.icon className="w-5 h-5 flex-shrink-0" />
-              {!isCollapsed && (
-                <span className="truncate">{item.label}</span>
-              )}
-            </Link>
-          );
-        })}
-      </nav>
-
-      {/* Logout Button */}
-      <div className="mt-auto">
-        <button
-          onClick={handleLogout}
-          className={cn(
-            "flex items-center gap-3 px-4 py-2 rounded-lg font-medium text-red-600 hover:bg-red-50 transition-all duration-200 w-full",
-            isCollapsed && "justify-center px-2"
-          )}
-          title={isCollapsed ? "Cerrar sesión" : undefined}
-        >
-          <ArrowRightOnRectangleIcon className="w-5 h-5 flex-shrink-0" />
-          {!isCollapsed && (
-            <span className="truncate">Cerrar sesión</span>
-          )}
-        </button>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 }

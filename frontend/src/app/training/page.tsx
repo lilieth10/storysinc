@@ -177,7 +177,7 @@ export default function TrainingPage() {
   };
 
   const handleSearch = (query: string) => {
-    toast.success(`Buscando: ${query}`);
+    // Función de búsqueda sin notificaciones
   };
 
   if (loading) {

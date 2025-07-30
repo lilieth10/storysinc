@@ -56,8 +56,14 @@ export function DashboardHeader() {
             <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-50">
               <div className="py-1">
                 <a
-                  href="/profile"
+                  href="/dashboard"
                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                >
+                  📊 Dashboard
+                </a>
+                <a
+                  href="/profile"
+                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 border-t border-gray-100"
                 >
                   👤 Mi Perfil
                 </a>

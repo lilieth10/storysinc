@@ -667,17 +667,17 @@ ${version.stats.files} archivos modificados
 
     return (
     <div className="min-h-screen bg-gray-50">
-      <DashboardHeader />
-      <div className="flex">
-        <Sidebar />
-        <main className="flex-1 p-8">
+      <Sidebar />
+      <div className="md:ml-64">
+        <DashboardHeader />
+        <main className="p-4 md:p-6 lg:p-8">
           <div className="max-w-7xl mx-auto">
             {/* Header */}
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            <div className="mb-6 md:mb-8">
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
                 Historial de Versiones
               </h1>
-              <p className="text-gray-600">
+              <p className="text-gray-600 text-sm md:text-base">
                 Gestiona y revisa el historial de cambios de tus proyectos
               </p>
             </div>
@@ -697,7 +697,7 @@ ${version.stats.files} archivos modificados
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
-                <div>
+                <div className="sm:col-span-2 lg:col-span-1">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     <MagnifyingGlassIcon className="w-4 h-4 inline mr-1" />
                     Buscar
@@ -803,11 +803,11 @@ ${version.stats.files} archivos modificados
 
               <div className="divide-y divide-gray-200">
                 {filteredVersions.map((version) => (
-                  <div key={version.id} className="px-4 sm:px-6 py-4 hover:bg-gray-50 transition-colors">
-                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-3">
-                          <span className="text-sm font-mono text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                  <div key={version.id} className="px-3 sm:px-6 py-4 hover:bg-gray-50 transition-colors">
+                    <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-3">
+                          <span className="text-xs sm:text-sm font-mono text-gray-500 bg-gray-100 px-2 py-1 rounded">
                             {version.hash}
                           </span>
                           <span
@@ -822,11 +822,11 @@ ${version.stats.files} archivos modificados
                           </span>
                         </div>
 
-                        <h4 className="text-sm font-medium text-gray-900 mb-2">
+                        <h4 className="text-sm font-medium text-gray-900 mb-2 break-words">
                           {version.message}
                         </h4>
 
-                        <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-gray-500 mb-3">
                           <span className="flex items-center">
                             <UserIcon className="w-3 h-3 mr-1" />
                             {version.author}
@@ -845,19 +845,19 @@ ${version.stats.files} archivos modificados
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
+                        <div className="flex items-center gap-2 sm:gap-4 text-xs text-gray-500 mb-3">
                           <span className="text-green-600">+{version.stats.additions}</span>
                           <span className="text-red-600">-{version.stats.deletions}</span>
                           <span className="text-gray-600">{version.stats.files} archivos</span>
                         </div>
 
-                        <div className="text-xs text-gray-400">
+                        <div className="text-xs text-gray-400 break-words">
                           {version.filesChanged.slice(0, 3).join(", ")}
                           {version.filesChanged.length > 3 && ` +${version.filesChanged.length - 3} más`}
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 sm:ml-4 flex-wrap">
+                      <div className="flex items-center gap-2 lg:ml-4 flex-wrap lg:flex-nowrap">
                         <button
                           onClick={() => handleViewDiff(version)}
                           className="text-xs bg-gray-600 text-white px-2 sm:px-3 py-1 rounded hover:bg-gray-700 flex items-center"
