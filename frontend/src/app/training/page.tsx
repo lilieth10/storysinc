@@ -60,14 +60,20 @@ export default function TrainingPage() {
       const response = await api.get("/training", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       // El backend devuelve un array directamente, no un objeto con resources
       const resources = response.data;
-      const categories = ['react', 'css', 'testing', 'javascript', 'typescript'];
-      
+      const categories = [
+        "react",
+        "css",
+        "testing",
+        "javascript",
+        "typescript",
+      ];
+
       setTrainingData({
         resources,
-        categories
+        categories,
       });
     } catch (error) {
       console.error("Error loading training data:", error);

@@ -17,5 +17,7 @@
     "noImplicitAny": false,
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false
-  }
+  },
+  "include": ["src/**/*", "*.mjs"],
+  "exclude": ["node_modules", "dist"]
 }

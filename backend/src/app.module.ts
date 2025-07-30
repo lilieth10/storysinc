@@ -14,6 +14,8 @@ import { SyncController } from './sync.controller';
 import { AIController } from './ai.controller';
 import { AdminController } from './admin.controller';
 import { TrainingController } from './training.controller';
+import { AIConfigController } from './ai-config.controller';
+import { VersionController } from './version.controller';
 
 @Module({
   imports: [AuthModule, UserModule, PrismaModule],
@@ -26,6 +28,8 @@ import { TrainingController } from './training.controller';
     AIController,
     AdminController,
     TrainingController,
+    AIConfigController,
+    VersionController,
   ],
   providers: [
     AppService,

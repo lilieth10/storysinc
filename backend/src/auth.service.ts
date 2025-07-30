@@ -37,7 +37,7 @@ export class AuthService {
       id: user.id,
       fullName: user.fullName,
       email: user.email,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
       role: user.role,
     };
   }

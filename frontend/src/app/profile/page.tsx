@@ -2,11 +2,11 @@
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Footer } from "@/components/landing/Footer";
+import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import { useAuth } from "@/store/auth";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
-import { NotificationsDropdown } from "@/components/notifications/NotificationsDropdown";
 
 export default function ProfilePage() {
   const {
@@ -75,37 +75,13 @@ export default function ProfilePage() {
     toast.success("Los datos fueron actualizados exitosamente");
   };
 
-  const handleLogout = () => {
-    logout();
-    router.replace("/");
-  };
-
   if (!form) return null;
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      {/* Header */}
-      <header className="w-full flex items-center justify-between px-8 py-4 bg-white shadow-sm">
-        <div className="flex items-center gap-2">
-          <Image
-            src="/proogia.png"
-            alt="Proogia Logo"
-            width={110}
-            height={36}
-            priority
-          />
-        </div>
-        <div className="flex items-center gap-6">
-          <NotificationsDropdown />
-          <Image
-            src={form.avatar || "/avatar.png"}
-            alt="Avatar"
-            width={36}
-            height={36}
-            className="rounded-full border-2 border-green-500"
-          />
-        </div>
-      </header>
+      {/* Header con dropdown */}
+      <DashboardHeader />
+
       {/* Card de perfil */}
       <main className="flex-1 flex flex-col items-center justify-center pb-8 mt-16">
         <div className="w-full max-w-md bg-white rounded-xl shadow-md p-8 flex flex-col items-center">
@@ -241,13 +217,6 @@ export default function ProfilePage() {
             </>
           )}
           {error && <div className="mt-2 text-red-500 text-sm">{error}</div>}
-          <Button
-            variant="outline"
-            className="w-full mt-4"
-            onClick={handleLogout}
-          >
-            Cerrar sesión
-          </Button>
         </div>
       </main>
       <Footer />

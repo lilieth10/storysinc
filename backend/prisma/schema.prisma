@@ -36,6 +36,7 @@ model User {
   aiChatHistory   AIChatMessage[]
   userProgress    UserTrainingProgress[]
   certificates    TrainingCertificate[]
+  aiAnalyses      AIAnalysis[]
 }
 
 model Report {
@@ -75,9 +76,11 @@ model Project {
   updatedAt   DateTime @updatedAt
 
   // Relations
-  owner       User     @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  owner         User                @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   collaborators ProjectCollaborator[]
   aiChatHistory AIChatMessage[]
+  aiAnalyses    AIAnalysis[]
+  versions      Version[]
 }
 
 model SyncProject {
@@ -201,4 +204,61 @@ model TrainingCertificate {
   resource TrainingResource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
   
   @@unique([userId, resourceId])
+} 
+
+model AIConfig {
+  id                    Int      @id @default(autoincrement())
+  analysisInterval      Int      @default(30) // en minutos
+  confidenceThreshold   Int      @default(75) // 0-100
+  maxRecommendations    Int      @default(10)
+  autoAnalysis          Boolean  @default(true)
+  performanceAnalysis   Boolean  @default(true)
+  securityAnalysis      Boolean  @default(true)
+  codeQualityAnalysis   Boolean  @default(true)
+  accessibilityAnalysis Boolean  @default(true)
+  patternDetection      Boolean  @default(true)
+  aiModel               String   @default("gpt-4")
+  maxTokens             Int      @default(4000)
+  temperature           Float    @default(0.7)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model AIAnalysis {
+  id              Int      @id @default(autoincrement())
+  projectId       Int?
+  userId          Int?
+  analysisType    String   // "performance", "security", "quality", etc.
+  confidence      Float    // 0-100
+  recommendations String   // JSON string
+  status          String   @default("completed") // "pending", "processing", "completed", "failed"
+  createdAt       DateTime @default(now())
+  
+  // Relations
+  project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AIModel {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Version {
+  id          Int      @id @default(autoincrement())
+  hash        String   @unique // Git commit hash
+  message     String   // Commit message
+  author      String   // Author name
+  branch      String   // Branch name
+  status      String   @default("pending") // "deployed", "testing", "conflict", "pending"
+  filesChanged String  // JSON array of changed files
+  projectId   Int
+  createdAt   DateTime @default(now())
+  
+  // Relations
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 } 

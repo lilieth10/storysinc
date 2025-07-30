@@ -1,7 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 import {
   Controller,
   Get,
@@ -10,10 +7,14 @@ import {
   Body,
   Req,
   UseGuards,
+  Put,
+  Delete,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Request } from 'express';
 import { PrismaService } from './prisma.service';
+import { RolesGuard } from './guards/roles.guard';
+import { Roles } from './decorators/roles.decorator';
 
 interface AuthenticatedRequest extends Request {
   user: {
@@ -28,176 +29,75 @@ interface UpdateProgressDto {
   timeSpent: number;
 }
 
+interface CreateTrainingResourceDto {
+  title: string;
+  description: string;
+  content: string;
+  type: string;
+  category: string;
+  difficulty: string;
+  duration?: number;
+  imageUrl?: string;
+  codeSnippet?: string;
+  order?: number;
+  isActive?: boolean;
+  fileUrl?: string;
+  videoUrl?: string;
+}
+
 @Controller('training')
 @UseGuards(AuthGuard('jwt'))
 export class TrainingController {
   constructor(private prisma: PrismaService) {}
 
   @Get()
-  getAllTrainingResources(@Req() req: AuthenticatedRequest) {
+  async getAllTrainingResources(@Req() req: AuthenticatedRequest) {
     const userId = req.user.userId;
 
-    // Mock data con URLs reales para descargas y videos
-    const trainingResources = [
-      {
-        id: 1,
-        title: 'Introducción a React',
-        description:
-          'Aprende los fundamentos de React, incluyendo componentes, props, estado y hooks. Este curso te preparará para desarrollar aplicaciones web modernas y dinámicas.',
-        type: 'overview',
-        category: 'react',
-        hasButton: true,
-        buttonText: 'Ver más',
-        fileUrl: 'https://example.com/react-intro.pdf',
-        videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-      },
-      {
-        id: 2,
-        title: 'Componentes y Props',
-        description:
-          'Profundiza en el sistema de componentes de React. Aprende a crear componentes reutilizables, pasar props y manejar el flujo de datos.',
-        type: 'module',
-        category: 'react',
-        position: 'right' as const,
-        fileUrl: 'https://example.com/react-components.pdf',
-        videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-        codeSnippet: {
-          language: 'jsx',
-          code: `function Welcome(props) {
-  return <h1>Hello, {props.name}</h1>;
-}
+    try {
+      // Obtener recursos reales de la base de datos
+      const trainingResources = await this.prisma.trainingResource.findMany({
+        where: { isActive: true },
+        orderBy: { order: 'asc' },
+      });
 
-function App() {
-  return (
-    <div>
-      <Welcome name="Sara" />
-      <Welcome name="Cahal" />
-      <Welcome name="Edite" />
-    </div>
-  );
-}`,
-          lines: [1, 12],
-        },
-      },
-      {
-        id: 3,
-        title: 'Estado y Ciclo de Vida',
-        description:
-          'Aprende a manejar el estado de los componentes y el ciclo de vida. Entiende cuándo y cómo actualizar el estado de manera eficiente.',
-        type: 'module',
-        category: 'react',
-        position: 'left' as const,
-        fileUrl: 'https://example.com/react-state.pdf',
-        videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-        hasImage: true,
-        imageDescription: 'Diagrama del ciclo de vida de React',
-      },
-      {
-        id: 4,
-        title: 'Hooks en React',
-        description:
-          'Explora los hooks de React: useState, useEffect, useContext y más. Aprende a usar hooks para simplificar tu código y hacerlo más legible.',
-        type: 'module',
-        category: 'react',
-        position: 'bottom' as const,
-        fileUrl: 'https://example.com/react-hooks.pdf',
-        videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-        codeSnippet: {
-          language: 'jsx',
-          code: `import React, { useState, useEffect } from 'react';
+      // Obtener progreso del usuario desde la base de datos
+      const userProgress = await this.prisma.userTrainingProgress.findMany({
+        where: { userId },
+        include: { resource: true },
+      });
 
-function Example() {
-  const [count, setCount] = useState(0);
-
-  useEffect(() => {
-    document.title = \`You clicked \${count} times\`;
-  });
-
-  return (
-    <div>
-      <p>You clicked {count} times</p>
-      <button onClick={() => setCount(count + 1)}>
-        Click me
-      </button>
-    </div>
-  );
-}`,
-          lines: [1, 20],
-        },
-      },
-      {
-        id: 5,
-        title: 'CSS y Styling',
-        description:
-          'Aprende diferentes técnicas de styling en React: CSS modules, styled-components, Tailwind CSS y más. Domina el arte de crear interfaces hermosas.',
-        type: 'module',
-        category: 'css',
-        position: 'right' as const,
-        fileUrl: 'https://example.com/css-styling.pdf',
-        videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-      },
-      {
-        id: 6,
-        title: 'Testing en React',
-        description:
-          'Aprende a escribir tests para tus componentes React usando Jest y React Testing Library. Asegura la calidad de tu código con testing efectivo.',
-        type: 'module',
-        category: 'testing',
-        position: 'left' as const,
-        fileUrl: 'https://example.com/react-testing.pdf',
-        videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-        codeSnippet: {
-          language: 'jsx',
-          code: `import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import App from './App';
-
-test('renders learn react link', () => {
-  render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
-});`,
-          lines: [1, 8],
-        },
-      },
-    ];
-
-    // Obtener progreso del usuario desde la base de datos
-    const getUserProgress = async () => {
-      try {
-        const userProgress = await this.prisma.userTrainingProgress.findMany({
-          where: { userId },
-          include: { resource: true },
-        });
-        return userProgress;
-      } catch (error) {
-        console.error('Error fetching user progress:', error);
-        return [];
-      }
-    };
-
-    // Combinar recursos con progreso del usuario
-    const combineWithProgress = async () => {
-      const progress = await getUserProgress();
-
+      // Combinar recursos con progreso del usuario
       return trainingResources.map((resource) => {
-        const userProgress = progress.find((p) => p.resourceId === resource.id);
+        const progress = userProgress.find((p) => p.resourceId === resource.id);
         return {
-          ...resource,
-          userProgress: userProgress
+          id: resource.id,
+          title: resource.title,
+          description: resource.description,
+          type: resource.type,
+          category: resource.category,
+          difficulty: resource.difficulty,
+          duration: resource.duration,
+          fileUrl: resource.fileUrl,
+          videoUrl: resource.videoUrl,
+          codeSnippet: resource.codeSnippet
+            ? JSON.parse(resource.codeSnippet)
+            : null,
+          userProgress: progress
             ? {
-                progress: userProgress.progress,
-                timeSpent: userProgress.timeSpent,
-                completed: userProgress.completed,
-                startedAt: userProgress.startedAt.toISOString(),
-                completedAt: userProgress.completedAt?.toISOString(),
+                progress: progress.progress,
+                timeSpent: progress.timeSpent,
+                completed: progress.completed,
+                startedAt: progress.startedAt.toISOString(),
+                completedAt: progress.completedAt?.toISOString(),
               }
             : null,
         };
       });
-    };
-
-    return combineWithProgress();
+    } catch (error) {
+      console.error('Error fetching training resources:', error);
+      return [];
+    }
   }
 
   @Get('categories')
@@ -332,6 +232,230 @@ test('renders learn react link', () => {
     } catch (error) {
       console.error('Error fetching user progress:', error);
       return { success: false, error: 'Failed to fetch progress' };
+    }
+  }
+
+  // ========== ENDPOINTS PARA ADMIN ==========
+
+  @Get('admin/resources')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  async getAllTrainingResourcesForAdmin() {
+    try {
+      const resources = await this.prisma.trainingResource.findMany({
+        include: {
+          userProgress: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  fullName: true,
+                  email: true,
+                },
+              },
+            },
+          },
+          certificates: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  fullName: true,
+                  email: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: { order: 'asc' },
+      });
+
+      return resources;
+    } catch (error) {
+      console.error('Error fetching training resources for admin:', error);
+      throw new Error('Error al obtener recursos de capacitación');
+    }
+  }
+
+  @Post('admin/resources')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  async createTrainingResource(@Body() createDto: CreateTrainingResourceDto) {
+    try {
+      const resource = await this.prisma.trainingResource.create({
+        data: {
+          title: createDto.title,
+          description: createDto.description,
+          content: createDto.content,
+          type: createDto.type,
+          category: createDto.category,
+          difficulty: createDto.difficulty,
+          duration: createDto.duration,
+          imageUrl: createDto.imageUrl,
+          codeSnippet: createDto.codeSnippet,
+          order: createDto.order || 0,
+          isActive: createDto.isActive !== false,
+          fileUrl: createDto.fileUrl,
+          videoUrl: createDto.videoUrl,
+        },
+      });
+
+      return {
+        success: true,
+        message: 'Recurso de capacitación creado exitosamente',
+        resource,
+      };
+    } catch (error) {
+      console.error('Error creating training resource:', error);
+      throw new Error('Error al crear recurso de capacitación');
+    }
+  }
+
+  @Put('admin/resources/:id')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  async updateTrainingResource(
+    @Param('id') id: string,
+    @Body() updateDto: Partial<CreateTrainingResourceDto>,
+  ) {
+    try {
+      const resource = await this.prisma.trainingResource.update({
+        where: { id: parseInt(id) },
+        data: updateDto,
+      });
+
+      return {
+        success: true,
+        message: 'Recurso de capacitación actualizado exitosamente',
+        resource,
+      };
+    } catch (error) {
+      console.error('Error updating training resource:', error);
+      throw new Error('Error al actualizar recurso de capacitación');
+    }
+  }
+
+  @Delete('admin/resources/:id')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  async deleteTrainingResource(@Param('id') id: string) {
+    try {
+      // Eliminar progreso y certificados relacionados
+      await this.prisma.userTrainingProgress.deleteMany({
+        where: { resourceId: parseInt(id) },
+      });
+
+      await this.prisma.trainingCertificate.deleteMany({
+        where: { resourceId: parseInt(id) },
+      });
+
+      // Eliminar el recurso
+      await this.prisma.trainingResource.delete({
+        where: { id: parseInt(id) },
+      });
+
+      return {
+        success: true,
+        message: 'Recurso de capacitación eliminado exitosamente',
+      };
+    } catch (error) {
+      console.error('Error deleting training resource:', error);
+      throw new Error('Error al eliminar recurso de capacitación');
+    }
+  }
+
+  @Get('admin/stats')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  async getTrainingStatsForAdmin() {
+    try {
+      const totalResources = await this.prisma.trainingResource.count();
+      const totalProgress = await this.prisma.userTrainingProgress.count();
+      const completedCourses = await this.prisma.userTrainingProgress.count({
+        where: { completed: true },
+      });
+      const totalCertificates = await this.prisma.trainingCertificate.count();
+
+      const averageProgress = await this.prisma.userTrainingProgress.aggregate({
+        _avg: { progress: true },
+      });
+
+      // Estadísticas por categoría
+      const statsByCategory = await this.prisma.trainingResource.groupBy({
+        by: ['category'],
+        _count: { category: true },
+      });
+
+      // Usuarios más activos en capacitación
+      const topUsers = await this.prisma.userTrainingProgress.groupBy({
+        by: ['userId'],
+        _count: { userId: true },
+        _sum: { timeSpent: true },
+        orderBy: { _count: { userId: 'desc' } },
+        take: 5,
+      });
+
+      return {
+        totalResources,
+        totalProgress,
+        completedCourses,
+        totalCertificates,
+        averageProgress: Math.round(averageProgress._avg.progress || 0),
+        statsByCategory,
+        topUsers,
+      };
+    } catch (error) {
+      console.error('Error fetching training stats for admin:', error);
+      throw new Error('Error al obtener estadísticas de capacitación');
+    }
+  }
+
+  @Get('admin/user-progress/:userId')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  async getUserProgressForAdmin(@Param('userId') userId: string) {
+    try {
+      const progress = await this.prisma.userTrainingProgress.findMany({
+        where: { userId: parseInt(userId) },
+        include: {
+          resource: true,
+          user: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+            },
+          },
+        },
+      });
+
+      const user = await this.prisma.user.findUnique({
+        where: { id: parseInt(userId) },
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          role: true,
+        },
+      });
+
+      return {
+        user,
+        progress,
+        totalCourses: progress.length,
+        completedCourses: progress.filter((p) => p.completed).length,
+        totalTimeSpent: progress.reduce((sum, p) => sum + p.timeSpent, 0),
+        averageProgress:
+          progress.length > 0
+            ? Math.round(
+                progress.reduce((sum, p) => sum + p.progress, 0) /
+                  progress.length,
+              )
+            : 0,
+      };
+    } catch (error) {
+      console.error('Error fetching user progress for admin:', error);
+      throw new Error('Error al obtener progreso del usuario');
     }
   }
 }
