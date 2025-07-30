@@ -3,58 +3,113 @@ import Image from "next/image";
 
 export function Footer() {
   return (
-    <footer className="bg-[#E9F9EC] text-gray-900 font-['Roboto'] pt-4 pb-2">
-      <div className="max-w-7xl mx-auto flex flex-row items-start justify-between px-6">
-        {/* Logo alineado a la izquierda */}
-        <div className="flex flex-col items-start justify-start min-w-[140px]">
-          <Image
-            src="/proogia.png"
-            alt="Proogia"
-            width={150}
-            height={150}
-            className="mb-2"
-            priority
-          />
+    <footer className="bg-[#E9F9EC] text-gray-900 font-['Roboto'] py-12">
+      <div className="max-w-7xl mx-auto px-6">
+        {/* Contenido principal del footer */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+          {/* Logo y descripción */}
+          <div className="lg:col-span-1">
+            <div className="flex items-center mb-4">
+              <Image
+                src="/proogia.png"
+                alt="Proogia"
+                width={120}
+                height={40}
+                className="h-10 w-auto"
+                priority
+              />
+            </div>
+            <p className="text-gray-600 text-sm leading-relaxed max-w-xs">
+              Plataforma integral para el desarrollo y análisis de proyectos con inteligencia artificial.
+            </p>
+          </div>
+
+          {/* Servicios */}
+          <div className="space-y-4">
+            <h3 className="font-bold text-gray-900 text-lg mb-4">Servicios</h3>
+            <div className="space-y-2">
+              <Link 
+                href="#" 
+                className="block text-gray-600 hover:text-green-600 transition-colors duration-200 text-sm"
+              >
+                Beneficios
+              </Link>
+              <Link 
+                href="#" 
+                className="block text-gray-600 hover:text-green-600 transition-colors duration-200 text-sm"
+              >
+                Funciones
+              </Link>
+              <Link 
+                href="#" 
+                className="block text-gray-600 hover:text-green-600 transition-colors duration-200 text-sm"
+              >
+                Integraciones
+              </Link>
+            </div>
+          </div>
+
+          {/* Sobre nosotros */}
+          <div className="space-y-4">
+            <h3 className="font-bold text-gray-900 text-lg mb-4">Sobre nosotros</h3>
+            <div className="space-y-2">
+              <Link 
+                href="#" 
+                className="block text-gray-600 hover:text-green-600 transition-colors duration-200 text-sm"
+              >
+                La plataforma
+              </Link>
+              <Link 
+                href="#" 
+                className="block text-gray-600 hover:text-green-600 transition-colors duration-200 text-sm"
+              >
+                Contacto
+              </Link>
+            </div>
+          </div>
+
+          {/* Legales */}
+          <div className="space-y-4">
+            <h3 className="font-bold text-gray-900 text-lg mb-4">Legales</h3>
+            <div className="space-y-2">
+              <Link 
+                href="#" 
+                className="block text-gray-600 hover:text-green-600 transition-colors duration-200 text-sm"
+              >
+                Términos y condiciones
+              </Link>
+              <Link 
+                href="#" 
+                className="block text-gray-600 hover:text-green-600 transition-colors duration-200 text-sm"
+              >
+                Política de privacidad
+              </Link>
+            </div>
+          </div>
         </div>
-        {/* Enlaces en tres columnas centradas */}
-        <div className="flex flex-1 flex-row justify-center gap-16">
-          <div className="flex flex-col min-w-[120px] items-center">
-            <span className="font-bold mb-2">Servicios</span>
-            <Link href="#" className="mb-1 hover:underline">
-              Beneficios
-            </Link>
-            <Link href="#" className="mb-1 hover:underline">
-              Funciones
-            </Link>
-            <Link href="#" className="mb-1 hover:underline">
-              Integraciones
-            </Link>
-          </div>
-          <div className="flex flex-col min-w-[120px] items-center">
-            <span className="font-bold mb-2">Sobre nosotros</span>
-            <Link href="#" className="mb-1 hover:underline">
-              La plataforma
-            </Link>
-            <Link href="#" className="mb-1 hover:underline">
-              Contacto
-            </Link>
-          </div>
-          <div className="flex flex-col min-w-[120px] items-center">
-            <span className="font-bold mb-2">Legales</span>
-            <Link href="#" className="mb-1 hover:underline">
-              Términos y condiciones
-            </Link>
-            <Link href="#" className="mb-1 hover:underline">
-              Política de privacidad
-            </Link>
+
+        {/* Línea divisoria */}
+        <div className="border-t border-gray-200 pt-6">
+          <div className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
+            <p className="text-gray-500 text-xs text-center sm:text-left">
+              Copyright © 2024 Proogia. Todos los derechos reservados.
+            </p>
+            <div className="flex space-x-6">
+              <Link 
+                href="#" 
+                className="text-gray-500 hover:text-green-600 transition-colors duration-200 text-xs"
+              >
+                Cookies
+              </Link>
+              <Link 
+                href="#" 
+                className="text-gray-500 hover:text-green-600 transition-colors duration-200 text-xs"
+              >
+                Mapa del sitio
+              </Link>
+            </div>
           </div>
         </div>
-      </div>
-      {/* Copyright */}
-      <div className="max-w-5xl mx-auto px-4">
-        <p className="text-gray-700 text-xs text-center mt-2 pb-1">
-          Copyright 0000 Nombre all rights reserved
-        </p>
       </div>
     </footer>
   );

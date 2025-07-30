@@ -99,7 +99,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" className={roboto.variable}>
-      <body className={`${roboto.className} antialiased`}>
+      <body 
+        className={`${roboto.className} antialiased`}
+        suppressHydrationWarning={true}
+      >
         <NotificationsProvider />
         <AuthInitializer />
         {children}
