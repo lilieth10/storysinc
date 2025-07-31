@@ -20,7 +20,8 @@ export function Footer() {
               />
             </div>
             <p className="text-gray-600 text-sm leading-relaxed max-w-xs">
-              Plataforma integral para el desarrollo y análisis de proyectos con inteligencia artificial.
+              Plataforma integral para el desarrollo y análisis de proyectos con
+              inteligencia artificial.
             </p>
           </div>
 
@@ -28,20 +29,20 @@ export function Footer() {
           <div className="space-y-4">
             <h3 className="font-bold text-gray-900 text-lg mb-4">Servicios</h3>
             <div className="space-y-2">
-              <Link 
-                href="#" 
+              <Link
+                href="#"
                 className="block text-gray-600 hover:text-green-600 transition-colors duration-200 text-sm"
               >
                 Beneficios
               </Link>
-              <Link 
-                href="#" 
+              <Link
+                href="#"
                 className="block text-gray-600 hover:text-green-600 transition-colors duration-200 text-sm"
               >
                 Funciones
               </Link>
-              <Link 
-                href="#" 
+              <Link
+                href="#"
                 className="block text-gray-600 hover:text-green-600 transition-colors duration-200 text-sm"
               >
                 Integraciones
@@ -51,16 +52,18 @@ export function Footer() {
 
           {/* Sobre nosotros */}
           <div className="space-y-4">
-            <h3 className="font-bold text-gray-900 text-lg mb-4">Sobre nosotros</h3>
+            <h3 className="font-bold text-gray-900 text-lg mb-4">
+              Sobre nosotros
+            </h3>
             <div className="space-y-2">
-              <Link 
-                href="#" 
+              <Link
+                href="#"
                 className="block text-gray-600 hover:text-green-600 transition-colors duration-200 text-sm"
               >
                 La plataforma
               </Link>
-              <Link 
-                href="#" 
+              <Link
+                href="#"
                 className="block text-gray-600 hover:text-green-600 transition-colors duration-200 text-sm"
               >
                 Contacto
@@ -72,14 +75,14 @@ export function Footer() {
           <div className="space-y-4">
             <h3 className="font-bold text-gray-900 text-lg mb-4">Legales</h3>
             <div className="space-y-2">
-              <Link 
-                href="#" 
+              <Link
+                href="#"
                 className="block text-gray-600 hover:text-green-600 transition-colors duration-200 text-sm"
               >
                 Términos y condiciones
               </Link>
-              <Link 
-                href="#" 
+              <Link
+                href="#"
                 className="block text-gray-600 hover:text-green-600 transition-colors duration-200 text-sm"
               >
                 Política de privacidad
@@ -95,14 +98,14 @@ export function Footer() {
               Copyright © 2024 Proogia. Todos los derechos reservados.
             </p>
             <div className="flex space-x-6">
-              <Link 
-                href="#" 
+              <Link
+                href="#"
                 className="text-gray-500 hover:text-green-600 transition-colors duration-200 text-xs"
               >
                 Cookies
               </Link>
-              <Link 
-                href="#" 
+              <Link
+                href="#"
                 className="text-gray-500 hover:text-green-600 transition-colors duration-200 text-xs"
               >
                 Mapa del sitio

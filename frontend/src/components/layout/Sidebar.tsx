@@ -20,7 +20,11 @@ const navItems = [
   { label: "Proyectos", href: "/projects", icon: FolderIcon },
   { label: "Sincronización", href: "/sync", icon: ArrowPathIcon },
   { label: "Análisis de IA", href: "/ai-analysis", icon: CpuChipIcon },
-  { label: "Historial de versiones", href: "/version-history", icon: ClockIcon },
+  {
+    label: "Historial de versiones",
+    href: "/version-history",
+    icon: ClockIcon,
+  },
   { label: "Capacitación", href: "/training", icon: AcademicCapIcon },
   { label: "Reportes", href: "/reports", icon: ChartBarIcon },
 ];
@@ -32,11 +36,13 @@ export function Sidebar() {
   const { logout } = useAuth();
 
   // Detectar si estamos en páginas principales donde el sidebar debe estar completo
-  const isInMainPage = pathname.match(/^\/(dashboard|projects|sync|ai-analysis|version-history|training|reports)$/);
-  
+  const isInMainPage = pathname.match(
+    /^\/(dashboard|projects|sync|ai-analysis|version-history|training|reports)$/,
+  );
+
   // Detectar si estamos en páginas de contenido específico que necesitan más espacio
   const isInContentPage = pathname.match(/^\/projects\/\d+$/);
-  
+
   // Auto-colapsar solo cuando estés en páginas de contenido específico
   useEffect(() => {
     if (isInContentPage) {
@@ -70,18 +76,18 @@ export function Sidebar() {
 
       {/* Mobile Overlay */}
       {isMobileOpen && (
-        <div 
+        <div
           className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
           onClick={toggleMobileMenu}
         />
       )}
 
       {/* Sidebar */}
-      <aside 
+      <aside
         className={cn(
           "fixed md:relative z-40 flex flex-col min-h-screen bg-white border-r border-gray-200 py-8 transition-all duration-300 ease-in-out",
           isCollapsed ? "w-16 px-2" : "w-64 px-4",
-          isMobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+          isMobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
         )}
       >
         {/* Navigation */}
@@ -99,14 +105,12 @@ export function Sidebar() {
                 className={cn(
                   "flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-green-50 transition-all duration-200",
                   isActive && "bg-green-500 text-white font-bold",
-                  isCollapsed && "justify-center px-2"
+                  isCollapsed && "justify-center px-2",
                 )}
                 title={isCollapsed ? item.label : undefined}
               >
                 <item.icon className="w-5 h-5 flex-shrink-0" />
-                {!isCollapsed && (
-                  <span className="truncate">{item.label}</span>
-                )}
+                {!isCollapsed && <span className="truncate">{item.label}</span>}
               </Link>
             );
           })}
@@ -118,14 +122,12 @@ export function Sidebar() {
             onClick={handleLogout}
             className={cn(
               "flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-red-600 hover:bg-red-50 transition-all duration-200 w-full",
-              isCollapsed && "justify-center px-2"
+              isCollapsed && "justify-center px-2",
             )}
             title={isCollapsed ? "Cerrar sesión" : undefined}
           >
             <ArrowRightOnRectangleIcon className="w-5 h-5 flex-shrink-0" />
-            {!isCollapsed && (
-              <span className="truncate">Cerrar sesión</span>
-            )}
+            {!isCollapsed && <span className="truncate">Cerrar sesión</span>}
           </button>
         </div>
       </aside>
