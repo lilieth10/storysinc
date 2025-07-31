@@ -193,9 +193,7 @@ export default function ProfilePage() {
                   <span className="text-black">{form.phone || "-"}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="font-semibold text-black">
-                    Nacimiento:
-                  </span>
+                  <span className="font-semibold text-black">Nacimiento:</span>
                   <span className="text-black">
                     {form.birthdate ? form.birthdate.substring(0, 10) : "-"}
                   </span>

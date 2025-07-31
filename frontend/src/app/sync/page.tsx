@@ -1118,41 +1118,63 @@ export default function SyncPage() {
                 <div>
                   <div className="mb-2">
                     <span className="font-semibold text-black">Tipo:</span>{" "}
-                    <span className="text-black">{selectedProject.pattern === "monolito"
-                      ? "Monolito"
-                      : selectedProject.pattern === "microservicio"
-                        ? "Microservicio"
-                        : selectedProject.pattern}</span>
+                    <span className="text-black">
+                      {selectedProject.pattern === "monolito"
+                        ? "Monolito"
+                        : selectedProject.pattern === "microservicio"
+                          ? "Microservicio"
+                          : selectedProject.pattern}
+                    </span>
                   </div>
                   <div className="mb-2">
-                    <span className="font-semibold text-black">Descripción:</span>{" "}
-                    <span className="text-black">{selectedProject.description}</span>
+                    <span className="font-semibold text-black">
+                      Descripción:
+                    </span>{" "}
+                    <span className="text-black">
+                      {selectedProject.description}
+                    </span>
                   </div>
                   {selectedProject.pattern === "monolito" && (
                     <div className="mb-2">
                       <span className="font-semibold text-black">Patrón:</span>{" "}
-                      <span className="text-black">{selectedProject.pattern || "-"}</span>
+                      <span className="text-black">
+                        {selectedProject.pattern || "-"}
+                      </span>
                     </div>
                   )}
                   {selectedProject.pattern === "microservicio" && (
                     <div className="mb-2">
-                      <span className="font-semibold text-black">Funciones:</span>{" "}
-                      <span className="text-black">{selectedProject.functions
-                        ? JSON.parse(selectedProject.functions).join(", ")
-                        : "-"}</span>
+                      <span className="font-semibold text-black">
+                        Funciones:
+                      </span>{" "}
+                      <span className="text-black">
+                        {selectedProject.functions
+                          ? JSON.parse(selectedProject.functions).join(", ")
+                          : "-"}
+                      </span>
                     </div>
                   )}
                   <div className="mb-2">
-                    <span className="font-semibold text-black">Asociación de Frontends:</span>{" "}
-                    <span className="text-black">{selectedProject.frontendAssociation || "-"}</span>
+                    <span className="font-semibold text-black">
+                      Asociación de Frontends:
+                    </span>{" "}
+                    <span className="text-black">
+                      {selectedProject.frontendAssociation || "-"}
+                    </span>
                   </div>
                   <div className="mb-2">
                     <span className="font-semibold text-black">Contacto:</span>{" "}
-                    <span className="text-black">{selectedProject.contact || "-"}</span>
+                    <span className="text-black">
+                      {selectedProject.contact || "-"}
+                    </span>
                   </div>
                   <div className="mb-2">
-                    <span className="font-semibold text-black">Descripción adicional:</span>{" "}
-                    <span className="text-black">{selectedProject.tags || "-"}</span>
+                    <span className="font-semibold text-black">
+                      Descripción adicional:
+                    </span>{" "}
+                    <span className="text-black">
+                      {selectedProject.tags || "-"}
+                    </span>
                   </div>
                 </div>
                 <div>
@@ -1163,7 +1185,9 @@ export default function SyncPage() {
                     </span>
                   </div>
                   <div className="mb-2">
-                    <span className="font-semibold text-black">Última sincronización:</span>{" "}
+                    <span className="font-semibold text-black">
+                      Última sincronización:
+                    </span>{" "}
                     <span
                       className={
                         (lastSyncHighlight
@@ -1418,9 +1442,9 @@ export default function SyncPage() {
 
                       {/* Sugerencias de IA */}
                       <div className="bg-white border border-green-200 rounded-lg p-4 mb-6">
-                                                  <h4 className="text-sm font-medium text-black mb-3">
-                            Sugerencias de IA
-                          </h4>
+                        <h4 className="text-sm font-medium text-black mb-3">
+                          Sugerencias de IA
+                        </h4>
                         <div className="space-y-3">
                           {(aiMetrics.suggestions || []).map(
                             (suggestion, index) => (

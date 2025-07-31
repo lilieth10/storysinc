@@ -69,7 +69,6 @@ export class ProjectController {
 
   @Get()
   async getProjects(@Req() req: AuthRequest) {
-    console.log('getProjects called, userId:', req.user.userId);
     return this.projectService.getProjectsForUser(req.user.userId);
   }
 

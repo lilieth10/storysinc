@@ -93,7 +93,11 @@ export default function VersionHistoryPage() {
       status: "deployed",
       projectId: 1,
       projectName: "E-commerce React",
-      filesChanged: ["src/auth/AuthProvider.tsx", "src/components/Login.tsx", "src/api/auth.ts"],
+      filesChanged: [
+        "src/auth/AuthProvider.tsx",
+        "src/components/Login.tsx",
+        "src/api/auth.ts",
+      ],
       stats: { additions: 145, deletions: 23, files: 3 },
       ciStatus: "success",
       diff: [
@@ -102,13 +106,11 @@ export default function VersionHistoryPage() {
           additions: [
             "+ import { createContext, useContext, useState } from 'react';",
             "+ export const AuthContext = createContext();",
-            "+ export const useAuth = () => useContext(AuthContext);"
+            "+ export const useAuth = () => useContext(AuthContext);",
           ],
-          deletions: [
-            "- const auth = { user: null };"
-          ]
-        }
-      ]
+          deletions: ["- const auth = { user: null };"],
+        },
+      ],
     },
     {
       id: "2",
@@ -121,7 +123,10 @@ export default function VersionHistoryPage() {
       status: "testing",
       projectId: 1,
       projectName: "E-commerce React",
-      filesChanged: ["src/components/ImageLoader.tsx", "src/utils/imageOptimization.ts"],
+      filesChanged: [
+        "src/components/ImageLoader.tsx",
+        "src/utils/imageOptimization.ts",
+      ],
       stats: { additions: 67, deletions: 12, files: 2 },
       ciStatus: "success",
       diff: [
@@ -129,13 +134,11 @@ export default function VersionHistoryPage() {
           file: "src/components/ImageLoader.tsx",
           additions: [
             "+ const [isLoading, setIsLoading] = useState(true);",
-            "+ const handleLoad = () => setIsLoading(false);"
+            "+ const handleLoad = () => setIsLoading(false);",
           ],
-          deletions: [
-            "- const image = new Image();"
-          ]
-        }
-      ]
+          deletions: ["- const image = new Image();"],
+        },
+      ],
     },
     {
       id: "3",
@@ -148,7 +151,11 @@ export default function VersionHistoryPage() {
       status: "deployed",
       projectId: 2,
       projectName: "API REST Node.js",
-      filesChanged: ["src/models/User.js", "src/controllers/userController.js", "src/database/queries.js"],
+      filesChanged: [
+        "src/models/User.js",
+        "src/controllers/userController.js",
+        "src/database/queries.js",
+      ],
       stats: { additions: 89, deletions: 45, files: 3 },
       ciStatus: "success",
       diff: [
@@ -157,13 +164,11 @@ export default function VersionHistoryPage() {
           additions: [
             "+ const userSchema = new Schema({",
             "+   email: { type: String, required: true, unique: true },",
-            "+   name: { type: String, required: true }"
+            "+   name: { type: String, required: true }",
           ],
-          deletions: [
-            "- const user = { email: '', name: '' };"
-          ]
-        }
-      ]
+          deletions: ["- const user = { email: '', name: '' };"],
+        },
+      ],
     },
     {
       id: "4",
@@ -176,7 +181,11 @@ export default function VersionHistoryPage() {
       status: "conflict",
       projectId: 1,
       projectName: "E-commerce React",
-      filesChanged: ["src/components/ThemeProvider.tsx", "src/styles/theme.css", "src/hooks/useTheme.ts"],
+      filesChanged: [
+        "src/components/ThemeProvider.tsx",
+        "src/styles/theme.css",
+        "src/hooks/useTheme.ts",
+      ],
       stats: { additions: 234, deletions: 67, files: 3 },
       ciStatus: "failed",
       diff: [
@@ -185,13 +194,11 @@ export default function VersionHistoryPage() {
           additions: [
             "+ const ThemeContext = createContext();",
             "+ export const ThemeProvider = ({ children }) => {",
-            "+   const [theme, setTheme] = useState('light');"
+            "+   const [theme, setTheme] = useState('light');",
           ],
-          deletions: [
-            "- const theme = 'light';"
-          ]
-        }
-      ]
+          deletions: ["- const theme = 'light';"],
+        },
+      ],
     },
     {
       id: "5",
@@ -214,33 +221,30 @@ export default function VersionHistoryPage() {
             "+ const jwt = require('jsonwebtoken');",
             "+ const validateToken = (token) => {",
             "+   try { return jwt.verify(token, process.env.JWT_SECRET); }",
-            "+   catch (error) { return null; }"
+            "+   catch (error) { return null; }",
           ],
-          deletions: [
-            "- const token = req.headers.authorization;"
-          ]
-        }
-      ]
-    }
+          deletions: ["- const token = req.headers.authorization;"],
+        },
+      ],
+    },
   ];
 
   const fetchVersions = useCallback(async () => {
     try {
       setLoading(true);
-      
+
       // Simular delay de red
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
+      await new Promise((resolve) => setTimeout(resolve, 800));
+
       // Usar datos simulados por ahora
       setVersions(mockVersions);
-      
     } catch {
       console.error("Error fetching versions");
       toast.error("Error al cargar el historial de versiones");
     } finally {
       setLoading(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -321,12 +325,14 @@ export default function VersionHistoryPage() {
   const formatTimeAgo = (date: string) => {
     const now = new Date();
     const commitDate = new Date(date);
-    const diffInHours = Math.floor((now.getTime() - commitDate.getTime()) / (1000 * 60 * 60));
-    
+    const diffInHours = Math.floor(
+      (now.getTime() - commitDate.getTime()) / (1000 * 60 * 60),
+    );
+
     if (diffInHours < 1) return "Hace menos de 1 hora";
     if (diffInHours === 1) return "Hace 1 hora";
     if (diffInHours < 24) return `Hace ${diffInHours} horas`;
-    
+
     const diffInDays = Math.floor(diffInHours / 24);
     if (diffInDays === 1) return "Hace 1 día";
     return `Hace ${diffInDays} días`;
@@ -337,7 +343,7 @@ export default function VersionHistoryPage() {
     setAiAnalysis("");
     setAnalysisProgress(0);
     setShowAnalysisLoader(true);
-    
+
     try {
       // Simular progreso real de análisis de IA
       const steps = [
@@ -345,17 +351,17 @@ export default function VersionHistoryPage() {
         { progress: 40, message: "Detectando patrones..." },
         { progress: 60, message: "Evaluando seguridad..." },
         { progress: 80, message: "Generando recomendaciones..." },
-        { progress: 100, message: "Completando análisis..." }
+        { progress: 100, message: "Completando análisis..." },
       ];
-      
+
       for (const step of steps) {
-        await new Promise(resolve => setTimeout(resolve, 400));
+        await new Promise((resolve) => setTimeout(resolve, 400));
         setAnalysisProgress(step.progress);
       }
-      
+
       // Análisis único y personalizado basado en el contenido específico del commit
       const analysis = generateUniqueAnalysis(version);
-      
+
       setAiAnalysis(analysis);
       toast.success(`✅ Análisis de ${version.hash} completado`);
     } catch {
@@ -373,23 +379,31 @@ export default function VersionHistoryPage() {
     const message = version.message.toLowerCase();
     const files = version.filesChanged;
     const stats = version.stats;
-    
+
     // Detectar patrones específicos en el mensaje
-    const isSecurity = /security|auth|jwt|token|password|encrypt|vulnerability/i.test(message);
-    const isPerformance = /performance|optimize|speed|fast|cache|lazy|loading/i.test(message);
+    const isSecurity =
+      /security|auth|jwt|token|password|encrypt|vulnerability/i.test(message);
+    const isPerformance =
+      /performance|optimize|speed|fast|cache|lazy|loading/i.test(message);
     const isBugFix = /fix|bug|error|issue|problem|resolve/i.test(message);
     const isFeature = /feat|feature|add|new|implement|support/i.test(message);
     const isDarkMode = /dark|theme|mode|color/i.test(message);
     const isImageRelated = /image|img|photo|picture|media/i.test(message);
     const isAuthRelated = /auth|login|register|user|session/i.test(message);
-    
+
     // Análisis específico por tipo de archivo
-    const hasReactFiles = files.some(f => f.includes('.tsx') || f.includes('.jsx'));
-    const hasStyleFiles = files.some(f => f.includes('.css') || f.includes('.scss'));
-    const hasUtilFiles = files.some(f => f.includes('utils') || f.includes('helpers'));
-    const hasComponentFiles = files.some(f => f.includes('components'));
-    const hasHookFiles = files.some(f => f.includes('hooks'));
-    
+    const hasReactFiles = files.some(
+      (f) => f.includes(".tsx") || f.includes(".jsx"),
+    );
+    const hasStyleFiles = files.some(
+      (f) => f.includes(".css") || f.includes(".scss"),
+    );
+    const hasUtilFiles = files.some(
+      (f) => f.includes("utils") || f.includes("helpers"),
+    );
+    const hasComponentFiles = files.some((f) => f.includes("components"));
+    const hasHookFiles = files.some((f) => f.includes("hooks"));
+
     // Generar análisis único
     let analysisType = "📊 Análisis General";
     let score = Math.floor(Math.random() * 20) + 75;
@@ -397,7 +411,7 @@ export default function VersionHistoryPage() {
     const recommendations = [];
     const warnings = [];
     const strengths = [];
-    
+
     // Análisis específico por tipo de cambio
     if (isSecurity) {
       analysisType = "🔒 Análisis de Seguridad";
@@ -409,7 +423,7 @@ export default function VersionHistoryPage() {
       recommendations.push("• Revisar políticas de contraseñas");
       strengths.push("• Autenticación segura implementada");
     }
-    
+
     if (isPerformance && isImageRelated) {
       analysisType = "⚡ Análisis de Rendimiento - Imágenes";
       score = 88 + Math.floor(Math.random() * 8);
@@ -422,7 +436,7 @@ export default function VersionHistoryPage() {
       strengths.push("• Mejora significativa en tiempo de carga");
       strengths.push("• Optimización de recursos detectada");
     }
-    
+
     if (isDarkMode) {
       analysisType = "🌙 Análisis de Dark Mode";
       score = 82 + Math.floor(Math.random() * 12);
@@ -435,7 +449,7 @@ export default function VersionHistoryPage() {
       strengths.push("• UX mejorada con opciones de tema");
       warnings.push("• Verificar contraste en modo oscuro");
     }
-    
+
     if (isAuthRelated) {
       analysisType = "👤 Análisis de Autenticación";
       score = 87 + Math.floor(Math.random() * 8);
@@ -447,7 +461,7 @@ export default function VersionHistoryPage() {
       recommendations.push("• Considerar OAuth para terceros");
       strengths.push("• Autenticación robusta implementada");
     }
-    
+
     if (isBugFix) {
       analysisType = "🐛 Análisis de Corrección";
       score = 90 + Math.floor(Math.random() * 6);
@@ -459,7 +473,7 @@ export default function VersionHistoryPage() {
       recommendations.push("• Revisar código relacionado");
       strengths.push("• Bug crítico resuelto exitosamente");
     }
-    
+
     if (isFeature) {
       analysisType = "✨ Análisis de Nueva Funcionalidad";
       score = 80 + Math.floor(Math.random() * 15);
@@ -471,57 +485,57 @@ export default function VersionHistoryPage() {
       recommendations.push("• Considerar feedback de usuarios");
       strengths.push("• Feature implementada correctamente");
     }
-    
+
     // Análisis por tipo de archivo
     if (hasReactFiles) {
       specificInsights.push("• Componentes React modificados");
       recommendations.push("• Usar React.memo para optimización");
       recommendations.push("• Implementar error boundaries");
     }
-    
+
     if (hasStyleFiles) {
       specificInsights.push("• Estilos CSS/SCSS modificados");
       recommendations.push("• Considerar CSS-in-JS para mejor encapsulación");
       recommendations.push("• Optimizar especificidad de selectores");
     }
-    
+
     if (hasUtilFiles) {
       specificInsights.push("• Utilidades y helpers modificados");
       strengths.push("• Código reutilizable bien estructurado");
       recommendations.push("• Agregar tests unitarios para utilidades");
     }
-    
+
     if (hasComponentFiles) {
       specificInsights.push("• Componentes modificados");
       recommendations.push("• Implementar prop-types o TypeScript");
       recommendations.push("• Considerar composición vs herencia");
     }
-    
+
     if (hasHookFiles) {
       specificInsights.push("• Custom hooks modificados");
       strengths.push("• Lógica reutilizable bien encapsulada");
       recommendations.push("• Documentar dependencias de hooks");
     }
-    
+
     // Análisis por estadísticas
     if (stats.additions > 100) {
       warnings.push("• Cambio significativo detectado");
       recommendations.push("• Revisar impacto en rendimiento");
       recommendations.push("• Realizar pruebas exhaustivas");
     }
-    
+
     if (stats.files > 3) {
       warnings.push("• Múltiples archivos modificados");
       recommendations.push("• Verificar consistencia entre archivos");
       recommendations.push("• Coordinar con el equipo");
     }
-    
+
     if (version.status === "conflict") {
       warnings.push("• Conflictos de merge detectados");
       recommendations.push("• Resolver conflictos antes de continuar");
       recommendations.push("• Coordinar con el equipo");
     }
-    
+
     // Generar análisis final único
     const analysis = `${analysisType} - ${version.hash}
 
@@ -530,13 +544,13 @@ export default function VersionHistoryPage() {
 • Autor: ${version.author}
 • Rama: ${version.branch}
 • Estado: ${version.status}
-• Archivos: ${files.join(', ')}
+• Archivos: ${files.join(", ")}
 
 🔍 **Insights Específicos:**
-${specificInsights.join('\n')}
+${specificInsights.join("\n")}
 
-${strengths.length > 0 ? `✅ **Fortalezas Detectadas:**\n${strengths.join('\n')}\n\n` : ''}${warnings.length > 0 ? `⚠️ **Atenciones:**\n${warnings.join('\n')}\n\n` : ''}💡 **Recomendaciones Específicas:**
-${recommendations.length > 0 ? recommendations.join('\n') : '• Agregar tests unitarios\n• Documentar cambios\n• Revisar naming conventions'}
+${strengths.length > 0 ? `✅ **Fortalezas Detectadas:**\n${strengths.join("\n")}\n\n` : ""}${warnings.length > 0 ? `⚠️ **Atenciones:**\n${warnings.join("\n")}\n\n` : ""}💡 **Recomendaciones Específicas:**
+${recommendations.length > 0 ? recommendations.join("\n") : "• Agregar tests unitarios\n• Documentar cambios\n• Revisar naming conventions"}
 
 📊 **Métricas de Calidad:** ${score}/100
 
@@ -547,18 +561,18 @@ ${recommendations.length > 0 ? recommendations.join('\n') : '• Agregar tests u
 • Tamaño del cambio: ${stats.additions + stats.deletions} líneas totales
 
 🎯 **Impacto Estimado:**
-• Complejidad: ${stats.additions + stats.deletions > 100 ? 'Alta' : stats.additions + stats.deletions > 50 ? 'Media' : 'Baja'}
-• Riesgo: ${version.status === 'conflict' ? 'Alto' : version.status === 'testing' ? 'Medio' : 'Bajo'}
-• Prioridad: ${score > 85 ? 'Alta' : score > 75 ? 'Media' : 'Baja'}`;
-    
+• Complejidad: ${stats.additions + stats.deletions > 100 ? "Alta" : stats.additions + stats.deletions > 50 ? "Media" : "Baja"}
+• Riesgo: ${version.status === "conflict" ? "Alto" : version.status === "testing" ? "Medio" : "Bajo"}
+• Prioridad: ${score > 85 ? "Alta" : score > 75 ? "Media" : "Baja"}`;
+
     return analysis;
   };
 
   const handleRevertVersion = async (version: Version) => {
     try {
       // Simular revert
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       toast.success(`✅ Versión ${version.hash} revertida exitosamente`);
       fetchVersions();
     } catch (error) {
@@ -570,15 +584,15 @@ ${recommendations.length > 0 ? recommendations.join('\n') : '• Agregar tests u
   const handleDownloadVersion = async (version: Version) => {
     try {
       // Simular descarga
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       // Crear archivo ZIP simulado
       const zipContent = `# Archivo ZIP simulado para ${version.hash}
 # Contenido del commit:
 ${version.message}
 
 # Archivos modificados:
-${version.filesChanged.join('\n')}
+${version.filesChanged.join("\n")}
 
 # Estadísticas:
 +${version.stats.additions} líneas agregadas
@@ -587,18 +601,18 @@ ${version.stats.files} archivos modificados
 
 # Fecha: ${new Date(version.date).toLocaleString()}
 # Autor: ${version.author}`;
-      
+
       // Crear y descargar archivo
-      const blob = new Blob([zipContent], { type: 'application/zip' });
+      const blob = new Blob([zipContent], { type: "application/zip" });
       const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
       link.download = `${version.hash}-${version.projectName}.zip`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      
+
       toast.success(`✅ Descarga de ${version.hash} completada`);
     } catch {
       toast.error("❌ Error al descargar versión");
@@ -617,9 +631,7 @@ ${version.stats.files} archivos modificados
     const matchesBranch =
       !filters.branch ||
       version.branch.toLowerCase().includes(filters.branch.toLowerCase());
-    const matchesStatus =
-      !filters.status ||
-      version.status === filters.status;
+    const matchesStatus = !filters.status || version.status === filters.status;
     const matchesSearch =
       !filters.searchTerm ||
       version.message
@@ -648,13 +660,13 @@ ${version.stats.files} archivos modificados
                   Gestiona y revisa el historial de cambios de tus proyectos
                 </p>
               </div>
-              
+
               {/* Loading simple */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
                 <div className="flex items-center justify-center py-12">
                   <div className="text-center">
                     <div className="w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                                         <p className="text-black">Cargando versiones...</p>
+                    <p className="text-black">Cargando versiones...</p>
                   </div>
                 </div>
               </div>
@@ -665,7 +677,7 @@ ${version.stats.files} archivos modificados
     );
   }
 
-    return (
+  return (
     <div className="min-h-screen bg-gray-50">
       <DashboardHeader />
       <div className="flex">
@@ -677,9 +689,9 @@ ${version.stats.files} archivos modificados
               <h1 className="text-3xl font-bold text-black mb-2">
                 Historial de Versiones
               </h1>
-                              <p className="text-black">
-                  Gestiona y revisa el historial de cambios de tus proyectos
-                </p>
+              <p className="text-black">
+                Gestiona y revisa el historial de cambios de tus proyectos
+              </p>
             </div>
 
             {/* Filtros */}
@@ -698,49 +710,49 @@ ${version.stats.files} archivos modificados
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
                 <div>
-                                     <label className="block text-sm font-medium text-black mb-1">
-                     <MagnifyingGlassIcon className="w-4 h-4 inline mr-1" />
-                     Buscar
-                   </label>
-                                     <input
-                     type="text"
-                     placeholder="Hash, mensaje, autor..."
-                     value={filters.searchTerm}
-                     onChange={(e) =>
-                       setFilters({ ...filters, searchTerm: e.target.value })
-                     }
-                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-black placeholder-gray-500"
-                   />
+                  <label className="block text-sm font-medium text-black mb-1">
+                    <MagnifyingGlassIcon className="w-4 h-4 inline mr-1" />
+                    Buscar
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Hash, mensaje, autor..."
+                    value={filters.searchTerm}
+                    onChange={(e) =>
+                      setFilters({ ...filters, searchTerm: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-black placeholder-gray-500"
+                  />
                 </div>
 
                 <div>
-                                     <label className="block text-sm font-medium text-black mb-1">
-                     <UserIcon className="w-4 h-4 inline mr-1" />
-                     Autor
-                   </label>
-                                     <input
-                     type="text"
-                     placeholder="Nombre del autor..."
-                     value={filters.author}
-                     onChange={(e) =>
-                       setFilters({ ...filters, author: e.target.value })
-                     }
-                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-black placeholder-gray-500"
-                   />
+                  <label className="block text-sm font-medium text-black mb-1">
+                    <UserIcon className="w-4 h-4 inline mr-1" />
+                    Autor
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Nombre del autor..."
+                    value={filters.author}
+                    onChange={(e) =>
+                      setFilters({ ...filters, author: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-black placeholder-gray-500"
+                  />
                 </div>
 
                 <div>
-                                     <label className="block text-sm font-medium text-black mb-1">
-                     <CodeBracketIcon className="w-4 h-4 inline mr-1" />
-                     Rama
-                   </label>
-                                     <select
-                     value={filters.branch}
-                     onChange={(e) =>
-                       setFilters({ ...filters, branch: e.target.value })
-                     }
-                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
-                   >
+                  <label className="block text-sm font-medium text-black mb-1">
+                    <CodeBracketIcon className="w-4 h-4 inline mr-1" />
+                    Rama
+                  </label>
+                  <select
+                    value={filters.branch}
+                    onChange={(e) =>
+                      setFilters({ ...filters, branch: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
+                  >
                     <option value="">Todas las ramas</option>
                     <option value="main">main</option>
                     <option value="develop">develop</option>
@@ -750,17 +762,17 @@ ${version.stats.files} archivos modificados
                 </div>
 
                 <div>
-                                     <label className="block text-sm font-medium text-black mb-1">
-                     <ClockIcon className="w-4 h-4 inline mr-1" />
-                     Estado
-                   </label>
-                                     <select
-                     value={filters.status}
-                     onChange={(e) =>
-                       setFilters({ ...filters, status: e.target.value })
-                     }
-                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
-                   >
+                  <label className="block text-sm font-medium text-black mb-1">
+                    <ClockIcon className="w-4 h-4 inline mr-1" />
+                    Estado
+                  </label>
+                  <select
+                    value={filters.status}
+                    onChange={(e) =>
+                      setFilters({ ...filters, status: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
+                  >
                     <option value="">Todos los estados</option>
                     <option value="deployed">Desplegado</option>
                     <option value="testing">En pruebas</option>
@@ -770,24 +782,24 @@ ${version.stats.files} archivos modificados
                 </div>
 
                 <div>
-                                     <label className="block text-sm font-medium text-black mb-1">
-                     <ChartBarIcon className="w-4 h-4 inline mr-1" />
-                     Fecha
-                   </label>
-                                     <input
-                     type="date"
-                     value={filters.dateRange.start}
-                     onChange={(e) =>
-                       setFilters({
-                         ...filters,
-                         dateRange: {
-                           ...filters.dateRange,
-                           start: e.target.value,
-                         },
-                       })
-                     }
-                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
-                   />
+                  <label className="block text-sm font-medium text-black mb-1">
+                    <ChartBarIcon className="w-4 h-4 inline mr-1" />
+                    Fecha
+                  </label>
+                  <input
+                    type="date"
+                    value={filters.dateRange.start}
+                    onChange={(e) =>
+                      setFilters({
+                        ...filters,
+                        dateRange: {
+                          ...filters.dateRange,
+                          start: e.target.value,
+                        },
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
+                  />
                 </div>
               </div>
             </div>
@@ -803,7 +815,10 @@ ${version.stats.files} archivos modificados
 
               <div className="divide-y divide-gray-200">
                 {filteredVersions.map((version) => (
-                  <div key={version.id} className="px-4 sm:px-6 py-4 hover:bg-gray-50 transition-colors">
+                  <div
+                    key={version.id}
+                    className="px-4 sm:px-6 py-4 hover:bg-gray-50 transition-colors"
+                  >
                     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-3">
@@ -813,7 +828,8 @@ ${version.stats.files} archivos modificados
                           <span
                             className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(version.status)}`}
                           >
-                            {getStatusIcon(version.status)} {getStatusText(version.status)}
+                            {getStatusIcon(version.status)}{" "}
+                            {getStatusText(version.status)}
                           </span>
                           <span
                             className={`px-2 py-1 rounded-full text-xs font-medium ${getCIStatusColor(version.ciStatus)}`}
@@ -846,14 +862,21 @@ ${version.stats.files} archivos modificados
                         </div>
 
                         <div className="flex items-center gap-4 text-xs text-black mb-3">
-                          <span className="text-green-600">+{version.stats.additions}</span>
-                          <span className="text-red-600">-{version.stats.deletions}</span>
-                          <span className="text-black">{version.stats.files} archivos</span>
+                          <span className="text-green-600">
+                            +{version.stats.additions}
+                          </span>
+                          <span className="text-red-600">
+                            -{version.stats.deletions}
+                          </span>
+                          <span className="text-black">
+                            {version.stats.files} archivos
+                          </span>
                         </div>
 
                         <div className="text-xs text-black">
                           {version.filesChanged.slice(0, 3).join(", ")}
-                          {version.filesChanged.length > 3 && ` +${version.filesChanged.length - 3} más`}
+                          {version.filesChanged.length > 3 &&
+                            ` +${version.filesChanged.length - 3} más`}
                         </div>
                       </div>
 
@@ -878,9 +901,11 @@ ${version.stats.files} archivos modificados
                           {analyzingWithAI === version.id ? (
                             <>
                               <ArrowPathIcon className="w-3 h-3 mr-1 animate-spin" />
-                              <span className="hidden sm:inline">{analysisProgress}%</span>
+                              <span className="hidden sm:inline">
+                                {analysisProgress}%
+                              </span>
                               {/* Barra de progreso */}
-                              <div 
+                              <div
                                 className="absolute bottom-0 left-0 h-1 bg-green-300 transition-all duration-300"
                                 style={{ width: `${analysisProgress}%` }}
                               />
@@ -946,8 +971,18 @@ ${version.stats.files} archivos modificados
                 onClick={() => setShowDiffModal(false)}
                 className="text-black hover:text-gray-600"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
@@ -959,7 +994,7 @@ ${version.stats.files} archivos modificados
                     <DocumentIcon className="w-4 h-4 mr-2" />
                     {fileDiff.file}
                   </h4>
-                  
+
                   <div className="bg-gray-900 rounded-lg p-4 font-mono text-sm">
                     {fileDiff.additions.map((line, lineIndex) => (
                       <div key={`add-${lineIndex}`} className="text-green-400">
@@ -978,11 +1013,15 @@ ${version.stats.files} archivos modificados
 
             <div className="flex items-center justify-between p-6 border-t border-gray-200">
               <div className="text-sm text-black">
-                <span className="text-green-600">+{selectedVersion.stats.additions}</span>
-                {" "}
-                <span className="text-red-600">-{selectedVersion.stats.deletions}</span>
-                {" "}
-                <span className="text-black">{selectedVersion.stats.files} archivos</span>
+                <span className="text-green-600">
+                  +{selectedVersion.stats.additions}
+                </span>{" "}
+                <span className="text-red-600">
+                  -{selectedVersion.stats.deletions}
+                </span>{" "}
+                <span className="text-black">
+                  {selectedVersion.stats.files} archivos
+                </span>
               </div>
               <div className="flex space-x-2">
                 <button
@@ -1022,8 +1061,18 @@ ${version.stats.files} archivos modificados
                 onClick={() => setAiAnalysis("")}
                 className="text-black hover:text-gray-600 transition-colors ml-4 flex-shrink-0"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
@@ -1031,9 +1080,9 @@ ${version.stats.files} archivos modificados
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-4 sm:p-6">
               <div className="prose prose-sm max-w-none">
-                                 <pre className="whitespace-pre-wrap text-sm bg-white p-4 rounded-lg border border-gray-200 overflow-x-auto text-black">
-                   {aiAnalysis}
-                 </pre>
+                <pre className="whitespace-pre-wrap text-sm bg-white p-4 rounded-lg border border-gray-200 overflow-x-auto text-black">
+                  {aiAnalysis}
+                </pre>
               </div>
             </div>
 
@@ -1066,7 +1115,7 @@ ${version.stats.files} archivos modificados
                   Procesando {analysisProgress}%
                 </p>
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
+                  <div
                     className="bg-green-500 h-2 rounded-full transition-all duration-300 ease-out"
                     style={{ width: `${analysisProgress}%` }}
                   ></div>

@@ -253,12 +253,6 @@ export class SyncController {
       });
 
       // Crear notificación de sincronización exitosa
-      console.log(
-        'Creando notificación para userId:',
-        userId,
-        'proyecto:',
-        project.name,
-      );
       await this.notificationService.createNotification({
         userId: userId,
         title: 'Sincronización completada',
@@ -271,8 +265,7 @@ export class SyncController {
         message: 'Sincronización completada exitosamente',
         lastSync: new Date(),
       };
-    } catch (error) {
-      console.error('Error during sync:', error);
+    } catch {
       throw new HttpException(
         'Error durante la sincronización',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -301,8 +294,7 @@ export class SyncController {
       });
 
       return history;
-    } catch (error) {
-      console.error('Error fetching sync history:', error);
+    } catch {
       throw new HttpException(
         'Error al obtener historial',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -330,8 +322,7 @@ export class SyncController {
         success: true,
         message: 'Entrada del historial eliminada',
       };
-    } catch (error) {
-      console.error('Error deleting history entry:', error);
+    } catch {
       throw new HttpException(
         'Error al eliminar entrada del historial',
         HttpStatus.INTERNAL_SERVER_ERROR,

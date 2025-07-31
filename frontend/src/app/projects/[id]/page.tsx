@@ -101,8 +101,11 @@ interface IAAnalysis {
   output?: {
     Sugerencias?: string[];
     Advertencias?: string[];
+    sugerencias?: string[]; // Versión en minúsculas
+    advertencias?: string[]; // Versión en minúsculas
+    optimizedCode?: string;
   };
-  [key: string]: any; // Para permitir otras propiedades que puedan venir de n8n
+  [key: string]: unknown; // Para permitir otras propiedades que puedan venir de n8n
 }
 
 // Componente de loading optimizado
@@ -306,7 +309,8 @@ export default function ProjectDetailPage() {
         toast.error("Error al ejecutar el código");
       }
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "Error al ejecutar el código";
+      const errorMessage =
+        error instanceof Error ? error.message : "Error al ejecutar el código";
       setExecutionOutput(`Error: ${errorMessage}`);
       toast.error(errorMessage);
     } finally {
@@ -331,53 +335,45 @@ export default function ProjectDetailPage() {
         },
       );
 
-      // Si recibimos código optimizado, actualizar el editor
-      console.log('Response data:', response.data); // Debug
-      console.log('Response data type:', typeof response.data);
-      console.log('Response data keys:', Object.keys(response.data || {}));
-      
+      // Buscar código optimizado en la respuesta
       let optimizedCode = null;
-      
-      // Buscar específicamente la estructura {"optimizedCode": "..."}
-      if (response.data.optimizedCode && typeof response.data.optimizedCode === 'string') {
-        optimizedCode = response.data.optimizedCode;
-        console.log('Found optimizedCode:', optimizedCode);
-      } else if (response.data.optimizedCode && typeof response.data.optimizedCode === 'object') {
-        // Si optimizedCode es un objeto, buscar dentro de él
-        if (response.data.optimizedCode.optimizedCode) {
-          optimizedCode = response.data.optimizedCode.optimizedCode;
-          console.log('Found optimizedCode within optimizedCode object:', optimizedCode);
-        }
+
+      // Buscar en la estructura correcta: response.data.output.optimizedCode
+      if (
+        response.data.output?.optimizedCode &&
+        typeof response.data.output.optimizedCode === "string"
+      ) {
+        optimizedCode = response.data.output.optimizedCode;
       }
-      
-      // Fallback para la estructura anterior
+
+      // Fallback para estructuras anteriores
       if (!optimizedCode) {
-        if (response.data.optimizedCode && typeof response.data.optimizedCode === 'object' && response.data.optimizedCode.optimizacion) {
-          optimizedCode = response.data.optimizedCode.optimizacion;
-          console.log('Found optimizacion (fallback):', optimizedCode);
+        if (
+          response.data.optimizedCode &&
+          typeof response.data.optimizedCode === "string"
+        ) {
+          optimizedCode = response.data.optimizedCode;
         }
       }
-      
+
       if (optimizedCode) {
-        console.log('Setting editor content to:', optimizedCode);
         setEditorContent(String(optimizedCode));
-        
-        // Usar el análisis real de n8n si está disponible
-        if (response.data.iaAnalysis) {
-          console.log('Setting IA analysis from n8n:', response.data.iaAnalysis);
-          setIaAnalysis(response.data.iaAnalysis);
+
+        // Guardar el análisis de IA
+        if (response.data.iaAnalysis?.output) {
+          setIaAnalysis({ output: response.data.iaAnalysis.output });
+          toast.success("Código optimizado y análisis de IA generado");
+        } else if (response.data.output) {
+          // Fallback para estructura anterior
+          setIaAnalysis({ output: response.data.output });
           toast.success("Código optimizado y análisis de IA generado");
         } else {
-          console.log('No se recibió análisis de IA de n8n');
           toast.success("Código optimizado");
         }
       } else {
-        console.log('No se encontró código optimizado en la respuesta. Full response:', response.data);
-        console.log('Debug info:', response.data.debug);
-        toast.error("No se pudo obtener código optimizado. Revisa la consola para más detalles.");
+        toast.error("No se pudo obtener código optimizado");
       }
     } catch (error) {
-      console.error('Error optimizing code:', error);
       toast.error("Error al optimizar código con IA");
     } finally {
       setLoadingIA(false);
@@ -419,47 +415,71 @@ export default function ProjectDetailPage() {
     };
 
     // Si tenemos contenido, intentar detectar el lenguaje por contenido
-    if (typeof content === 'string' && content.length > 0) {
-      const firstLine = content.trim().split('\n')[0].toLowerCase();
-      
+    if (typeof content === "string" && content.length > 0) {
+      const firstLine = content.trim().split("\n")[0].toLowerCase();
+
       // Detectar archivos de proyecto React/TypeScript PRIMERO
-      if (content.includes('import React') || content.includes('ReactDOM.render') ||
-          content.includes('export default') || content.includes('from \'react') ||
-          content.includes('from "react') || content.includes('<React.StrictMode>') ||
-          content.includes('document.getElementById') || content.includes('JSX.Element')) {
+      if (
+        content.includes("import React") ||
+        content.includes("ReactDOM.render") ||
+        content.includes("export default") ||
+        content.includes("from 'react") ||
+        content.includes('from "react') ||
+        content.includes("<React.StrictMode>") ||
+        content.includes("document.getElementById") ||
+        content.includes("JSX.Element")
+      ) {
         return "typescript"; // Para archivos .tsx/.ts
       }
-      
+
       // Detectar Python por palabras clave (solo si NO es React)
-      if ((content.includes('def ') || content.includes('print(') || 
-          content.includes('import ') || content.includes('from ') ||
-          firstLine.includes('python') || content.includes('if __name__')) &&
-          !content.includes('import React') && !content.includes('ReactDOM')) {
+      if (
+        (content.includes("def ") ||
+          content.includes("print(") ||
+          content.includes("import ") ||
+          content.includes("from ") ||
+          firstLine.includes("python") ||
+          content.includes("if __name__")) &&
+        !content.includes("import React") &&
+        !content.includes("ReactDOM")
+      ) {
         return "python";
       }
-      
+
       // Detectar JavaScript puro (solo si NO es React)
-      if ((content.includes('function ') || content.includes('const ') || 
-          content.includes('let ') || content.includes('var ') ||
-          content.includes('console.log')) &&
-          !content.includes('import React') && !content.includes('ReactDOM')) {
-        return ext === 'ts' || ext === 'tsx' ? "typescript" : "javascript";
+      if (
+        (content.includes("function ") ||
+          content.includes("const ") ||
+          content.includes("let ") ||
+          content.includes("var ") ||
+          content.includes("console.log")) &&
+        !content.includes("import React") &&
+        !content.includes("ReactDOM")
+      ) {
+        return ext === "ts" || ext === "tsx" ? "typescript" : "javascript";
       }
-      
+
       // Detectar HTML
-      if (content.includes('<!DOCTYPE html>') || content.includes('<html>') ||
-          content.includes('<head>') || content.includes('<body>')) {
+      if (
+        content.includes("<!DOCTYPE html>") ||
+        content.includes("<html>") ||
+        content.includes("<head>") ||
+        content.includes("<body>")
+      ) {
         return "html";
       }
-      
+
       // Detectar CSS
-      if (content.includes('{') && content.includes('}') && 
-          (content.includes(':') || content.includes('@media'))) {
+      if (
+        content.includes("{") &&
+        content.includes("}") &&
+        (content.includes(":") || content.includes("@media"))
+      ) {
         return "css";
       }
-      
+
       // Detectar JSON
-      if (content.trim().startsWith('{') || content.trim().startsWith('[')) {
+      if (content.trim().startsWith("{") || content.trim().startsWith("[")) {
         try {
           JSON.parse(content);
           return "json";
@@ -478,9 +498,12 @@ export default function ProjectDetailPage() {
   };
 
   const createExecutableFile = () => {
-    const language = getLanguageFromFile(selectedFile?.name || "", editorContent);
+    const language = getLanguageFromFile(
+      selectedFile?.name || "",
+      editorContent,
+    );
     let template = "";
-    
+
     switch (language) {
       case "javascript":
         template = `// Código JavaScript ejecutable
@@ -527,13 +550,15 @@ print(f"Suma de números: {sum(numeros)}")`;
         template = `// Código ejecutable
 console.log("¡Hola mundo!");`;
     }
-    
+
     setEditorContent(template);
     toast.success("Plantilla de código ejecutable creada");
   };
 
   const togglePreview = () => {
-    if (getLanguageFromFile(selectedFile?.name || "", editorContent) === "html") {
+    if (
+      getLanguageFromFile(selectedFile?.name || "", editorContent) === "html"
+    ) {
       setPreviewContent(editorContent);
       setShowPreview(!showPreview);
     } else {
@@ -900,7 +925,9 @@ console.log("¡Hola mundo!");`;
                               className="bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs"
                             >
                               <CodeBracketIcon className="w-4 h-4 mr-1" />
-                              <span className="hidden sm:inline">Crear Ejecutable</span>
+                              <span className="hidden sm:inline">
+                                Crear Ejecutable
+                              </span>
                             </Button>
                             <Button
                               variant="outline"
@@ -910,10 +937,14 @@ console.log("¡Hola mundo!");`;
                               className="text-xs"
                             >
                               <BookmarkIcon className="w-4 h-4 mr-1" />
-                              <span className="hidden sm:inline">{saving ? "Guardando..." : "Guardar"}</span>
+                              <span className="hidden sm:inline">
+                                {saving ? "Guardando..." : "Guardar"}
+                              </span>
                             </Button>
-                            {getLanguageFromFile(selectedFile.name, editorContent) ===
-                              "html" && (
+                            {getLanguageFromFile(
+                              selectedFile.name,
+                              editorContent,
+                            ) === "html" && (
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -922,7 +953,9 @@ console.log("¡Hola mundo!");`;
                                 className="text-xs"
                               >
                                 <EyeIcon className="w-4 h-4 mr-1" />
-                                <span className="hidden sm:inline">{showPreview ? "Ocultar" : "Vista Previa"}</span>
+                                <span className="hidden sm:inline">
+                                  {showPreview ? "Ocultar" : "Vista Previa"}
+                                </span>
                               </Button>
                             )}
                             <Button
@@ -933,7 +966,9 @@ console.log("¡Hola mundo!");`;
                               className="text-xs"
                             >
                               <PlayIcon className="w-4 h-4 mr-1" />
-                              <span className="hidden sm:inline">{executing ? "Ejecutando..." : "Ejecutar"}</span>
+                              <span className="hidden sm:inline">
+                                {executing ? "Ejecutando..." : "Ejecutar"}
+                              </span>
                             </Button>
                             <Button
                               size="sm"
@@ -941,7 +976,11 @@ console.log("¡Hola mundo!");`;
                               disabled={loadingIA}
                               className="bg-green-500 hover:bg-green-600 text-white text-xs"
                             >
-                              <span className="hidden sm:inline">{loadingIA ? "Optimizando..." : "Optimizar con IA"}</span>
+                              <span className="hidden sm:inline">
+                                {loadingIA
+                                  ? "Optimizando..."
+                                  : "Optimizar con IA"}
+                              </span>
                             </Button>
                           </div>
                         </div>
@@ -1048,46 +1087,50 @@ console.log("¡Hola mundo!");`;
                                   {iaAnalysis.output && (
                                     <>
                                       {/* Sugerencias */}
-                                      {iaAnalysis.output.Sugerencias && iaAnalysis.output.Sugerencias.length > 0 && (
-                                        <Card className="p-3">
-                                          <h4 className="text-sm font-medium text-gray-900 mb-2">
-                                            Sugerencias
-                                          </h4>
-                                          <div className="space-y-1">
-                                            {iaAnalysis.output.Sugerencias.map(
-                                              (sugerencia, idx) => (
-                                                <p
-                                                  key={idx}
-                                                  className="text-xs text-gray-600"
-                                                >
-                                                  • {sugerencia}
-                                                </p>
-                                              ),
-                                            )}
-                                          </div>
-                                        </Card>
-                                      )}
+                                      {iaAnalysis.output?.Sugerencias &&
+                                        iaAnalysis.output.Sugerencias.length >
+                                          0 && (
+                                          <Card className="p-3">
+                                            <h4 className="text-sm font-medium text-gray-900 mb-2">
+                                              Sugerencias
+                                            </h4>
+                                            <div className="space-y-1">
+                                              {iaAnalysis.output.Sugerencias.map(
+                                                (sugerencia, idx) => (
+                                                  <p
+                                                    key={idx}
+                                                    className="text-xs text-gray-600"
+                                                  >
+                                                    • {sugerencia}
+                                                  </p>
+                                                ),
+                                              )}
+                                            </div>
+                                          </Card>
+                                        )}
 
                                       {/* Advertencias */}
-                                      {iaAnalysis.output.Advertencias && iaAnalysis.output.Advertencias.length > 0 && (
-                                        <Card className="p-3">
-                                          <h4 className="text-sm font-medium text-gray-900 mb-2">
-                                            Advertencias
-                                          </h4>
-                                          <div className="space-y-1">
-                                            {iaAnalysis.output.Advertencias.map(
-                                              (advertencia, idx) => (
-                                                <p
-                                                  key={idx}
-                                                  className="text-xs text-red-600"
-                                                >
-                                                  ⚠ {advertencia}
-                                                </p>
-                                              ),
-                                            )}
-                                          </div>
-                                        </Card>
-                                      )}
+                                      {iaAnalysis.output?.Advertencias &&
+                                        iaAnalysis.output.Advertencias.length >
+                                          0 && (
+                                          <Card className="p-3">
+                                            <h4 className="text-sm font-medium text-gray-900 mb-2">
+                                              Advertencias
+                                            </h4>
+                                            <div className="space-y-1">
+                                              {iaAnalysis.output.Advertencias.map(
+                                                (advertencia, idx) => (
+                                                  <p
+                                                    key={idx}
+                                                    className="text-xs text-red-600"
+                                                  >
+                                                    ⚠ {advertencia}
+                                                  </p>
+                                                ),
+                                              )}
+                                            </div>
+                                          </Card>
+                                        )}
                                     </>
                                   )}
 
@@ -1099,7 +1142,7 @@ console.log("¡Hola mundo!");`;
                                         {iaAnalysis.performance.score || 0}/100)
                                       </h4>
                                       <div className="space-y-1">
-                                        {iaAnalysis.performance.suggestions && 
+                                        {iaAnalysis.performance.suggestions &&
                                           iaAnalysis.performance.suggestions.map(
                                             (suggestion, idx) => (
                                               <p
@@ -1118,11 +1161,12 @@ console.log("¡Hola mundo!");`;
                                   {iaAnalysis.security && (
                                     <Card className="p-3">
                                       <h4 className="text-sm font-medium text-gray-900 mb-2">
-                                        Seguridad ({iaAnalysis.security.score || 0}
+                                        Seguridad (
+                                        {iaAnalysis.security.score || 0}
                                         /100)
                                       </h4>
                                       <div className="space-y-1">
-                                        {iaAnalysis.security.risks && 
+                                        {iaAnalysis.security.risks &&
                                           iaAnalysis.security.risks.map(
                                             (risk, idx) => (
                                               <p
@@ -1142,10 +1186,11 @@ console.log("¡Hola mundo!");`;
                                     <Card className="p-3">
                                       <h4 className="text-sm font-medium text-gray-900 mb-2">
                                         Mejores Prácticas (
-                                        {iaAnalysis.bestPractices.score || 0}/100)
+                                        {iaAnalysis.bestPractices.score || 0}
+                                        /100)
                                       </h4>
                                       <div className="space-y-1">
-                                        {iaAnalysis.bestPractices.issues && 
+                                        {iaAnalysis.bestPractices.issues &&
                                           iaAnalysis.bestPractices.issues.map(
                                             (issue, idx) => (
                                               <p
@@ -1161,24 +1206,33 @@ console.log("¡Hola mundo!");`;
                                   )}
 
                                   {/* Si no hay estructura específica, mostrar el análisis como texto */}
-                                  {!iaAnalysis.output && !iaAnalysis.performance && !iaAnalysis.security && !iaAnalysis.bestPractices && (
-                                    <Card className="p-3">
-                                      <h4 className="text-sm font-medium text-gray-900 mb-2">
-                                        Análisis de IA
-                                      </h4>
-                                      <div className="space-y-1">
-                                        <p className="text-xs text-gray-600">
-                                          {typeof iaAnalysis === 'string' ? iaAnalysis : JSON.stringify(iaAnalysis, null, 2)}
-                                        </p>
-                                      </div>
-                                    </Card>
-                                  )}
+                                  {!iaAnalysis.output &&
+                                    !iaAnalysis.performance &&
+                                    !iaAnalysis.security &&
+                                    !iaAnalysis.bestPractices && (
+                                      <Card className="p-3">
+                                        <h4 className="text-sm font-medium text-gray-900 mb-2">
+                                          Análisis de IA
+                                        </h4>
+                                        <div className="space-y-1">
+                                          <p className="text-xs text-gray-600">
+                                            {typeof iaAnalysis === "string"
+                                              ? iaAnalysis
+                                              : JSON.stringify(
+                                                  iaAnalysis,
+                                                  null,
+                                                  2,
+                                                )}
+                                          </p>
+                                        </div>
+                                      </Card>
+                                    )}
                                 </div>
                               ) : (
                                 <div className="text-center py-8">
                                   <p className="text-sm text-gray-500">
-                                    Haz clic en &quot;Optimizar con IA&quot; para
-                                    obtener código optimizado
+                                    Haz clic en &quot;Optimizar con IA&quot;
+                                    para obtener código optimizado
                                   </p>
                                 </div>
                               )}

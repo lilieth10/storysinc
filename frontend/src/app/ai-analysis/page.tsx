@@ -1,4 +1,5 @@
- 
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
@@ -22,8 +23,6 @@ import { useAuth } from "@/store/auth";
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
   ssr: false,
 });
-
-
 
 interface Project {
   id: number;
@@ -57,15 +56,19 @@ export default function AIAnalysisPage() {
   const [metricsAnalysis, setMetricsAnalysis] = useState<any>(null);
 
   // Función para guardar código en la base de datos
-  const saveCodeToDatabase = async (projectId: number, fileName: string, code: string) => {
+  const saveCodeToDatabase = async (
+    projectId: number,
+    fileName: string,
+    code: string,
+  ) => {
     if (!token) return;
-    
+
     try {
       setSaving(true);
       await api.post("/ai/save-code", {
         projectId,
         fileName,
-        code
+        code,
       });
       setLastSaved(new Date());
     } catch (error) {
@@ -79,7 +82,7 @@ export default function AIAnalysisPage() {
   // Función para cargar código guardado desde la base de datos
   const loadCodeFromDatabase = async (projectId: number, fileName: string) => {
     if (!token) return null;
-    
+
     try {
       const response = await api.get(`/ai/load-code/${projectId}/${fileName}`);
       return response.data.code;
@@ -92,15 +95,15 @@ export default function AIAnalysisPage() {
   // Función para analizar código con n8n
   const analyzeWithN8n = async () => {
     if (!selectedProject || !selectedFile || !codeContent || !token) return;
-    
+
     try {
       setAnalyzingWithN8n(true);
       const response = await api.post("/ai/analyze-with-n8n", {
         projectId: selectedProject.id,
         fileName: selectedFile,
-        code: codeContent
+        code: codeContent,
       });
-      
+
       setN8nAnalysis(response.data);
       console.log("Análisis de n8n:", response.data);
     } catch (error) {
@@ -114,15 +117,15 @@ export default function AIAnalysisPage() {
   // Función para analizar métricas con n8n_v2
   const analyzeMetricsWithN8n = async () => {
     if (!selectedProject || !selectedFile || !codeContent || !token) return;
-    
+
     try {
       setAnalyzingMetrics(true);
       const response = await api.post("/ai/analyze-metrics-with-n8n", {
         projectId: selectedProject.id,
         fileName: selectedFile,
-        code: codeContent
+        code: codeContent,
       });
-      
+
       setMetricsAnalysis(response.data);
       console.log("Análisis de métricas de n8n:", response.data);
     } catch (error) {
@@ -148,11 +151,11 @@ export default function AIAnalysisPage() {
   useEffect(() => {
     const fetchProjects = async () => {
       if (!token) return;
-      
+
       try {
         const response = await api.get("/ai/projects");
         const projects = response.data;
-        
+
         setProjects(projects);
         if (projects.length > 0) {
           setSelectedProject(projects[0]);
@@ -171,15 +174,17 @@ export default function AIAnalysisPage() {
   useEffect(() => {
     if (selectedProject && selectedFile) {
       // Primero intentar cargar código guardado desde la base de datos
-      loadCodeFromDatabase(selectedProject.id, selectedFile).then((savedCode) => {
-        if (savedCode) {
-          // Si hay código guardado, usarlo
-          setCodeContent(savedCode);
-        } else {
-          // Si no hay código guardado, generar código nuevo
-          setCodeContent(generateProjectCode(selectedProject, selectedFile));
-        }
-      });
+      loadCodeFromDatabase(selectedProject.id, selectedFile).then(
+        (savedCode) => {
+          if (savedCode) {
+            // Si hay código guardado, usarlo
+            setCodeContent(savedCode);
+          } else {
+            // Si no hay código guardado, generar código nuevo
+            setCodeContent(generateProjectCode(selectedProject, selectedFile));
+          }
+        },
+      );
     }
   }, [selectedProject, selectedFile]);
 
@@ -362,8 +367,6 @@ module.exports = {
     }
   };
 
-
-
   const sendQuery = async () => {
     if (!userQuery.trim() || !selectedProject) return;
 
@@ -379,30 +382,24 @@ module.exports = {
     setUserQuery("");
 
     try {
-      // Conectar con el backend real
-      const response = await fetch("http://localhost:3001/api/ai/query", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({
-          projectId: selectedProject.id,
-          query: currentQuery,
-        }),
+      // Usar el nuevo endpoint de chat con n8n
+      const response = await api.post("/ai/chat-with-n8n", {
+        projectId: selectedProject.id,
+        fileName: selectedFile,
+        code: codeContent,
+        query: currentQuery,
       });
 
-      if (response.ok) {
-        const data = await response.json();
+      if (response.data && response.data.response) {
         const aiMessage: ChatMessage = {
           id: (Date.now() + 1).toString(),
           type: "ai",
-          content: data.response,
+          content: response.data.response,
           timestamp: new Date(),
         };
         setChatHistory((prev) => [...prev, aiMessage]);
       } else {
-        // Fallback a respuesta local si el backend falla
+        // Fallback a respuesta local si n8n falla
         const aiResponse = generateAIResponse(currentQuery, selectedProject);
         const aiMessage: ChatMessage = {
           id: (Date.now() + 1).toString(),
@@ -463,8 +460,6 @@ module.exports = {
     return `Entiendo tu pregunta sobre "${project.name}". ¿Podrías ser más específico sobre qué aspecto del código te gustaría analizar?`;
   };
 
-
-
   return (
     <div className="min-h-screen bg-gray-50">
       <DashboardHeader />
@@ -523,7 +518,9 @@ module.exports = {
                   onChange={(e) => {
                     setSelectedFile(e.target.value);
                     if (selectedProject && e.target.value) {
-                      setCodeContent(generateProjectCode(selectedProject, e.target.value));
+                      setCodeContent(
+                        generateProjectCode(selectedProject, e.target.value),
+                      );
                     }
                   }}
                   className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black"
@@ -536,99 +533,112 @@ module.exports = {
               </div>
             </div>
 
-                         {selectedProject && selectedFile && (
-               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                 {/* Editor de código */}
-                 <div className="bg-white border border-gray-200 rounded-lg flex flex-col h-[600px]">
-                   <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
-                     <div className="flex items-center">
-                       <DocumentIcon className="w-5 h-5 text-gray-400 mr-2" />
-                       <span className="text-sm font-medium text-gray-900">
-                         {selectedFile}
-                       </span>
-                       {saving && (
-                         <div className="ml-3 flex items-center text-xs text-gray-500">
-                           <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-500 mr-1"></div>
-                           Guardando...
-                         </div>
-                       )}
-                       {lastSaved && !saving && (
-                         <div className="ml-3 text-xs text-green-600">
-                           Guardado {lastSaved.toLocaleTimeString()}
-                         </div>
-                       )}
-                     </div>
-                     <div className="flex space-x-2">
-                       <Button
-                         onClick={analyzeWithN8n}
-                         disabled={analyzingWithN8n || analyzingMetrics || !selectedProject || !selectedFile || !codeContent}
-                         size="sm"
-                         className="bg-blue-500 hover:bg-blue-600 text-white"
-                       >
-                         {analyzingWithN8n ? (
-                           <div className="flex items-center">
-                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                             Analizando...
-                           </div>
-                         ) : (
-                           <div className="flex items-center">
-                             <MagnifyingGlassIcon className="w-4 h-4 mr-2" />
-                             Análisis IA
-                           </div>
-                         )}
-                       </Button>
-                       <Button
-                         onClick={analyzeMetricsWithN8n}
-                         disabled={analyzingWithN8n || analyzingMetrics || !selectedProject || !selectedFile || !codeContent}
-                         size="sm"
-                         className="bg-purple-500 hover:bg-purple-600 text-white"
-                       >
-                         {analyzingMetrics ? (
-                           <div className="flex items-center">
-                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                             Analizando...
-                           </div>
-                         ) : (
-                           <div className="flex items-center">
-                             <LightBulbIcon className="w-4 h-4 mr-2" />
-                             Métricas
-                           </div>
-                         )}
-                       </Button>
-                     </div>
-                   </div>
-                   <div className="flex-1 min-h-0">
-                     <MonacoEditor
-                       height="100%"
-                       language="javascript"
-                       theme="vs-light"
-                       value={codeContent}
-                       onChange={(value) => setCodeContent(value || "")}
-                       options={{
-                         minimap: { enabled: false },
-                         fontSize: 14,
-                         lineNumbers: "on",
-                         roundedSelection: false,
-                         scrollBeyondLastLine: false,
-                         automaticLayout: true,
-                       }}
-                     />
-                   </div>
-                 </div>
+            {selectedProject && selectedFile && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Editor de código */}
+                <div className="bg-white border border-gray-200 rounded-lg flex flex-col h-[600px]">
+                  <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
+                    <div className="flex items-center">
+                      <DocumentIcon className="w-5 h-5 text-gray-400 mr-2" />
+                      <span className="text-sm font-medium text-gray-900">
+                        {selectedFile}
+                      </span>
+                      {saving && (
+                        <div className="ml-3 flex items-center text-xs text-gray-500">
+                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-500 mr-1"></div>
+                          Guardando...
+                        </div>
+                      )}
+                      {lastSaved && !saving && (
+                        <div className="ml-3 text-xs text-green-600">
+                          Guardado {lastSaved.toLocaleTimeString()}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button
+                        onClick={analyzeWithN8n}
+                        disabled={
+                          analyzingWithN8n ||
+                          analyzingMetrics ||
+                          !selectedProject ||
+                          !selectedFile ||
+                          !codeContent
+                        }
+                        size="sm"
+                        className="bg-blue-500 hover:bg-blue-600 text-white"
+                      >
+                        {analyzingWithN8n ? (
+                          <div className="flex items-center">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Analizando...
+                          </div>
+                        ) : (
+                          <div className="flex items-center">
+                            <MagnifyingGlassIcon className="w-4 h-4 mr-2" />
+                            Análisis IA
+                          </div>
+                        )}
+                      </Button>
+                      <Button
+                        onClick={analyzeMetricsWithN8n}
+                        disabled={
+                          analyzingWithN8n ||
+                          analyzingMetrics ||
+                          !selectedProject ||
+                          !selectedFile ||
+                          !codeContent
+                        }
+                        size="sm"
+                        className="bg-purple-500 hover:bg-purple-600 text-white"
+                      >
+                        {analyzingMetrics ? (
+                          <div className="flex items-center">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Analizando...
+                          </div>
+                        ) : (
+                          <div className="flex items-center">
+                            <LightBulbIcon className="w-4 h-4 mr-2" />
+                            Métricas
+                          </div>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex-1 min-h-0">
+                    <MonacoEditor
+                      height="100%"
+                      language="javascript"
+                      theme="vs-light"
+                      value={codeContent}
+                      onChange={(value) => setCodeContent(value || "")}
+                      options={{
+                        minimap: { enabled: false },
+                        fontSize: 14,
+                        lineNumbers: "on",
+                        roundedSelection: false,
+                        scrollBeyondLastLine: false,
+                        automaticLayout: true,
+                      }}
+                    />
+                  </div>
+                </div>
 
-                                 {/* Panel de chat */}
-                 <div className="bg-white border border-gray-200 rounded-lg flex flex-col h-[600px]">
-                   <div className="p-4 border-b border-gray-200 flex-shrink-0">
-                     <h3 className="text-lg font-semibold text-gray-900">
-                       Chat con IA
-                     </h3>
-                     <p className="text-sm text-gray-600">
-                       Haz preguntas sobre tu código y obtén respuestas inteligentes
-                     </p>
-                   </div>
-                   
-                   {/* Historial de chat */}
-                   <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
+                {/* Panel de chat */}
+                <div className="bg-white border border-gray-200 rounded-lg flex flex-col h-[600px]">
+                  <div className="p-4 border-b border-gray-200 flex-shrink-0">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Chat con IA
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      Haz preguntas sobre tu código y obtén respuestas
+                      inteligentes
+                    </p>
+                  </div>
+
+                  {/* Historial de chat */}
+                  <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
                     {chatHistory.length === 0 ? (
                       <div className="text-center py-8">
                         <LightBulbIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
@@ -644,7 +654,9 @@ module.exports = {
                         <div
                           key={message.id}
                           className={`flex ${
-                            message.type === "user" ? "justify-end" : "justify-start"
+                            message.type === "user"
+                              ? "justify-end"
+                              : "justify-start"
                           }`}
                         >
                           <div
@@ -664,31 +676,29 @@ module.exports = {
                     )}
                   </div>
 
-                                     {/* Input de chat */}
-                   <div className="p-4 border-t border-gray-200 flex-shrink-0">
-                     <div className="flex space-x-2">
-                       <input
-                         type="text"
-                         value={userQuery}
-                         onChange={(e) => setUserQuery(e.target.value)}
-                         onKeyPress={(e) => e.key === "Enter" && sendQuery()}
-                         placeholder="Escribe tu pregunta..."
-                         className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                       />
-                       <Button
-                         onClick={sendQuery}
-                         disabled={!userQuery.trim()}
-                         className="bg-green-500 hover:bg-green-600 text-white"
-                       >
-                         <PaperAirplaneIcon className="w-4 h-4" />
-                       </Button>
-                     </div>
-                   </div>
+                  {/* Input de chat */}
+                  <div className="p-4 border-t border-gray-200 flex-shrink-0">
+                    <div className="flex space-x-2">
+                      <input
+                        type="text"
+                        value={userQuery}
+                        onChange={(e) => setUserQuery(e.target.value)}
+                        onKeyPress={(e) => e.key === "Enter" && sendQuery()}
+                        placeholder="Escribe tu pregunta..."
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      />
+                      <Button
+                        onClick={sendQuery}
+                        disabled={!userQuery.trim()}
+                        className="bg-green-500 hover:bg-green-600 text-white"
+                      >
+                        <PaperAirplaneIcon className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
-
-            
 
             {/* Resultados de análisis */}
             {(n8nAnalysis || metricsAnalysis) && (
@@ -707,20 +717,29 @@ module.exports = {
                             Respuesta del IA Agent
                           </h4>
                           <div className="text-sm text-blue-800 whitespace-pre-wrap">
-                            {typeof n8nAnalysis.analysis === 'string' 
-                              ? n8nAnalysis.analysis 
-                              : JSON.stringify(n8nAnalysis.analysis, null, 2)
-                            }
+                            {typeof n8nAnalysis.analysis === "string"
+                              ? n8nAnalysis.analysis
+                              : JSON.stringify(n8nAnalysis.analysis, null, 2)}
                           </div>
                         </div>
                       ) : (
                         <div className="text-center py-4">
-                          <p className="text-gray-600">No se recibió respuesta del análisis</p>
+                          <p className="text-gray-600">
+                            No se recibió respuesta del análisis
+                          </p>
                         </div>
                       )}
                       <div className="text-xs text-gray-500">
-                        <p>Lenguaje detectado: <span className="font-medium">{n8nAnalysis.language}</span></p>
-                        <p>Archivo analizado: <span className="font-medium">{selectedFile}</span></p>
+                        <p>
+                          Lenguaje detectado:{" "}
+                          <span className="font-medium">
+                            {n8nAnalysis.language}
+                          </span>
+                        </p>
+                        <p>
+                          Archivo analizado:{" "}
+                          <span className="font-medium">{selectedFile}</span>
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -740,20 +759,33 @@ module.exports = {
                             Análisis de Métricas
                           </h4>
                           <div className="text-sm text-purple-800 whitespace-pre-wrap">
-                            {typeof metricsAnalysis.analysis === 'string' 
-                              ? metricsAnalysis.analysis 
-                              : JSON.stringify(metricsAnalysis.analysis, null, 2)
-                            }
+                            {typeof metricsAnalysis.analysis === "string"
+                              ? metricsAnalysis.analysis
+                              : JSON.stringify(
+                                  metricsAnalysis.analysis,
+                                  null,
+                                  2,
+                                )}
                           </div>
                         </div>
                       ) : (
                         <div className="text-center py-4">
-                          <p className="text-gray-600">No se recibió respuesta del análisis</p>
+                          <p className="text-gray-600">
+                            No se recibió respuesta del análisis
+                          </p>
                         </div>
                       )}
                       <div className="text-xs text-gray-500">
-                        <p>Lenguaje detectado: <span className="font-medium">{metricsAnalysis.language}</span></p>
-                        <p>Archivo analizado: <span className="font-medium">{selectedFile}</span></p>
+                        <p>
+                          Lenguaje detectado:{" "}
+                          <span className="font-medium">
+                            {metricsAnalysis.language}
+                          </span>
+                        </p>
+                        <p>
+                          Archivo analizado:{" "}
+                          <span className="font-medium">{selectedFile}</span>
+                        </p>
                       </div>
                     </div>
                   </div>

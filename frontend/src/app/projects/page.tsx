@@ -415,54 +415,6 @@ export default function ProjectsPage() {
                           </svg>
                           Abrir Editor
                         </button>
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => handleAnalyzeIA(project.id)}
-                            disabled={loadingIA}
-                            className="flex-1 inline-flex items-center justify-center px-2 py-2 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {loadingIA ? (
-                              <AILoader size="sm" text="" />
-                            ) : (
-                              <>
-                                <svg
-                                  className="w-3 h-3 mr-1"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-                                  />
-                                </svg>
-                                IA
-                              </>
-                            )}
-                          </button>
-                          <button
-                            onClick={() => handleSyncProject(project.id)}
-                            disabled={loadingIA}
-                            className="flex-1 inline-flex items-center justify-center px-2 py-2 border border-gray-300 text-xs font-medium rounded-md text-black bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            <svg
-                              className="w-3 h-3 mr-1"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                              />
-                            </svg>
-                            Sync
-                          </button>
-                        </div>
                       </div>
                     </div>
                   </div>
@@ -521,247 +473,257 @@ export default function ProjectsPage() {
               </div>
             )}
 
-            {/* Create Project Form - Integrado como en Figma */}
+            {/* Create Project Modal */}
             {showCreateForm && (
-              <div className="bg-white border border-gray-200 rounded-lg p-6 md:p-8 mb-8">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-semibold text-black">
-                    Crear un nuevo repositorio
-                  </h2>
-                  <button
-                    onClick={() => setShowCreateForm(false)}
-                    className="text-black hover:text-gray-600"
-                  >
-                    <svg
-                      className="w-6 h-6"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
-                  </button>
-                </div>
-
-                <div className="space-y-6">
-                  <div className="flex flex-col md:flex-row md:items-center md:gap-6">
-                    <div className="flex-1">
-                      <label className="block text-sm font-medium text-black mb-2">
-                        Nombre de repositorio{" "}
-                        <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.name}
-                        onChange={(e) =>
-                          setFormData({ ...formData, name: e.target.value })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black placeholder-gray-500"
-                        placeholder="Mi Proyecto"
-                      />
+              <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+                <div className="bg-[#E9F9EC] rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-green-200">
+                  <div className="p-6 md:p-8">
+                    <div className="flex items-center justify-between mb-6">
+                      <h2 className="text-xl font-semibold text-black">
+                        Crear un nuevo repositorio
+                      </h2>
+                      <button
+                        onClick={() => setShowCreateForm(false)}
+                        className="text-black hover:text-gray-600"
+                      >
+                        <svg
+                          className="w-6 h-6"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M6 18L18 6M6 6l12 12"
+                          />
+                        </svg>
+                      </button>
                     </div>
-                    <div className="flex-1 mt-4 md:mt-0">
-                      <label className="block text-sm font-medium text-black mb-2">
-                        Dueño <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={
-                          /* Aquí deberías poner el valor del dueño si lo tienes, por ahora vacío */ ""
-                        }
-                        readOnly
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-black cursor-not-allowed"
-                        placeholder="Nombre del dueño"
-                      />
-                    </div>
-                  </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-black mb-2">
-                      Descripción
-                    </label>
-                                          <textarea
-                        value={formData.description}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            description: e.target.value,
-                          })
-                        }
-                        rows={3}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black placeholder-gray-500"
-                        placeholder="Describe tu proyecto..."
-                      />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-black mb-2">
-                      Licencia
-                    </label>
-                    <select
-                      value={formData.license || "MIT"}
-                      onChange={(e) =>
-                        setFormData({ ...formData, license: e.target.value })
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black"
-                    >
-                      <option value="MIT">MIT License</option>
-                      <option value="Apache">Apache License 2.0</option>
-                      <option value="GPL">GPL v3</option>
-                      <option value="BSD">BSD License</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-black mb-2">
-                      Visibilidad
-                    </label>
-                    <div className="space-y-2">
-                      <label className="flex items-center">
-                        <input
-                          type="radio"
-                          name="visibility"
-                          value="public"
-                          checked={formData.visibility === "public"}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              visibility: e.target.value,
-                            })
-                          }
-                          className="mr-2"
-                        />
-                        <span className="mr-1">
-                          <svg
-                            className="inline w-4 h-4 text-green-600"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M12 17a4 4 0 100-8 4 4 0 000 8zm6-4V7a6 6 0 10-12 0v6a2 2 0 002 2h8a2 2 0 002-2z"
-                            />
-                          </svg>
-                        </span>
-                        Público
-                      </label>
-                      <label className="flex items-center">
-                        <input
-                          type="radio"
-                          name="visibility"
-                          value="private"
-                          checked={formData.visibility === "private"}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              visibility: e.target.value,
-                            })
-                          }
-                          className="mr-2"
-                        />
-                        <span className="mr-1">
-                          <svg
-                            className="inline w-4 h-4 text-black"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M12 17a4 4 0 100-8 4 4 0 000 8zm6-4V7a6 6 0 10-12 0v6a2 2 0 002 2h8a2 2 0 002-2z"
-                            />
-                            <circle cx="12" cy="12" r="4" fill="currentColor" />
-                          </svg>
-                        </span>
-                        Privado
-                      </label>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-black mb-2">
-                      Inicializar este repositorio con:
-                    </label>
-                    <div className="space-y-2">
-                      <label className="flex items-center">
-                        <input
-                          type="checkbox"
-                          name="addReadme"
-                          checked={formData.addReadme || false}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              addReadme: e.target.checked,
-                            })
-                          }
-                          className="mr-2"
-                        />
-                        Agregar un archivo README
-                      </label>
-                      <label className="flex items-center">
-                        <input
-                          type="checkbox"
-                          name="addGitignore"
-                          checked={formData.addGitignore || false}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              addGitignore: e.target.checked,
-                            })
-                          }
-                          className="mr-2"
-                        />
-                        Agregar .gitignore
-                      </label>
-                      <label className="flex items-center">
-                        <input
-                          type="checkbox"
-                          name="chooseLicense"
-                          checked={formData.chooseLicense || false}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              chooseLicense: e.target.checked,
-                            })
-                          }
-                          className="mr-2"
-                        />
-                        Elegir una licencia
-                      </label>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end space-x-3 pt-4">
-                    <button
-                      onClick={() => setShowCreateForm(false)}
-                      className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-black hover:bg-gray-50"
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      onClick={handleCreateProject}
-                      disabled={loadingIA}
-                      className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {loadingIA ? (
-                        <div className="flex items-center">
-                          <AILoader size="sm" text="" />
-                          <span className="ml-2">Creando...</span>
+                    <div className="space-y-6">
+                      <div className="flex flex-col md:flex-row md:items-center md:gap-6">
+                        <div className="flex-1">
+                          <label className="block text-sm font-medium text-black mb-2">
+                            Nombre de repositorio{" "}
+                            <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.name}
+                            onChange={(e) =>
+                              setFormData({ ...formData, name: e.target.value })
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black placeholder-gray-500"
+                            placeholder="Mi Proyecto"
+                          />
                         </div>
-                      ) : (
-                        "Crear repositorio"
-                      )}
-                    </button>
+                        <div className="flex-1 mt-4 md:mt-0">
+                          <label className="block text-sm font-medium text-black mb-2">
+                            Dueño <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            value=""
+                            readOnly
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-black cursor-not-allowed"
+                            placeholder="Nombre del dueño"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-black mb-2">
+                          Descripción
+                        </label>
+                        <textarea
+                          value={formData.description}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              description: e.target.value,
+                            })
+                          }
+                          rows={3}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black placeholder-gray-500"
+                          placeholder="Describe tu proyecto..."
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-black mb-2">
+                          Licencia
+                        </label>
+                        <select
+                          value={formData.license || "MIT"}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              license: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black"
+                        >
+                          <option value="MIT">MIT License</option>
+                          <option value="Apache">Apache License 2.0</option>
+                          <option value="GPL">GPL v3</option>
+                          <option value="BSD">BSD License</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-black mb-2">
+                          Visibilidad
+                        </label>
+                        <div className="space-y-2">
+                          <label className="flex items-center">
+                            <input
+                              type="radio"
+                              name="visibility"
+                              value="public"
+                              checked={formData.visibility === "public"}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  visibility: e.target.value,
+                                })
+                              }
+                              className="mr-2"
+                            />
+                            <span className="mr-1">
+                              <svg
+                                className="inline w-4 h-4 text-green-600"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                />
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                />
+                              </svg>
+                            </span>
+                            Público
+                          </label>
+                          <label className="flex items-center">
+                            <input
+                              type="radio"
+                              name="visibility"
+                              value="private"
+                              checked={formData.visibility === "private"}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  visibility: e.target.value,
+                                })
+                              }
+                              className="mr-2"
+                            />
+                            <span className="mr-1">
+                              <svg
+                                className="inline w-4 h-4 text-gray-600"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"
+                                />
+                              </svg>
+                            </span>
+                            Privado
+                          </label>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-black mb-2">
+                          Opciones adicionales
+                        </label>
+                        <div className="space-y-2">
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              name="addReadme"
+                              checked={formData.addReadme || false}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  addReadme: e.target.checked,
+                                })
+                              }
+                              className="mr-2"
+                            />
+                            Agregar un archivo README
+                          </label>
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              name="addGitignore"
+                              checked={formData.addGitignore || false}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  addGitignore: e.target.checked,
+                                })
+                              }
+                              className="mr-2"
+                            />
+                            Agregar .gitignore
+                          </label>
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              name="chooseLicense"
+                              checked={formData.chooseLicense || false}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  chooseLicense: e.target.checked,
+                                })
+                              }
+                              className="mr-2"
+                            />
+                            Elegir una licencia
+                          </label>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end space-x-3 pt-4">
+                        <button
+                          onClick={() => setShowCreateForm(false)}
+                          className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-black hover:bg-gray-50"
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          onClick={handleCreateProject}
+                          disabled={loadingIA}
+                          className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {loadingIA ? (
+                            <div className="flex items-center">
+                              <AILoader size="sm" text="" />
+                              <span className="ml-2">Creando...</span>
+                            </div>
+                          ) : (
+                            "Crear repositorio"
+                          )}
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
