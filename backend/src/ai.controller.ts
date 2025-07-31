@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
@@ -82,11 +83,14 @@ export class AIController {
   // Función para enviar datos a n8n
   private async sendToN8n(codigo: string, lenguaje: string): Promise<any> {
     try {
-      const response = await fetch('https://n8n.useteam.io/webhook/071-maqueta', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ codigo, lenguaje }),
-      });
+      const response = await fetch(
+        'https://n8n.useteam.io/webhook/071-maqueta',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ codigo, lenguaje }),
+        },
+      );
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -98,13 +102,19 @@ export class AIController {
     }
   }
 
-  private async sendToN8nMetrics(codigo: string, lenguaje: string): Promise<any> {
+  private async sendToN8nMetrics(
+    codigo: string,
+    lenguaje: string,
+  ): Promise<any> {
     try {
-      const response = await fetch('https://n8n.useteam.io/webhook/071-maqueta_v2', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ codigo, lenguaje }),
-      });
+      const response = await fetch(
+        'https://n8n.useteam.io/webhook/071-maqueta_v2',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ codigo, lenguaje }),
+        },
+      );
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -116,13 +126,19 @@ export class AIController {
     }
   }
 
-  private async sendToN8nOptimize(codigo: string, lenguaje: string): Promise<any> {
+  private async sendToN8nOptimize(
+    codigo: string,
+    lenguaje: string,
+  ): Promise<any> {
     try {
-      const response = await fetch('https://n8n.useteam.io/webhook/071-maqueta_v3', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ codigo, lenguaje }),
-      });
+      const response = await fetch(
+        'https://n8n.useteam.io/webhook/071-maqueta_v3',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ codigo, lenguaje }),
+        },
+      );
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -136,26 +152,34 @@ export class AIController {
 
   private determineLanguage(fileName: string): string {
     const fileExtension = fileName.split('.').pop()?.toLowerCase();
-    
+
     if (fileExtension === 'py' || fileExtension === 'python') {
       return 'python';
-    } else if (fileExtension === 'js' || fileExtension === 'jsx' || fileExtension === 'ts' || fileExtension === 'tsx') {
+    } else if (
+      fileExtension === 'js' ||
+      fileExtension === 'jsx' ||
+      fileExtension === 'ts' ||
+      fileExtension === 'tsx'
+    ) {
       return 'javascript';
     } else if (fileExtension === 'java') {
       return 'java';
     } else if (fileExtension === 'cpp' || fileExtension === 'c') {
       return 'cpp';
     }
-    
+
     return 'javascript'; // por defecto
   }
 
   // Analizar código con n8n
   @Post('analyze-with-n8n')
-  async analyzeWithN8n(@Body() body: N8nAnalysisDto, @Request() req: AuthenticatedRequest) {
+  async analyzeWithN8n(
+    @Body() body: N8nAnalysisDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
     try {
       const userId = req.user?.userId ?? req.user?.id ?? 1;
-      
+
       // Verificar que el proyecto pertenece al usuario
       const project = await this.prisma.project.findFirst({
         where: {
@@ -177,14 +201,14 @@ export class AIController {
 
       // Determinar el lenguaje basado en la extensión del archivo
       const language = this.determineLanguage(body.fileName);
-      
+
       // Enviar a n8n
       const n8nResponse = await this.sendToN8n(body.code, language);
-      
+
       return {
         analysis: n8nResponse.analysis || n8nResponse,
         language: language,
-        fileName: body.fileName
+        fileName: body.fileName,
       };
     } catch (error) {
       console.error('Error analyzing with n8n:', error);
@@ -196,10 +220,13 @@ export class AIController {
   }
 
   @Post('analyze-metrics-with-n8n')
-  async analyzeMetricsWithN8n(@Body() body: N8nAnalysisDto, @Request() req: AuthenticatedRequest) {
+  async analyzeMetricsWithN8n(
+    @Body() body: N8nAnalysisDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
     try {
       const userId = req.user?.userId ?? req.user?.id ?? 1;
-      
+
       // Verificar que el proyecto pertenece al usuario
       const project = await this.prisma.project.findFirst({
         where: {
@@ -221,14 +248,14 @@ export class AIController {
 
       // Determinar el lenguaje basado en la extensión del archivo
       const language = this.determineLanguage(body.fileName);
-      
+
       // Enviar a n8n_v2 para métricas
       const n8nResponse = await this.sendToN8nMetrics(body.code, language);
-      
+
       return {
         analysis: n8nResponse.analysis || n8nResponse,
         language: language,
-        fileName: body.fileName
+        fileName: body.fileName,
       };
     } catch (error) {
       console.error('Error analyzing metrics with n8n:', error);
@@ -240,7 +267,10 @@ export class AIController {
   }
 
   @Post('optimize-code-with-n8n')
-  async optimizeCodeWithN8n(@Body() body: N8nAnalysisDto, @Request() req: AuthenticatedRequest) {
+  async optimizeCodeWithN8n(
+    @Body() body: N8nAnalysisDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
     try {
       const userId = req.user?.userId ?? req.user?.id ?? 1;
 
@@ -267,38 +297,40 @@ export class AIController {
       const language = this.determineLanguage(body.fileName);
 
       // Enviar a n8n_v3 para optimización
-      const n8nOptimizeResponse = await this.sendToN8nOptimize(body.code, language);
-      
-      console.log('n8n optimize response:', n8nOptimizeResponse);
-      console.log('n8n optimize response type:', typeof n8nOptimizeResponse);
-      console.log('n8n optimize response keys:', Object.keys(n8nOptimizeResponse || {}));
-      
+      const n8nOptimizeResponse = await this.sendToN8nOptimize(
+        body.code,
+        language,
+      );
+
       // Extraer el código optimizado - buscar específicamente la estructura {"optimizedCode": "..."}
       let optimizedCode: any = null;
-      
+
       // Buscar optimizedCode en la respuesta principal
       if (n8nOptimizeResponse && typeof n8nOptimizeResponse === 'object') {
         if (n8nOptimizeResponse.optimizedCode) {
           optimizedCode = n8nOptimizeResponse.optimizedCode;
-          console.log('Found optimizedCode in main response:', optimizedCode);
-        } else if (n8nOptimizeResponse.output && typeof n8nOptimizeResponse.output === 'object') {
+        } else if (
+          n8nOptimizeResponse.output &&
+          typeof n8nOptimizeResponse.output === 'object'
+        ) {
           // Buscar en output.optimizedCode
           if (n8nOptimizeResponse.output.optimizedCode) {
             optimizedCode = n8nOptimizeResponse.output.optimizedCode;
-            console.log('Found optimizedCode in output:', optimizedCode);
           }
         }
       }
-      
+
       // Si no se encontró optimizedCode, intentar con la estructura anterior
       if (!optimizedCode) {
         if (n8nOptimizeResponse && typeof n8nOptimizeResponse === 'object') {
-          if (n8nOptimizeResponse.output && typeof n8nOptimizeResponse.output === 'object' && n8nOptimizeResponse.output.optimizacion) {
+          if (
+            n8nOptimizeResponse.output &&
+            typeof n8nOptimizeResponse.output === 'object' &&
+            n8nOptimizeResponse.output.optimizacion
+          ) {
             optimizedCode = n8nOptimizeResponse.output.optimizacion;
-            console.log('Found optimizacion in output (fallback):', optimizedCode);
           } else if (n8nOptimizeResponse.optimizacion) {
             optimizedCode = n8nOptimizeResponse.optimizacion;
-            console.log('Found optimizacion in main response (fallback):', optimizedCode);
           }
         }
       }
@@ -307,8 +339,7 @@ export class AIController {
       let iaAnalysis = null;
       try {
         const n8nAnalysisResponse = await this.sendToN8n(body.code, language);
-        console.log('n8n analysis response:', n8nAnalysisResponse);
-        
+
         // Extraer el análisis de la respuesta
         if (n8nAnalysisResponse.analysis) {
           iaAnalysis = n8nAnalysisResponse.analysis;
@@ -319,8 +350,7 @@ export class AIController {
         } else {
           iaAnalysis = n8nAnalysisResponse;
         }
-      } catch (analysisError) {
-        console.error('Error getting IA analysis:', analysisError);
+      } catch {
         // Si falla el análisis, continuamos solo con la optimización
       }
 
@@ -333,11 +363,13 @@ export class AIController {
           originalResponse: n8nOptimizeResponse,
           extractedCode: optimizedCode,
           responseType: typeof n8nOptimizeResponse,
-          responseKeys: n8nOptimizeResponse && typeof n8nOptimizeResponse === 'object' ? Object.keys(n8nOptimizeResponse) : []
-        }
+          responseKeys:
+            n8nOptimizeResponse && typeof n8nOptimizeResponse === 'object'
+              ? Object.keys(n8nOptimizeResponse as Record<string, unknown>)
+              : [],
+        },
       };
-    } catch (error) {
-      console.error('Error optimizing code with n8n:', error);
+    } catch {
       throw new HttpException(
         'Error al optimizar código con n8n',
         HttpStatus.INTERNAL_SERVER_ERROR,
