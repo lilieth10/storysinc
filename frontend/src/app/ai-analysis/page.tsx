@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
@@ -380,30 +382,24 @@ module.exports = {
     setUserQuery("");
 
     try {
-      // Conectar con el backend real
-      const response = await fetch("http://localhost:3001/api/ai/query", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({
-          projectId: selectedProject.id,
-          query: currentQuery,
-        }),
+      // Usar el nuevo endpoint de chat con n8n
+      const response = await api.post("/ai/chat-with-n8n", {
+        projectId: selectedProject.id,
+        fileName: selectedFile,
+        code: codeContent,
+        query: currentQuery,
       });
 
-      if (response.ok) {
-        const data = await response.json();
+      if (response.data && response.data.response) {
         const aiMessage: ChatMessage = {
           id: (Date.now() + 1).toString(),
           type: "ai",
-          content: data.response,
+          content: response.data.response,
           timestamp: new Date(),
         };
         setChatHistory((prev) => [...prev, aiMessage]);
       } else {
-        // Fallback a respuesta local si el backend falla
+        // Fallback a respuesta local si n8n falla
         const aiResponse = generateAIResponse(currentQuery, selectedProject);
         const aiMessage: ChatMessage = {
           id: (Date.now() + 1).toString(),

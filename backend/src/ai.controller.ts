@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
@@ -42,6 +41,13 @@ interface N8nAnalysisDto {
   projectId: number;
   fileName: string;
   code: string;
+}
+
+interface N8nChatDto {
+  projectId: number;
+  fileName: string;
+  code: string;
+  query: string;
 }
 
 @Controller('ai')
@@ -146,6 +152,49 @@ export class AIController {
       return data;
     } catch (error) {
       console.error('Error sending to n8n optimize:', error);
+      throw error;
+    }
+  }
+
+  // Función para enviar datos al webhook de chat
+  private async sendToN8nChat(
+    codigo: string,
+    lenguaje: string,
+    pregunta: string,
+  ): Promise<any> {
+    try {
+      const response = await fetch(
+        'https://n8n.useteam.io/webhook/chat-proyecto',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            codigo,
+            lenguaje,
+            mensaje: pregunta,
+          }),
+        },
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const responseText = await response.text();
+
+      if (!responseText.trim()) {
+        throw new Error(
+          'El webhook de n8n respondió vacío. Verifica que el flujo esté funcionando correctamente.',
+        );
+      }
+
+      try {
+        const data = JSON.parse(responseText);
+        return data;
+      } catch {
+        throw new Error(`Respuesta inválida del webhook: ${responseText}`);
+      }
+    } catch (error) {
+      console.error('Error sending to n8n chat:', error);
       throw error;
     }
   }
@@ -372,6 +421,110 @@ export class AIController {
     } catch {
       throw new HttpException(
         'Error al optimizar código con n8n',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  // Endpoint de prueba
+  @Get('test')
+  async test() {
+    return { message: 'AI Controller funcionando' };
+  }
+
+  // Chat con n8n
+  @Post('chat-with-n8n')
+  async chatWithN8n(
+    @Body() body: N8nChatDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    try {
+      const userId = req.user?.userId ?? req.user?.id ?? 1;
+
+      // Verificar que el proyecto pertenece al usuario
+      const project = await this.prisma.project.findFirst({
+        where: {
+          id: body.projectId,
+          OR: [
+            { ownerId: userId },
+            {
+              collaborators: {
+                some: { userId: userId },
+              },
+            },
+          ],
+        },
+      });
+
+      if (!project) {
+        throw new HttpException('Proyecto no encontrado', HttpStatus.NOT_FOUND);
+      }
+
+      // Determinar el lenguaje basado en la extensión del archivo
+      const language = this.determineLanguage(body.fileName);
+
+      // Guardar mensaje del usuario en la DB
+      await this.prisma.aIChatMessage.create({
+        data: {
+          projectId: body.projectId,
+          userId: userId,
+          message: body.query,
+          isAI: false,
+        },
+      });
+
+      // Intentar con n8n primero
+      let aiResponse = '';
+      try {
+        const n8nResponse = await this.sendToN8nChat(
+          body.code,
+          language,
+          body.query,
+        );
+
+        // Extraer respuesta de n8n
+        if (n8nResponse && typeof n8nResponse === 'object') {
+          if (n8nResponse.respuesta) {
+            aiResponse = n8nResponse.respuesta;
+          } else if (n8nResponse.response) {
+            aiResponse = n8nResponse.response;
+          } else if (n8nResponse.result) {
+            aiResponse = n8nResponse.result;
+          } else {
+            aiResponse = JSON.stringify(n8nResponse);
+          }
+        } else if (typeof n8nResponse === 'string') {
+          aiResponse = n8nResponse;
+        } else {
+          aiResponse = 'No se pudo procesar la respuesta del análisis.';
+        }
+      } catch (n8nError) {
+        console.error('Error con n8n, usando fallback:', n8nError);
+        // Fallback si n8n falla
+        aiResponse = this.generateFallbackResponse(body.query, language);
+      }
+
+      // Guardar respuesta de IA en la DB
+      await this.prisma.aIChatMessage.create({
+        data: {
+          projectId: body.projectId,
+          userId: userId,
+          message: aiResponse,
+          isAI: true,
+        },
+      });
+
+      return {
+        response: aiResponse,
+        language: language,
+        fileName: body.fileName,
+        query: body.query,
+        projectId: body.projectId,
+      };
+    } catch (error) {
+      console.error('Error in chat with n8n:', error);
+      throw new HttpException(
+        `Error al procesar la consulta con n8n: ${error instanceof Error ? error.message : 'Error desconocido'}`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -1114,5 +1267,105 @@ Basándome en tu proyecto, aquí tienes algunas recomendaciones:
 - Arquitectura y escalabilidad
 
 ¡Estoy aquí para ayudarte con cualquier aspecto de tu proyecto!`;
+  }
+
+  private generateFallbackResponse(query: string, language: string): string {
+    const lowerQuery = query.toLowerCase();
+
+    if (lowerQuery.includes('fibonacci')) {
+      return `Aquí tienes un código básico de Fibonacci en ${language}:
+
+${
+  language === 'javascript'
+    ? `
+function fibonacci(n) {
+  if (n <= 1) return n;
+  return fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+// Ejemplo de uso:
+console.log(fibonacci(10)); // 55`
+    : language === 'python'
+      ? `
+def fibonacci(n):
+    if n <= 1:
+        return n
+    return fibonacci(n - 1) + fibonacci(n - 2)
+
+# Ejemplo de uso:
+print(fibonacci(10))  # 55`
+      : `
+int fibonacci(int n) {
+    if (n <= 1) return n;
+    return fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+// Ejemplo de uso:
+printf("%d", fibonacci(10)); // 55`
+}`;
+    }
+
+    if (lowerQuery.includes('fizz') || lowerQuery.includes('buzz')) {
+      return `Aquí tienes el ejercicio FizzBuzz en ${language}:
+
+${
+  language === 'javascript'
+    ? `
+function fizzBuzz(n) {
+  for (let i = 1; i <= n; i++) {
+    if (i % 3 === 0 && i % 5 === 0) {
+      console.log('FizzBuzz');
+    } else if (i % 3 === 0) {
+      console.log('Fizz');
+    } else if (i % 5 === 0) {
+      console.log('Buzz');
+    } else {
+      console.log(i);
+    }
+  }
+}
+
+// Ejemplo de uso:
+fizzBuzz(15);`
+    : language === 'python'
+      ? `
+def fizz_buzz(n):
+    for i in range(1, n + 1):
+        if i % 3 == 0 and i % 5 == 0:
+            print('FizzBuzz')
+        elif i % 3 == 0:
+            print('Fizz')
+        elif i % 5 == 0:
+            print('Buzz')
+        else:
+            print(i)
+
+# Ejemplo de uso:
+fizz_buzz(15)`
+      : `
+void fizzBuzz(int n) {
+    for (int i = 1; i <= n; i++) {
+        if (i % 3 == 0 && i % 5 == 0) {
+            printf("FizzBuzz\\n");
+        } else if (i % 3 == 0) {
+            printf("Fizz\\n");
+        } else if (i % 5 == 0) {
+            printf("Buzz\\n");
+        } else {
+            printf("%d\\n", i);
+        }
+    }
+}
+
+// Ejemplo de uso:
+fizzBuzz(15);`
+}`;
+    }
+
+    if (lowerQuery.includes('hola') || lowerQuery.includes('hello')) {
+      return `¡Hola! Soy tu asistente de IA para análisis de código. Puedo ayudarte a analizar tu código de ${language}. ¿Qué te gustaría que revise?`;
+    }
+
+    return `Entiendo tu pregunta sobre ${language}. Actualmente hay un problema temporal con el servicio de IA. ¿Podrías intentar de nuevo en unos momentos?`;
   }
 }

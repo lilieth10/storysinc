@@ -415,7 +415,6 @@ export default function ProjectsPage() {
                           </svg>
                           Abrir Editor
                         </button>
-
                       </div>
                     </div>
                   </div>
@@ -559,7 +558,10 @@ export default function ProjectsPage() {
                         <select
                           value={formData.license || "MIT"}
                           onChange={(e) =>
-                            setFormData({ ...formData, license: e.target.value })
+                            setFormData({
+                              ...formData,
+                              license: e.target.value,
+                            })
                           }
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black"
                         >
