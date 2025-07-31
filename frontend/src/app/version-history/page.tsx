@@ -19,6 +19,7 @@ import {
   MagnifyingGlassIcon,
   FunnelIcon,
   ChartBarIcon,
+  FolderIcon,
 } from "@heroicons/react/24/outline";
 
 interface Version {
@@ -55,6 +56,7 @@ interface VersionFilters {
   branch: string;
   searchTerm: string;
   status: string;
+  projectId: string; // Nuevo filtro por proyecto
 }
 
 export default function VersionHistoryPage() {
@@ -78,6 +80,7 @@ export default function VersionHistoryPage() {
     branch: "",
     searchTerm: "",
     status: "",
+    projectId: "", // Nuevo filtro por proyecto
   });
 
   // Datos simulados realistas
@@ -632,6 +635,7 @@ ${version.stats.files} archivos modificados
       !filters.branch ||
       version.branch.toLowerCase().includes(filters.branch.toLowerCase());
     const matchesStatus = !filters.status || version.status === filters.status;
+    const matchesProject = !filters.projectId || version.projectId === parseInt(filters.projectId);
     const matchesSearch =
       !filters.searchTerm ||
       version.message
@@ -640,7 +644,7 @@ ${version.stats.files} archivos modificados
       version.hash.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
       version.author.toLowerCase().includes(filters.searchTerm.toLowerCase());
 
-    return matchesAuthor && matchesBranch && matchesStatus && matchesSearch;
+    return matchesAuthor && matchesBranch && matchesStatus && matchesProject && matchesSearch;
   });
 
   if (loading) {
@@ -758,6 +762,25 @@ ${version.stats.files} archivos modificados
                     <option value="develop">develop</option>
                     <option value="feature">feature/*</option>
                     <option value="hotfix">hotfix/*</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-black mb-1">
+                    <FolderIcon className="w-4 h-4 inline mr-1" />
+                    Proyecto
+                  </label>
+                  <select
+                    value={filters.projectId}
+                    onChange={(e) =>
+                      setFilters({ ...filters, projectId: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
+                  >
+                    <option value="">Todos los proyectos</option>
+                    <option value="1">E-commerce React</option>
+                    <option value="2">API REST Node.js</option>
+                    <option value="3">Dashboard Analytics</option>
                   </select>
                 </div>
 
