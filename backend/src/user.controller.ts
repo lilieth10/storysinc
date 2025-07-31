@@ -22,4 +22,16 @@ export class UserController {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     return this.userService.updateProfile(req.user.userId, data);
   }
+
+  @Get('stats')
+  async getUserStats(@Req() req: Request) {
+    // @ts-expect-error: userId viene del JWT
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    return this.userService.getUserStats(req.user.userId);
+  }
+
+  @Get('test')
+  async test() {
+    return { message: 'UserController funcionando correctamente' };
+  }
 }

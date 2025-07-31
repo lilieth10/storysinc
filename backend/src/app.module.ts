@@ -16,6 +16,8 @@ import { AdminController } from './admin.controller';
 import { TrainingController } from './training.controller';
 import { AIConfigController } from './ai-config.controller';
 import { VersionController } from './version.controller';
+import { UserController } from './user.controller';
+import { UserService } from './user.service';
 
 @Module({
   imports: [AuthModule, UserModule, PrismaModule],
@@ -30,12 +32,14 @@ import { VersionController } from './version.controller';
     TrainingController,
     AIConfigController,
     VersionController,
+    UserController,
   ],
   providers: [
     AppService,
     NotificationGateway,
     ProjectService,
     NotificationService,
+    UserService,
   ],
 })
 export class AppModule {}
