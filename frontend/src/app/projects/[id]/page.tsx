@@ -85,18 +85,24 @@ interface ExecutionResult {
 }
 
 interface IAAnalysis {
-  performance: {
-    score: number;
-    suggestions: string[];
+  performance?: {
+    score?: number;
+    suggestions?: string[];
   };
-  security: {
-    risks: string[];
-    score: number;
+  security?: {
+    risks?: string[];
+    score?: number;
   };
-  bestPractices: {
-    issues: string[];
-    score: number;
+  bestPractices?: {
+    issues?: string[];
+    score?: number;
   };
+  // Estructura real que viene de n8n (071-maqueta)
+  output?: {
+    Sugerencias?: string[];
+    Advertencias?: string[];
+  };
+  [key: string]: any; // Para permitir otras propiedades que puedan venir de n8n
 }
 
 // Componente de loading optimizado
@@ -314,20 +320,65 @@ export default function ProjectDetailPage() {
     setLoadingIA(true);
     try {
       const response = await api.post(
-        `/projects/${projectId}/analyze`,
+        `/ai/optimize-code-with-n8n`,
         {
-          filePath: selectedFile.path,
-          content: editorContent,
+          projectId: parseInt(projectId),
+          fileName: selectedFile.name,
+          code: editorContent,
         },
         {
           headers: { Authorization: `Bearer ${token}` },
         },
       );
 
-      setIaAnalysis(response.data);
-      toast.success("Análisis de IA completado");
+      // Si recibimos código optimizado, actualizar el editor
+      console.log('Response data:', response.data); // Debug
+      console.log('Response data type:', typeof response.data);
+      console.log('Response data keys:', Object.keys(response.data || {}));
+      
+      let optimizedCode = null;
+      
+      // Buscar específicamente la estructura {"optimizedCode": "..."}
+      if (response.data.optimizedCode && typeof response.data.optimizedCode === 'string') {
+        optimizedCode = response.data.optimizedCode;
+        console.log('Found optimizedCode:', optimizedCode);
+      } else if (response.data.optimizedCode && typeof response.data.optimizedCode === 'object') {
+        // Si optimizedCode es un objeto, buscar dentro de él
+        if (response.data.optimizedCode.optimizedCode) {
+          optimizedCode = response.data.optimizedCode.optimizedCode;
+          console.log('Found optimizedCode within optimizedCode object:', optimizedCode);
+        }
+      }
+      
+      // Fallback para la estructura anterior
+      if (!optimizedCode) {
+        if (response.data.optimizedCode && typeof response.data.optimizedCode === 'object' && response.data.optimizedCode.optimizacion) {
+          optimizedCode = response.data.optimizedCode.optimizacion;
+          console.log('Found optimizacion (fallback):', optimizedCode);
+        }
+      }
+      
+      if (optimizedCode) {
+        console.log('Setting editor content to:', optimizedCode);
+        setEditorContent(String(optimizedCode));
+        
+        // Usar el análisis real de n8n si está disponible
+        if (response.data.iaAnalysis) {
+          console.log('Setting IA analysis from n8n:', response.data.iaAnalysis);
+          setIaAnalysis(response.data.iaAnalysis);
+          toast.success("Código optimizado y análisis de IA generado");
+        } else {
+          console.log('No se recibió análisis de IA de n8n');
+          toast.success("Código optimizado");
+        }
+      } else {
+        console.log('No se encontró código optimizado en la respuesta. Full response:', response.data);
+        console.log('Debug info:', response.data.debug);
+        toast.error("No se pudo obtener código optimizado. Revisa la consola para más detalles.");
+      }
     } catch (error) {
-      toast.error("Error al analizar con IA");
+      console.error('Error optimizing code:', error);
+      toast.error("Error al optimizar código con IA");
     } finally {
       setLoadingIA(false);
     }
@@ -347,6 +398,7 @@ export default function ProjectDetailPage() {
   const handleFileSelect = (file: FileNode) => {
     setSelectedFile(file);
     setEditorContent(file.content || "");
+    setIaAnalysis(null); // Limpiar análisis anterior
   };
 
   const getLanguageFromFile = (filename: string, content?: string): string => {
@@ -367,7 +419,7 @@ export default function ProjectDetailPage() {
     };
 
     // Si tenemos contenido, intentar detectar el lenguaje por contenido
-    if (content) {
+    if (typeof content === 'string' && content.length > 0) {
       const firstLine = content.trim().split('\n')[0].toLowerCase();
       
       // Detectar archivos de proyecto React/TypeScript PRIMERO
@@ -889,7 +941,7 @@ console.log("¡Hola mundo!");`;
                               disabled={loadingIA}
                               className="bg-green-500 hover:bg-green-600 text-white text-xs"
                             >
-                              <span className="hidden sm:inline">{loadingIA ? "Analizando..." : "Analizar con IA"}</span>
+                              <span className="hidden sm:inline">{loadingIA ? "Optimizando..." : "Optimizar con IA"}</span>
                             </Button>
                           </div>
                         </div>
@@ -992,68 +1044,141 @@ console.log("¡Hola mundo!");`;
                               </h3>
                               {iaAnalysis ? (
                                 <div className="space-y-4">
-                                  <Card className="p-3">
-                                    <h4 className="text-sm font-medium text-gray-900 mb-2">
-                                      Rendimiento (
-                                      {iaAnalysis.performance.score}/100)
-                                    </h4>
-                                    <div className="space-y-1">
-                                      {iaAnalysis.performance.suggestions.map(
-                                        (suggestion, idx) => (
-                                          <p
-                                            key={idx}
-                                            className="text-xs text-gray-600"
-                                          >
-                                            • {suggestion}
-                                          </p>
-                                        ),
+                                  {/* Estructura real de n8n (071-maqueta) */}
+                                  {iaAnalysis.output && (
+                                    <>
+                                      {/* Sugerencias */}
+                                      {iaAnalysis.output.Sugerencias && iaAnalysis.output.Sugerencias.length > 0 && (
+                                        <Card className="p-3">
+                                          <h4 className="text-sm font-medium text-gray-900 mb-2">
+                                            Sugerencias
+                                          </h4>
+                                          <div className="space-y-1">
+                                            {iaAnalysis.output.Sugerencias.map(
+                                              (sugerencia, idx) => (
+                                                <p
+                                                  key={idx}
+                                                  className="text-xs text-gray-600"
+                                                >
+                                                  • {sugerencia}
+                                                </p>
+                                              ),
+                                            )}
+                                          </div>
+                                        </Card>
                                       )}
-                                    </div>
-                                  </Card>
 
-                                  <Card className="p-3">
-                                    <h4 className="text-sm font-medium text-gray-900 mb-2">
-                                      Seguridad ({iaAnalysis.security.score}
-                                      /100)
-                                    </h4>
-                                    <div className="space-y-1">
-                                      {iaAnalysis.security.risks.map(
-                                        (risk, idx) => (
-                                          <p
-                                            key={idx}
-                                            className="text-xs text-red-600"
-                                          >
-                                            ⚠ {risk}
-                                          </p>
-                                        ),
+                                      {/* Advertencias */}
+                                      {iaAnalysis.output.Advertencias && iaAnalysis.output.Advertencias.length > 0 && (
+                                        <Card className="p-3">
+                                          <h4 className="text-sm font-medium text-gray-900 mb-2">
+                                            Advertencias
+                                          </h4>
+                                          <div className="space-y-1">
+                                            {iaAnalysis.output.Advertencias.map(
+                                              (advertencia, idx) => (
+                                                <p
+                                                  key={idx}
+                                                  className="text-xs text-red-600"
+                                                >
+                                                  ⚠ {advertencia}
+                                                </p>
+                                              ),
+                                            )}
+                                          </div>
+                                        </Card>
                                       )}
-                                    </div>
-                                  </Card>
+                                    </>
+                                  )}
 
-                                  <Card className="p-3">
-                                    <h4 className="text-sm font-medium text-gray-900 mb-2">
-                                      Mejores Prácticas (
-                                      {iaAnalysis.bestPractices.score}/100)
-                                    </h4>
-                                    <div className="space-y-1">
-                                      {iaAnalysis.bestPractices.issues.map(
-                                        (issue, idx) => (
-                                          <p
-                                            key={idx}
-                                            className="text-xs text-yellow-600"
-                                          >
-                                            ↻ {issue}
-                                          </p>
-                                        ),
-                                      )}
-                                    </div>
-                                  </Card>
+                                  {/* Análisis de Rendimiento (estructura anterior) */}
+                                  {iaAnalysis.performance && (
+                                    <Card className="p-3">
+                                      <h4 className="text-sm font-medium text-gray-900 mb-2">
+                                        Rendimiento (
+                                        {iaAnalysis.performance.score || 0}/100)
+                                      </h4>
+                                      <div className="space-y-1">
+                                        {iaAnalysis.performance.suggestions && 
+                                          iaAnalysis.performance.suggestions.map(
+                                            (suggestion, idx) => (
+                                              <p
+                                                key={idx}
+                                                className="text-xs text-gray-600"
+                                              >
+                                                • {suggestion}
+                                              </p>
+                                            ),
+                                          )}
+                                      </div>
+                                    </Card>
+                                  )}
+
+                                  {/* Análisis de Seguridad (estructura anterior) */}
+                                  {iaAnalysis.security && (
+                                    <Card className="p-3">
+                                      <h4 className="text-sm font-medium text-gray-900 mb-2">
+                                        Seguridad ({iaAnalysis.security.score || 0}
+                                        /100)
+                                      </h4>
+                                      <div className="space-y-1">
+                                        {iaAnalysis.security.risks && 
+                                          iaAnalysis.security.risks.map(
+                                            (risk, idx) => (
+                                              <p
+                                                key={idx}
+                                                className="text-xs text-red-600"
+                                              >
+                                                ⚠ {risk}
+                                              </p>
+                                            ),
+                                          )}
+                                      </div>
+                                    </Card>
+                                  )}
+
+                                  {/* Análisis de Mejores Prácticas (estructura anterior) */}
+                                  {iaAnalysis.bestPractices && (
+                                    <Card className="p-3">
+                                      <h4 className="text-sm font-medium text-gray-900 mb-2">
+                                        Mejores Prácticas (
+                                        {iaAnalysis.bestPractices.score || 0}/100)
+                                      </h4>
+                                      <div className="space-y-1">
+                                        {iaAnalysis.bestPractices.issues && 
+                                          iaAnalysis.bestPractices.issues.map(
+                                            (issue, idx) => (
+                                              <p
+                                                key={idx}
+                                                className="text-xs text-yellow-600"
+                                              >
+                                                ↻ {issue}
+                                              </p>
+                                            ),
+                                          )}
+                                      </div>
+                                    </Card>
+                                  )}
+
+                                  {/* Si no hay estructura específica, mostrar el análisis como texto */}
+                                  {!iaAnalysis.output && !iaAnalysis.performance && !iaAnalysis.security && !iaAnalysis.bestPractices && (
+                                    <Card className="p-3">
+                                      <h4 className="text-sm font-medium text-gray-900 mb-2">
+                                        Análisis de IA
+                                      </h4>
+                                      <div className="space-y-1">
+                                        <p className="text-xs text-gray-600">
+                                          {typeof iaAnalysis === 'string' ? iaAnalysis : JSON.stringify(iaAnalysis, null, 2)}
+                                        </p>
+                                      </div>
+                                    </Card>
+                                  )}
                                 </div>
                               ) : (
                                 <div className="text-center py-8">
                                   <p className="text-sm text-gray-500">
-                                    Haz clic en &quot;Analizar con IA&quot; para
-                                    obtener sugerencias de mejora
+                                    Haz clic en &quot;Optimizar con IA&quot; para
+                                    obtener código optimizado
                                   </p>
                                 </div>
                               )}

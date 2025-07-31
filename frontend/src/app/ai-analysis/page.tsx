@@ -53,6 +53,8 @@ export default function AIAnalysisPage() {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [analyzingWithN8n, setAnalyzingWithN8n] = useState(false);
   const [n8nAnalysis, setN8nAnalysis] = useState<any>(null);
+  const [analyzingMetrics, setAnalyzingMetrics] = useState(false);
+  const [metricsAnalysis, setMetricsAnalysis] = useState<any>(null);
 
   // Función para guardar código en la base de datos
   const saveCodeToDatabase = async (projectId: number, fileName: string, code: string) => {
@@ -106,6 +108,28 @@ export default function AIAnalysisPage() {
       // Aquí podrías mostrar una notificación de error
     } finally {
       setAnalyzingWithN8n(false);
+    }
+  };
+
+  // Función para analizar métricas con n8n_v2
+  const analyzeMetricsWithN8n = async () => {
+    if (!selectedProject || !selectedFile || !codeContent || !token) return;
+    
+    try {
+      setAnalyzingMetrics(true);
+      const response = await api.post("/ai/analyze-metrics-with-n8n", {
+        projectId: selectedProject.id,
+        fileName: selectedFile,
+        code: codeContent
+      });
+      
+      setMetricsAnalysis(response.data);
+      console.log("Análisis de métricas de n8n:", response.data);
+    } catch (error) {
+      console.error("Error analyzing metrics with n8n:", error);
+      // Aquí podrías mostrar una notificación de error
+    } finally {
+      setAnalyzingMetrics(false);
     }
   };
 
@@ -534,24 +558,44 @@ module.exports = {
                          </div>
                        )}
                      </div>
-                     <Button
-                       onClick={analyzeWithN8n}
-                       disabled={analyzingWithN8n || !selectedProject || !selectedFile || !codeContent}
-                       size="sm"
-                       className="bg-blue-500 hover:bg-blue-600 text-white"
-                     >
-                       {analyzingWithN8n ? (
-                         <div className="flex items-center">
-                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                           Analizando con n8n...
-                         </div>
-                       ) : (
-                         <div className="flex items-center">
-                           <MagnifyingGlassIcon className="w-4 h-4 mr-2" />
-                           Analizar con n8n
-                         </div>
-                       )}
-                     </Button>
+                     <div className="flex space-x-2">
+                       <Button
+                         onClick={analyzeWithN8n}
+                         disabled={analyzingWithN8n || analyzingMetrics || !selectedProject || !selectedFile || !codeContent}
+                         size="sm"
+                         className="bg-blue-500 hover:bg-blue-600 text-white"
+                       >
+                         {analyzingWithN8n ? (
+                           <div className="flex items-center">
+                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                             Analizando...
+                           </div>
+                         ) : (
+                           <div className="flex items-center">
+                             <MagnifyingGlassIcon className="w-4 h-4 mr-2" />
+                             Análisis IA
+                           </div>
+                         )}
+                       </Button>
+                       <Button
+                         onClick={analyzeMetricsWithN8n}
+                         disabled={analyzingWithN8n || analyzingMetrics || !selectedProject || !selectedFile || !codeContent}
+                         size="sm"
+                         className="bg-purple-500 hover:bg-purple-600 text-white"
+                       >
+                         {analyzingMetrics ? (
+                           <div className="flex items-center">
+                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                             Analizando...
+                           </div>
+                         ) : (
+                           <div className="flex items-center">
+                             <LightBulbIcon className="w-4 h-4 mr-2" />
+                             Métricas
+                           </div>
+                         )}
+                       </Button>
+                     </div>
                    </div>
                    <div className="flex-1 min-h-0">
                      <MonacoEditor
@@ -646,36 +690,74 @@ module.exports = {
 
             
 
-            {/* Resultados del análisis de n8n */}
-            {n8nAnalysis && (
-              <div className="mt-6 bg-white border border-gray-200 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                  <MagnifyingGlassIcon className="w-5 h-5 text-blue-500 mr-2" />
-                  Análisis de n8n
-                </h3>
-                <div className="space-y-4">
-                  {n8nAnalysis.analysis ? (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                      <h4 className="text-sm font-medium text-blue-900 mb-2">
-                        Respuesta del IA Agent
-                      </h4>
-                      <div className="text-sm text-blue-800 whitespace-pre-wrap">
-                        {typeof n8nAnalysis.analysis === 'string' 
-                          ? n8nAnalysis.analysis 
-                          : JSON.stringify(n8nAnalysis.analysis, null, 2)
-                        }
+            {/* Resultados de análisis */}
+            {(n8nAnalysis || metricsAnalysis) && (
+              <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Análisis principal */}
+                {n8nAnalysis && (
+                  <div className="bg-white border border-gray-200 rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <MagnifyingGlassIcon className="w-5 h-5 text-blue-500 mr-2" />
+                      Análisis de IA
+                    </h3>
+                    <div className="space-y-4">
+                      {n8nAnalysis.analysis ? (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                          <h4 className="text-sm font-medium text-blue-900 mb-2">
+                            Respuesta del IA Agent
+                          </h4>
+                          <div className="text-sm text-blue-800 whitespace-pre-wrap">
+                            {typeof n8nAnalysis.analysis === 'string' 
+                              ? n8nAnalysis.analysis 
+                              : JSON.stringify(n8nAnalysis.analysis, null, 2)
+                            }
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-center py-4">
+                          <p className="text-gray-600">No se recibió respuesta del análisis</p>
+                        </div>
+                      )}
+                      <div className="text-xs text-gray-500">
+                        <p>Lenguaje detectado: <span className="font-medium">{n8nAnalysis.language}</span></p>
+                        <p>Archivo analizado: <span className="font-medium">{selectedFile}</span></p>
                       </div>
                     </div>
-                  ) : (
-                    <div className="text-center py-4">
-                      <p className="text-gray-600">No se recibió respuesta del análisis</p>
-                    </div>
-                  )}
-                  <div className="text-xs text-gray-500">
-                    <p>Lenguaje detectado: <span className="font-medium">{n8nAnalysis.language}</span></p>
-                    <p>Archivo analizado: <span className="font-medium">{selectedFile}</span></p>
                   </div>
-                </div>
+                )}
+
+                {/* Análisis de métricas */}
+                {metricsAnalysis && (
+                  <div className="bg-white border border-gray-200 rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <LightBulbIcon className="w-5 h-5 text-purple-500 mr-2" />
+                      Métricas Detalladas
+                    </h3>
+                    <div className="space-y-4">
+                      {metricsAnalysis.analysis ? (
+                        <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                          <h4 className="text-sm font-medium text-purple-900 mb-2">
+                            Análisis de Métricas
+                          </h4>
+                          <div className="text-sm text-purple-800 whitespace-pre-wrap">
+                            {typeof metricsAnalysis.analysis === 'string' 
+                              ? metricsAnalysis.analysis 
+                              : JSON.stringify(metricsAnalysis.analysis, null, 2)
+                            }
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-center py-4">
+                          <p className="text-gray-600">No se recibió respuesta del análisis</p>
+                        </div>
+                      )}
+                      <div className="text-xs text-gray-500">
+                        <p>Lenguaje detectado: <span className="font-medium">{metricsAnalysis.language}</span></p>
+                        <p>Archivo analizado: <span className="font-medium">{selectedFile}</span></p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
