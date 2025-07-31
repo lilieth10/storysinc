@@ -288,7 +288,7 @@ export default function VersionHistoryPage() {
       case "failed":
         return "text-red-600 bg-red-100";
       default:
-        return "text-gray-600 bg-gray-100";
+        return "text-black bg-gray-100";
     }
   };
 
@@ -314,7 +314,7 @@ export default function VersionHistoryPage() {
       case "pending":
         return "text-yellow-600 bg-yellow-100";
       default:
-        return "text-gray-600 bg-gray-100";
+        return "text-black bg-gray-100";
     }
   };
 
@@ -641,10 +641,10 @@ ${version.stats.files} archivos modificados
             <div className="max-w-7xl mx-auto">
               {/* Header */}
               <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                <h1 className="text-3xl font-bold text-black mb-2">
                   Historial de Versiones
                 </h1>
-                <p className="text-gray-600">
+                <p className="text-black">
                   Gestiona y revisa el historial de cambios de tus proyectos
                 </p>
               </div>
@@ -654,7 +654,7 @@ ${version.stats.files} archivos modificados
                 <div className="flex items-center justify-center py-12">
                   <div className="text-center">
                     <div className="w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-gray-600">Cargando versiones...</p>
+                                         <p className="text-black">Cargando versiones...</p>
                   </div>
                 </div>
               </div>
@@ -667,80 +667,80 @@ ${version.stats.files} archivos modificados
 
     return (
     <div className="min-h-screen bg-gray-50">
-      <Sidebar />
-      <div className="md:ml-64">
-        <DashboardHeader />
-        <main className="p-4 md:p-6 lg:p-8">
+      <DashboardHeader />
+      <div className="flex">
+        <Sidebar />
+        <main className="flex-1 p-8">
           <div className="max-w-7xl mx-auto">
             {/* Header */}
-            <div className="mb-6 md:mb-8">
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-black mb-2">
                 Historial de Versiones
               </h1>
-              <p className="text-gray-600 text-sm md:text-base">
-                Gestiona y revisa el historial de cambios de tus proyectos
-              </p>
+                              <p className="text-black">
+                  Gestiona y revisa el historial de cambios de tus proyectos
+                </p>
             </div>
 
             {/* Filtros */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 mb-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
-                <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                <h3 className="text-lg font-semibold text-black flex items-center">
                   <FunnelIcon className="w-5 h-5 mr-2" />
                   Filtros y Búsqueda
                 </h3>
                 <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-500">
+                  <span className="text-sm text-black">
                     {filteredVersions.length} versiones encontradas
                   </span>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
-                <div className="sm:col-span-2 lg:col-span-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <MagnifyingGlassIcon className="w-4 h-4 inline mr-1" />
-                    Buscar
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Hash, mensaje, autor..."
-                    value={filters.searchTerm}
-                    onChange={(e) =>
-                      setFilters({ ...filters, searchTerm: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  />
+                <div>
+                                     <label className="block text-sm font-medium text-black mb-1">
+                     <MagnifyingGlassIcon className="w-4 h-4 inline mr-1" />
+                     Buscar
+                   </label>
+                                     <input
+                     type="text"
+                     placeholder="Hash, mensaje, autor..."
+                     value={filters.searchTerm}
+                     onChange={(e) =>
+                       setFilters({ ...filters, searchTerm: e.target.value })
+                     }
+                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-black placeholder-gray-500"
+                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <UserIcon className="w-4 h-4 inline mr-1" />
-                    Autor
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Nombre del autor..."
-                    value={filters.author}
-                    onChange={(e) =>
-                      setFilters({ ...filters, author: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  />
+                                     <label className="block text-sm font-medium text-black mb-1">
+                     <UserIcon className="w-4 h-4 inline mr-1" />
+                     Autor
+                   </label>
+                                     <input
+                     type="text"
+                     placeholder="Nombre del autor..."
+                     value={filters.author}
+                     onChange={(e) =>
+                       setFilters({ ...filters, author: e.target.value })
+                     }
+                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-black placeholder-gray-500"
+                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <CodeBracketIcon className="w-4 h-4 inline mr-1" />
-                    Rama
-                  </label>
-                  <select
-                    value={filters.branch}
-                    onChange={(e) =>
-                      setFilters({ ...filters, branch: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  >
+                                     <label className="block text-sm font-medium text-black mb-1">
+                     <CodeBracketIcon className="w-4 h-4 inline mr-1" />
+                     Rama
+                   </label>
+                                     <select
+                     value={filters.branch}
+                     onChange={(e) =>
+                       setFilters({ ...filters, branch: e.target.value })
+                     }
+                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
+                   >
                     <option value="">Todas las ramas</option>
                     <option value="main">main</option>
                     <option value="develop">develop</option>
@@ -750,17 +750,17 @@ ${version.stats.files} archivos modificados
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <ClockIcon className="w-4 h-4 inline mr-1" />
-                    Estado
-                  </label>
-                  <select
-                    value={filters.status}
-                    onChange={(e) =>
-                      setFilters({ ...filters, status: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  >
+                                     <label className="block text-sm font-medium text-black mb-1">
+                     <ClockIcon className="w-4 h-4 inline mr-1" />
+                     Estado
+                   </label>
+                                     <select
+                     value={filters.status}
+                     onChange={(e) =>
+                       setFilters({ ...filters, status: e.target.value })
+                     }
+                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
+                   >
                     <option value="">Todos los estados</option>
                     <option value="deployed">Desplegado</option>
                     <option value="testing">En pruebas</option>
@@ -770,24 +770,24 @@ ${version.stats.files} archivos modificados
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <ChartBarIcon className="w-4 h-4 inline mr-1" />
-                    Fecha
-                  </label>
-                  <input
-                    type="date"
-                    value={filters.dateRange.start}
-                    onChange={(e) =>
-                      setFilters({
-                        ...filters,
-                        dateRange: {
-                          ...filters.dateRange,
-                          start: e.target.value,
-                        },
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  />
+                                     <label className="block text-sm font-medium text-black mb-1">
+                     <ChartBarIcon className="w-4 h-4 inline mr-1" />
+                     Fecha
+                   </label>
+                                     <input
+                     type="date"
+                     value={filters.dateRange.start}
+                     onChange={(e) =>
+                       setFilters({
+                         ...filters,
+                         dateRange: {
+                           ...filters.dateRange,
+                           start: e.target.value,
+                         },
+                       })
+                     }
+                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
+                   />
                 </div>
               </div>
             </div>
@@ -795,7 +795,7 @@ ${version.stats.files} archivos modificados
             {/* Lista de Versiones */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
               <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                <h3 className="text-lg font-semibold text-black flex items-center">
                   <DocumentIcon className="w-5 h-5 mr-2" />
                   Versiones ({filteredVersions.length})
                 </h3>
@@ -803,11 +803,11 @@ ${version.stats.files} archivos modificados
 
               <div className="divide-y divide-gray-200">
                 {filteredVersions.map((version) => (
-                  <div key={version.id} className="px-3 sm:px-6 py-4 hover:bg-gray-50 transition-colors">
-                    <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-wrap items-center gap-2 mb-3">
-                          <span className="text-xs sm:text-sm font-mono text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                  <div key={version.id} className="px-4 sm:px-6 py-4 hover:bg-gray-50 transition-colors">
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-3">
+                          <span className="text-sm font-mono text-black bg-gray-100 px-2 py-1 rounded">
                             {version.hash}
                           </span>
                           <span
@@ -822,11 +822,11 @@ ${version.stats.files} archivos modificados
                           </span>
                         </div>
 
-                        <h4 className="text-sm font-medium text-gray-900 mb-2 break-words">
+                        <h4 className="text-sm font-medium text-black mb-2">
                           {version.message}
                         </h4>
 
-                        <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-gray-500 mb-3">
+                        <div className="flex items-center gap-4 text-xs text-black mb-3">
                           <span className="flex items-center">
                             <UserIcon className="w-3 h-3 mr-1" />
                             {version.author}
@@ -845,19 +845,19 @@ ${version.stats.files} archivos modificados
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-2 sm:gap-4 text-xs text-gray-500 mb-3">
+                        <div className="flex items-center gap-4 text-xs text-black mb-3">
                           <span className="text-green-600">+{version.stats.additions}</span>
                           <span className="text-red-600">-{version.stats.deletions}</span>
-                          <span className="text-gray-600">{version.stats.files} archivos</span>
+                          <span className="text-black">{version.stats.files} archivos</span>
                         </div>
 
-                        <div className="text-xs text-gray-400 break-words">
+                        <div className="text-xs text-black">
                           {version.filesChanged.slice(0, 3).join(", ")}
                           {version.filesChanged.length > 3 && ` +${version.filesChanged.length - 3} más`}
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 lg:ml-4 flex-wrap lg:flex-nowrap">
+                      <div className="flex items-center gap-2 sm:ml-4 flex-wrap">
                         <button
                           onClick={() => handleViewDiff(version)}
                           className="text-xs bg-gray-600 text-white px-2 sm:px-3 py-1 rounded hover:bg-gray-700 flex items-center"
@@ -918,8 +918,8 @@ ${version.stats.files} archivos modificados
 
               {filteredVersions.length === 0 && (
                 <div className="px-6 py-8 text-center">
-                  <DocumentIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">
+                  <DocumentIcon className="w-12 h-12 text-black mx-auto mb-4" />
+                  <p className="text-black">
                     No se encontraron versiones con los filtros aplicados
                   </p>
                 </div>
@@ -935,16 +935,16 @@ ${version.stats.files} archivos modificados
           <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">
+                <h3 className="text-lg font-semibold text-black">
                   Cambios en {selectedVersion.hash}
                 </h3>
-                <p className="text-sm text-gray-600 mt-1">
+                <p className="text-sm text-black mt-1">
                   {selectedVersion.message}
                 </p>
               </div>
               <button
                 onClick={() => setShowDiffModal(false)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-black hover:text-gray-600"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -955,7 +955,7 @@ ${version.stats.files} archivos modificados
             <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
               {selectedVersion.diff?.map((fileDiff, index) => (
                 <div key={index} className="mb-6">
-                  <h4 className="text-sm font-medium text-gray-900 mb-3 flex items-center">
+                  <h4 className="text-sm font-medium text-black mb-3 flex items-center">
                     <DocumentIcon className="w-4 h-4 mr-2" />
                     {fileDiff.file}
                   </h4>
@@ -977,12 +977,12 @@ ${version.stats.files} archivos modificados
             </div>
 
             <div className="flex items-center justify-between p-6 border-t border-gray-200">
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-black">
                 <span className="text-green-600">+{selectedVersion.stats.additions}</span>
                 {" "}
                 <span className="text-red-600">-{selectedVersion.stats.deletions}</span>
                 {" "}
-                <span className="text-gray-600">{selectedVersion.stats.files} archivos</span>
+                <span className="text-black">{selectedVersion.stats.files} archivos</span>
               </div>
               <div className="flex space-x-2">
                 <button
@@ -1010,17 +1010,17 @@ ${version.stats.files} archivos modificados
             {/* Header */}
             <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 bg-gray-50 flex-shrink-0">
               <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                <h3 className="text-lg font-semibold text-black flex items-center">
                   <CodeBracketIcon className="w-5 h-5 mr-2 text-green-600 flex-shrink-0" />
                   Análisis de IA
                 </h3>
-                <p className="text-sm text-gray-600 mt-1">
+                <p className="text-sm text-black mt-1">
                   Resultados del análisis inteligente
                 </p>
               </div>
               <button
                 onClick={() => setAiAnalysis("")}
-                className="text-gray-400 hover:text-gray-600 transition-colors ml-4 flex-shrink-0"
+                className="text-black hover:text-gray-600 transition-colors ml-4 flex-shrink-0"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1031,9 +1031,9 @@ ${version.stats.files} archivos modificados
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-4 sm:p-6">
               <div className="prose prose-sm max-w-none">
-                <pre className="whitespace-pre-wrap text-sm bg-gray-50 p-4 rounded-lg border border-gray-200 overflow-x-auto">
-                  {aiAnalysis}
-                </pre>
+                                 <pre className="whitespace-pre-wrap text-sm bg-white p-4 rounded-lg border border-gray-200 overflow-x-auto text-black">
+                   {aiAnalysis}
+                 </pre>
               </div>
             </div>
 
@@ -1059,10 +1059,10 @@ ${version.stats.files} archivos modificados
                 <AILoader size="md" text="" />
               </div>
               <div className="flex-1">
-                <h4 className="text-lg font-semibold text-gray-900 mb-1">
+                <h4 className="text-lg font-semibold text-black mb-1">
                   Analizando con IA
                 </h4>
-                <p className="text-sm text-gray-600 mb-2">
+                <p className="text-sm text-black mb-2">
                   Procesando {analysisProgress}%
                 </p>
                 <div className="w-full bg-gray-200 rounded-full h-2">

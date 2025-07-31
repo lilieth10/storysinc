@@ -80,6 +80,7 @@ model Project {
   collaborators ProjectCollaborator[]
   aiChatHistory AIChatMessage[]
   aiAnalyses    AIAnalysis[]
+  aiCodeFiles   AICodeFile[]
   versions      Version[]
 }
 
@@ -237,6 +238,20 @@ model AIAnalysis {
   // Relations
   project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
   user    User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AICodeFile {
+  id        Int      @id @default(autoincrement())
+  projectId Int
+  fileName  String
+  code      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, fileName])
 }
 
 model AIModel {

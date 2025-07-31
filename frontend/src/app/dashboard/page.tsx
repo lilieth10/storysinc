@@ -261,7 +261,7 @@ export default function DashboardPage() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando dashboard...</p>
+          <p className="text-black">Cargando dashboard...</p>
         </div>
       </div>
     );
@@ -286,7 +286,7 @@ export default function DashboardPage() {
 
             {/* Título principal */}
             <div className="mb-8">
-              <h1 className="text-lg font-semibold text-gray-700 mb-2">
+              <h1 className="text-lg font-semibold text-black mb-2">
                 Resumen de rendimiento de la plataforma
               </h1>
             </div>
@@ -297,7 +297,7 @@ export default function DashboardPage() {
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h2 className="text-sm font-medium text-gray-600 mb-1">
+                    <h2 className="text-sm font-medium text-black mb-1">
                       Estadísticas
                     </h2>
                     <h3 className="text-lg font-bold text-gray-900">
@@ -305,7 +305,7 @@ export default function DashboardPage() {
                     </h3>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600">Filtrar:</span>
+                    <span className="text-sm text-black">Filtrar:</span>
                     <select className="text-sm border border-gray-300 rounded px-2 py-1">
                       <option>Últimos 6 meses</option>
                       <option>Último año</option>
@@ -325,7 +325,7 @@ export default function DashboardPage() {
 
               {/* Gráfico de Uso de Recursos (derecha) */}
               <div>
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                <h2 className="text-lg font-semibold text-black mb-4">
                   Resumen
                 </h2>
                 <div className="h-64 flex justify-center">

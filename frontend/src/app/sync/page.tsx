@@ -203,7 +203,7 @@ export default function SyncPage() {
         <div className="flex items-center space-x-3">
           <div className="flex-1">
             <p className="font-medium">¿Eliminar entrada del historial?</p>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-black">
               Esta acción no se puede deshacer
             </p>
           </div>
@@ -219,7 +219,7 @@ export default function SyncPage() {
             </button>
             <button
               onClick={() => toast.dismiss(t.id)}
-              className="px-3 py-1 bg-gray-300 text-gray-700 rounded text-sm hover:bg-gray-400"
+              className="px-3 py-1 bg-gray-300 text-black rounded text-sm hover:bg-gray-400"
             >
               Cancelar
             </button>
@@ -435,7 +435,7 @@ export default function SyncPage() {
               </div>
               <form className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-black mb-1">
                     Nombre del servicio
                   </label>
                   <input
@@ -452,7 +452,7 @@ export default function SyncPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-black mb-1">
                     Descripción
                   </label>
                   <textarea
@@ -464,13 +464,13 @@ export default function SyncPage() {
                       }))
                     }
                     rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black placeholder-gray-500"
                     placeholder="Describe el servicio"
                   />
                 </div>
                 {createType === "bff" && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-black mb-1">
                       Patrón
                     </label>
                     <select
@@ -481,7 +481,7 @@ export default function SyncPage() {
                           pattern: e.target.value,
                         }))
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black"
                     >
                       <option value="">Selecciona un patrón</option>
                       <option value="monolito">Monolito</option>
@@ -494,14 +494,14 @@ export default function SyncPage() {
                 )}
                 {createType === "sidecar" && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-black mb-1">
                       Funciones
                     </label>
                     <div className="flex gap-2 mb-1">
                       <input
                         type="text"
                         placeholder="Envío de Notificaciones"
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black placeholder-gray-500"
                         onKeyDown={(e) => {
                           if (e.key === "Enter") {
                             e.preventDefault();
@@ -513,7 +513,7 @@ export default function SyncPage() {
                       <input
                         type="text"
                         placeholder="Registro de Notificaciones"
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black placeholder-gray-500"
                         onKeyDown={(e) => {
                           if (e.key === "Enter") {
                             e.preventDefault();
@@ -628,7 +628,7 @@ export default function SyncPage() {
               style={{ maxWidth: "100%", minWidth: 0 }}
             >
               <div className="mb-6">
-                <h2 className="text-2xl font-bold text-gray-800">
+                <h2 className="text-2xl font-bold text-black">
                   Editar proyecto
                 </h2>
               </div>
@@ -1032,7 +1032,7 @@ export default function SyncPage() {
                   </div>
 
                   {/* Solo texto simple */}
-                  <p className="text-gray-600 font-medium text-lg">
+                  <p className="text-black font-medium text-lg">
                     Sincronizando...
                   </p>
                 </div>
@@ -1040,7 +1040,7 @@ export default function SyncPage() {
             )}
             <div className="w-full max-w-3xl bg-white border border-gray-200 rounded-lg shadow-sm mt-8 mb-8 px-8 py-6">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-800">
+                <h2 className="text-2xl font-bold text-black">
                   {selectedProject.name}
                 </h2>
                 <div className="flex gap-2">
@@ -1117,64 +1117,58 @@ export default function SyncPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <div className="mb-2">
-                    <span className="font-semibold">Tipo:</span>{" "}
-                    {selectedProject.pattern === "monolito"
+                    <span className="font-semibold text-black">Tipo:</span>{" "}
+                    <span className="text-black">{selectedProject.pattern === "monolito"
                       ? "Monolito"
                       : selectedProject.pattern === "microservicio"
                         ? "Microservicio"
-                        : selectedProject.pattern}
+                        : selectedProject.pattern}</span>
                   </div>
                   <div className="mb-2">
-                    <span className="font-semibold">Descripción:</span>{" "}
-                    {selectedProject.description}
+                    <span className="font-semibold text-black">Descripción:</span>{" "}
+                    <span className="text-black">{selectedProject.description}</span>
                   </div>
                   {selectedProject.pattern === "monolito" && (
                     <div className="mb-2">
-                      <span className="font-semibold">Patrón:</span>{" "}
-                      {selectedProject.pattern || "-"}
+                      <span className="font-semibold text-black">Patrón:</span>{" "}
+                      <span className="text-black">{selectedProject.pattern || "-"}</span>
                     </div>
                   )}
                   {selectedProject.pattern === "microservicio" && (
                     <div className="mb-2">
-                      <span className="font-semibold">Funciones:</span>{" "}
-                      {selectedProject.functions
+                      <span className="font-semibold text-black">Funciones:</span>{" "}
+                      <span className="text-black">{selectedProject.functions
                         ? JSON.parse(selectedProject.functions).join(", ")
-                        : "-"}
+                        : "-"}</span>
                     </div>
                   )}
                   <div className="mb-2">
-                    <span className="font-semibold">
-                      Asociación de Frontends:
-                    </span>{" "}
-                    {selectedProject.frontendAssociation || "-"}
+                    <span className="font-semibold text-black">Asociación de Frontends:</span>{" "}
+                    <span className="text-black">{selectedProject.frontendAssociation || "-"}</span>
                   </div>
                   <div className="mb-2">
-                    <span className="font-semibold">Contacto:</span>{" "}
-                    {selectedProject.contact || "-"}
+                    <span className="font-semibold text-black">Contacto:</span>{" "}
+                    <span className="text-black">{selectedProject.contact || "-"}</span>
                   </div>
                   <div className="mb-2">
-                    <span className="font-semibold">
-                      Descripción adicional:
-                    </span>{" "}
-                    {selectedProject.tags || "-"}
+                    <span className="font-semibold text-black">Descripción adicional:</span>{" "}
+                    <span className="text-black">{selectedProject.tags || "-"}</span>
                   </div>
                 </div>
                 <div>
                   <div className="mb-2">
-                    <span className="font-semibold">Estado:</span>{" "}
+                    <span className="font-semibold text-black">Estado:</span>{" "}
                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                       Activo
                     </span>
                   </div>
                   <div className="mb-2">
-                    <span className="font-semibold">
-                      Última sincronización:
-                    </span>{" "}
+                    <span className="font-semibold text-black">Última sincronización:</span>{" "}
                     <span
                       className={
-                        lastSyncHighlight
+                        (lastSyncHighlight
                           ? "bg-green-200 transition-all duration-700 px-2 rounded"
-                          : ""
+                          : "") + " text-black"
                       }
                     >
                       {selectedProject.lastSync
@@ -1218,7 +1212,7 @@ export default function SyncPage() {
                 ) : historyError ? (
                   <div className="text-red-600">{historyError}</div>
                 ) : syncHistory.length === 0 ? (
-                  <div className="text-gray-500">
+                  <div className="text-black">
                     No hay sincronizaciones registradas.
                   </div>
                 ) : expandedSections.history ? (
@@ -1248,7 +1242,7 @@ export default function SyncPage() {
                               idx % 2 === 0 ? "bg-green-50" : "bg-white"
                             }
                           >
-                            <td className="px-4 py-2 text-gray-700">
+                            <td className="px-4 py-2 text-black">
                               {new Date(h.date).toLocaleString()}
                             </td>
                             <td className="px-4 py-2">
@@ -1258,7 +1252,7 @@ export default function SyncPage() {
                                 {h.status === "success" ? "Éxito" : "Error"}
                               </span>
                             </td>
-                            <td className="px-4 py-2 text-gray-700">
+                            <td className="px-4 py-2 text-black">
                               {h.message || "-"}
                             </td>
                             <td className="px-4 py-2 text-right">
@@ -1302,14 +1296,14 @@ export default function SyncPage() {
                   {loadingMetrics ? (
                     <div className="text-center py-8">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto"></div>
-                      <p className="mt-2 text-gray-600">Analizando con IA...</p>
+                      <p className="mt-2 text-black">Analizando con IA...</p>
                     </div>
                   ) : aiMetrics ? (
                     <>
                       {/* Gráfico de rendimiento de sincronización */}
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                         <div className="bg-white border border-green-200 rounded-lg p-4">
-                          <h4 className="text-sm font-medium text-gray-900 mb-3">
+                          <h4 className="text-sm font-medium text-black mb-3">
                             Rendimiento de Sincronización
                           </h4>
                           <div className="h-64">
@@ -1364,7 +1358,7 @@ export default function SyncPage() {
                         </div>
 
                         <div className="bg-white border border-green-200 rounded-lg p-4">
-                          <h4 className="text-sm font-medium text-gray-900 mb-3">
+                          <h4 className="text-sm font-medium text-black mb-3">
                             Patrones Detectados
                           </h4>
                           <div className="h-64">
@@ -1424,9 +1418,9 @@ export default function SyncPage() {
 
                       {/* Sugerencias de IA */}
                       <div className="bg-white border border-green-200 rounded-lg p-4 mb-6">
-                        <h4 className="text-sm font-medium text-gray-900 mb-3">
-                          Sugerencias de IA
-                        </h4>
+                                                  <h4 className="text-sm font-medium text-black mb-3">
+                            Sugerencias de IA
+                          </h4>
                         <div className="space-y-3">
                           {(aiMetrics.suggestions || []).map(
                             (suggestion, index) => (
@@ -1450,10 +1444,10 @@ export default function SyncPage() {
                                   }`}
                                 ></div>
                                 <div>
-                                  <p className="text-sm font-medium text-gray-900">
+                                  <p className="text-sm font-medium text-black">
                                     {suggestion.title}
                                   </p>
-                                  <p className="text-xs text-gray-600">
+                                  <p className="text-xs text-black">
                                     {suggestion.description}
                                   </p>
                                 </div>
@@ -1468,7 +1462,7 @@ export default function SyncPage() {
                         <div className="bg-white border border-green-200 rounded-lg p-4">
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="text-sm text-gray-600">
+                              <p className="text-sm text-black">
                                 Tiempo Promedio
                               </p>
                               <p className="text-2xl font-bold text-green-600">
@@ -1484,7 +1478,7 @@ export default function SyncPage() {
                         <div className="bg-white border border-green-200 rounded-lg p-4">
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="text-sm text-gray-600">
+                              <p className="text-sm text-black">
                                 Tasa de Éxito
                               </p>
                               <p className="text-2xl font-bold text-green-600">
@@ -1500,7 +1494,7 @@ export default function SyncPage() {
                         <div className="bg-white border border-green-200 rounded-lg p-4">
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="text-sm text-gray-600">
+                              <p className="text-sm text-black">
                                 Optimizaciones IA
                               </p>
                               <p className="text-2xl font-bold text-green-600">
@@ -1515,7 +1509,7 @@ export default function SyncPage() {
                       </div>
                     </>
                   ) : (
-                    <div className="text-center py-8 text-gray-500">
+                    <div className="text-center py-8 text-black">
                       No hay datos de IA disponibles para este proyecto.
                     </div>
                   )}
@@ -1540,13 +1534,13 @@ export default function SyncPage() {
           <div className="flex-1 bg-white p-6">
             <div className="flex justify-between items-center mb-6">
               <div className="relative">
-                <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-black" />
                 <input
                   type="text"
                   placeholder="Buscar proyectos..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 w-80"
+                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 w-80 text-black placeholder-gray-500"
                 />
               </div>
               <Button
@@ -1559,14 +1553,14 @@ export default function SyncPage() {
             </div>
 
             <div className="mb-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              <h2 className="text-lg font-semibold text-black mb-4">
                 Proyectos sincronizados
               </h2>
 
               {loading ? (
                 <div className="text-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto"></div>
-                  <p className="mt-2 text-gray-600">Cargando proyectos...</p>
+                  <p className="mt-2 text-black">Cargando proyectos...</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1578,12 +1572,12 @@ export default function SyncPage() {
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex items-center">
-                          <FolderIcon className="w-8 h-8 text-gray-400 mr-3" />
+                          <FolderIcon className="w-8 h-8 text-black mr-3" />
                           <div>
-                            <h3 className="font-medium text-gray-900">
+                            <h3 className="font-medium text-black">
                               {project.name}
                             </h3>
-                            <p className="text-sm text-gray-500 capitalize">
+                            <p className="text-sm text-black capitalize">
                               {project.pattern === "monolito"
                                 ? "Monolito"
                                 : project.pattern === "microservicio"

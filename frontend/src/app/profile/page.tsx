@@ -113,14 +113,14 @@ export default function ProfilePage() {
                   value={form.fullName ?? ""}
                   onChange={handleChange}
                   placeholder="Nombre completo"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-black placeholder-gray-500"
                 />
                 <input
                   name="email"
                   value={form.email ?? ""}
                   onChange={handleChange}
                   placeholder="Correo electrónico"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-black placeholder-gray-500"
                 />
                 <input
                   name="password"
@@ -128,7 +128,7 @@ export default function ProfilePage() {
                   value={form.password ?? ""}
                   onChange={handleChange}
                   placeholder="Contraseña"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-black placeholder-gray-500"
                 />
                 <input
                   name="confirmPassword"
@@ -136,14 +136,14 @@ export default function ProfilePage() {
                   value={form.confirmPassword ?? ""}
                   onChange={handleChange}
                   placeholder="Repetir contraseña"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-black placeholder-gray-500"
                 />
                 <input
                   name="phone"
                   value={form.phone ?? ""}
                   onChange={handleChange}
                   placeholder="No. de teléfono"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-black placeholder-gray-500"
                 />
                 <input
                   name="birthdate"
@@ -151,14 +151,14 @@ export default function ProfilePage() {
                   value={form.birthdate ? form.birthdate.substring(0, 10) : ""}
                   onChange={handleChange}
                   placeholder="Fecha de nacimiento"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-black"
                 />
                 <textarea
                   name="address"
                   value={form.address ?? ""}
                   onChange={handleChange}
                   placeholder="Dirección"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md resize-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md resize-none text-black placeholder-gray-500"
                 />
                 <div className="flex gap-2 mt-2">
                   <Button type="submit" className="flex-1" disabled={loading}>
@@ -178,25 +178,25 @@ export default function ProfilePage() {
           ) : (
             <>
               <div className="text-center mb-4">
-                <h2 className="text-xl font-bold text-gray-900">
+                <h2 className="text-xl font-bold text-black">
                   {form.fullName}
                 </h2>
-                <p className="text-gray-500 text-sm">@{form.username}</p>
+                <p className="text-black text-sm">@{form.username}</p>
               </div>
               <div className="w-full flex flex-col gap-2 mb-4">
                 <div className="flex items-center justify-between">
-                  <span className="font-semibold text-gray-700">Correo:</span>
-                  <span className="text-gray-600">{form.email}</span>
+                  <span className="font-semibold text-black">Correo:</span>
+                  <span className="text-black">{form.email}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="font-semibold text-gray-700">Teléfono:</span>
-                  <span className="text-gray-600">{form.phone || "-"}</span>
+                  <span className="font-semibold text-black">Teléfono:</span>
+                  <span className="text-black">{form.phone || "-"}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="font-semibold text-gray-700">
+                  <span className="font-semibold text-black">
                     Nacimiento:
                   </span>
-                  <span className="text-gray-600">
+                  <span className="text-black">
                     {form.birthdate ? form.birthdate.substring(0, 10) : "-"}
                   </span>
                 </div>

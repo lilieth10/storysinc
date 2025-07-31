@@ -213,7 +213,7 @@ export default function TrainingPage() {
               <div className="mb-6">
                 <button
                   onClick={handleGoBack}
-                  className="text-gray-600 hover:text-gray-800 font-medium flex items-center gap-2"
+                  className="text-black hover:text-gray-800 font-medium flex items-center gap-2"
                 >
                   <span>←</span>
                   <span>Volver a Capacitaciones</span>
@@ -222,11 +222,11 @@ export default function TrainingPage() {
 
               {/* Contenido del curso */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-                <h1 className="text-3xl font-bold text-gray-900 mb-6">
+                <h1 className="text-3xl font-bold text-black mb-6">
                   {selectedResource.title}
                 </h1>
 
-                <p className="text-gray-600 leading-relaxed mb-8">
+                <p className="text-black leading-relaxed mb-8">
                   {selectedResource.description}
                 </p>
 
@@ -234,10 +234,10 @@ export default function TrainingPage() {
                 {selectedResource.userProgress && (
                   <div className="mb-6">
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-medium text-gray-700">
+                      <span className="text-sm font-medium text-black">
                         Progreso
                       </span>
-                      <span className="text-sm text-gray-500">
+                      <span className="text-sm text-black">
                         {selectedResource.userProgress.progress}%
                       </span>
                     </div>
@@ -303,7 +303,7 @@ export default function TrainingPage() {
             <div className="mb-6">
               <button
                 onClick={handleGoBack}
-                className="text-gray-600 hover:text-gray-800 font-medium flex items-center gap-2"
+                className="text-black hover:text-gray-800 font-medium flex items-center gap-2"
               >
                 <span>←</span>
                 <span>Capacitación</span>
@@ -312,7 +312,7 @@ export default function TrainingPage() {
 
             {/* Título principal */}
             <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900">CAPACITACIÓN</h1>
+              <h1 className="text-3xl font-bold text-black">CAPACITACIÓN</h1>
             </div>
 
             {/* Barra de búsqueda */}
@@ -321,7 +321,7 @@ export default function TrainingPage() {
                 <input
                   type="text"
                   placeholder="Buscar recursos de capacitación..."
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black placeholder-gray-500"
                   onChange={(e) => handleSearch(e.target.value)}
                 />
                 <button className="absolute right-2 top-2 text-gray-400">
@@ -372,10 +372,10 @@ export default function TrainingPage() {
                     {/* Material de capacitación - Overview */}
                     {resource.type === "overview" && (
                       <div className="mb-8">
-                        <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                        <h2 className="text-xl font-semibold text-black mb-4">
                           {resource.title}
                         </h2>
-                        <p className="text-gray-600 mb-6 leading-relaxed max-w-4xl">
+                        <p className="text-black mb-6 leading-relaxed max-w-4xl">
                           {resource.description}
                         </p>
                         {resource.hasButton && (
@@ -395,7 +395,7 @@ export default function TrainingPage() {
                         className={`flex ${resource.position === "left" ? "flex-row-reverse" : "flex-row"} gap-8 items-start mb-8`}
                       >
                         <div className="flex-1 max-w-2xl">
-                          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                          <h2 className="text-xl font-semibold text-black mb-4">
                             {resource.title}
                           </h2>
                           <p className="text-gray-600 leading-relaxed mb-4">

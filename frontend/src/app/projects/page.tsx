@@ -158,11 +158,11 @@ export default function ProjectsPage() {
       case "active":
         return "bg-green-100 text-green-800";
       case "inactive":
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-100 text-black";
       case "archived":
         return "bg-red-100 text-red-800";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-100 text-black";
     }
   };
 
@@ -217,7 +217,7 @@ export default function ProjectsPage() {
             {/* Header con búsqueda y crear como en el Figma */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
               <div className="flex flex-1 items-center gap-6 max-w-3xl w-full">
-                <h1 className="text-2xl font-bold text-gray-800 whitespace-nowrap mr-4">
+                <h1 className="text-2xl font-bold text-black whitespace-nowrap mr-4">
                   Proyectos
                 </h1>
                 <div className="flex-1">
@@ -225,10 +225,10 @@ export default function ProjectsPage() {
                     <input
                       type="text"
                       placeholder="Buscar proyectos..."
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black placeholder-gray-500"
                     />
                     <svg
-                      className="absolute left-3 top-2.5 h-5 w-5 text-gray-400"
+                      className="absolute left-3 top-2.5 h-5 w-5 text-black"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -270,7 +270,7 @@ export default function ProjectsPage() {
               <select
                 value={filterPattern}
                 onChange={(e) => setFilterPattern(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black"
               >
                 <option value="all">Todos los patrones</option>
                 <option value="monolith">Monolito</option>
@@ -282,7 +282,7 @@ export default function ProjectsPage() {
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black"
               >
                 <option value="all">Todos los estados</option>
                 <option value="active">Activo</option>
@@ -294,7 +294,7 @@ export default function ProjectsPage() {
             {/* Project Grid - Corregido como en Figma */}
             {filteredProjects.length === 0 ? (
               <div className="text-center py-12">
-                <div className="text-gray-500 mb-4">
+                <div className="text-black mb-4">
                   No se encontraron proyectos
                 </div>
                 <button
@@ -321,10 +321,10 @@ export default function ProjectsPage() {
                             </span>
                           </div>
                           <div className="min-w-0 flex-1">
-                            <h3 className="text-base md:text-lg font-semibold text-gray-900 truncate">
+                            <h3 className="text-base md:text-lg font-semibold text-black truncate">
                               {project.name}
                             </h3>
-                            <p className="text-sm text-gray-600 line-clamp-2 mt-1">
+                            <p className="text-sm text-black line-clamp-2 mt-1">
                               {project.description}
                             </p>
                           </div>
@@ -342,7 +342,7 @@ export default function ProjectsPage() {
                               setSelectedProject(project);
                               setShowDeleteModal(true);
                             }}
-                            className="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0"
+                            className="text-black hover:text-red-500 transition-colors flex-shrink-0"
                           >
                             <svg
                               className="w-4 h-4"
@@ -363,11 +363,11 @@ export default function ProjectsPage() {
 
                       {/* Información del proyecto */}
                       <div className="space-y-1 mb-3">
-                        <div className="text-xs text-gray-600">
+                        <div className="text-xs text-black">
                           Última sincronización:{" "}
                           {new Date(project.lastSync).toLocaleDateString()}
                         </div>
-                        <div className="text-xs text-gray-600">
+                        <div className="text-xs text-black">
                           Propietario: {project.owner?.name || "John Doe"}
                         </div>
                       </div>
@@ -381,13 +381,13 @@ export default function ProjectsPage() {
                             .map((tag, index) => (
                               <span
                                 key={index}
-                                className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
+                                className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-black"
                               >
                                 {tag.trim()}
                               </span>
                             ))}
                           {project.tags.split(",").length > 3 && (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-black">
                               +{project.tags.split(",").length - 3}
                             </span>
                           )}
@@ -445,7 +445,7 @@ export default function ProjectsPage() {
                           <button
                             onClick={() => handleSyncProject(project.id)}
                             disabled={loadingIA}
-                            className="flex-1 inline-flex items-center justify-center px-2 py-2 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 inline-flex items-center justify-center px-2 py-2 border border-gray-300 text-xs font-medium rounded-md text-black bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <svg
                               className="w-3 h-3 mr-1"
@@ -473,7 +473,7 @@ export default function ProjectsPage() {
             {/* Paginación como en el Figma */}
             {filteredProjects.length > 0 && (
               <div className="flex justify-center items-center space-x-1 md:space-x-2">
-                <button className="px-2 md:px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                <button className="px-2 md:px-3 py-2 text-sm font-medium text-black bg-white border border-gray-300 rounded-md hover:bg-gray-50">
                   <svg
                     className="w-4 h-4"
                     fill="none"
@@ -491,19 +491,19 @@ export default function ProjectsPage() {
                 <button className="px-2 md:px-3 py-2 text-sm font-medium text-white bg-green-600 border border-green-600 rounded-md">
                   1
                 </button>
-                <button className="px-2 md:px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                <button className="px-2 md:px-3 py-2 text-sm font-medium text-black bg-white border border-gray-300 rounded-md hover:bg-gray-50">
                   2
                 </button>
-                <button className="px-2 md:px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                <button className="px-2 md:px-3 py-2 text-sm font-medium text-black bg-white border border-gray-300 rounded-md hover:bg-gray-50">
                   3
                 </button>
-                <button className="px-2 md:px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                <button className="px-2 md:px-3 py-2 text-sm font-medium text-black bg-white border border-gray-300 rounded-md hover:bg-gray-50">
                   4
                 </button>
-                <button className="px-2 md:px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                <button className="px-2 md:px-3 py-2 text-sm font-medium text-black bg-white border border-gray-300 rounded-md hover:bg-gray-50">
                   5
                 </button>
-                <button className="px-2 md:px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                <button className="px-2 md:px-3 py-2 text-sm font-medium text-black bg-white border border-gray-300 rounded-md hover:bg-gray-50">
                   <svg
                     className="w-4 h-4"
                     fill="none"
@@ -525,12 +525,12 @@ export default function ProjectsPage() {
             {showCreateForm && (
               <div className="bg-white border border-gray-200 rounded-lg p-6 md:p-8 mb-8">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-semibold text-gray-900">
+                  <h2 className="text-xl font-semibold text-black">
                     Crear un nuevo repositorio
                   </h2>
                   <button
                     onClick={() => setShowCreateForm(false)}
-                    className="text-gray-400 hover:text-gray-600"
+                    className="text-black hover:text-gray-600"
                   >
                     <svg
                       className="w-6 h-6"
@@ -551,7 +551,7 @@ export default function ProjectsPage() {
                 <div className="space-y-6">
                   <div className="flex flex-col md:flex-row md:items-center md:gap-6">
                     <div className="flex-1">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-black mb-2">
                         Nombre de repositorio{" "}
                         <span className="text-red-500">*</span>
                       </label>
@@ -561,12 +561,12 @@ export default function ProjectsPage() {
                         onChange={(e) =>
                           setFormData({ ...formData, name: e.target.value })
                         }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black placeholder-gray-500"
                         placeholder="Mi Proyecto"
                       />
                     </div>
                     <div className="flex-1 mt-4 md:mt-0">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-black mb-2">
                         Dueño <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -575,32 +575,32 @@ export default function ProjectsPage() {
                           /* Aquí deberías poner el valor del dueño si lo tienes, por ahora vacío */ ""
                         }
                         readOnly
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500 cursor-not-allowed"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-black cursor-not-allowed"
                         placeholder="Nombre del dueño"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-black mb-2">
                       Descripción
                     </label>
-                    <textarea
-                      value={formData.description}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          description: e.target.value,
-                        })
-                      }
-                      rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                      placeholder="Describe tu proyecto..."
-                    />
+                                          <textarea
+                        value={formData.description}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            description: e.target.value,
+                          })
+                        }
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black placeholder-gray-500"
+                        placeholder="Describe tu proyecto..."
+                      />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-black mb-2">
                       Licencia
                     </label>
                     <select
@@ -608,7 +608,7 @@ export default function ProjectsPage() {
                       onChange={(e) =>
                         setFormData({ ...formData, license: e.target.value })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black"
                     >
                       <option value="MIT">MIT License</option>
                       <option value="Apache">Apache License 2.0</option>
@@ -618,7 +618,7 @@ export default function ProjectsPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-black mb-2">
                       Visibilidad
                     </label>
                     <div className="space-y-2">
@@ -669,7 +669,7 @@ export default function ProjectsPage() {
                         />
                         <span className="mr-1">
                           <svg
-                            className="inline w-4 h-4 text-gray-500"
+                            className="inline w-4 h-4 text-black"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -689,7 +689,7 @@ export default function ProjectsPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-black mb-2">
                       Inicializar este repositorio con:
                     </label>
                     <div className="space-y-2">
@@ -744,7 +744,7 @@ export default function ProjectsPage() {
                   <div className="flex justify-end space-x-3 pt-4">
                     <button
                       onClick={() => setShowCreateForm(false)}
-                      className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                      className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-black hover:bg-gray-50"
                     >
                       Cancelar
                     </button>
@@ -776,10 +776,10 @@ export default function ProjectsPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg w-full max-w-md">
             <div className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              <h3 className="text-lg font-semibold text-black mb-4">
                 Eliminar Proyecto
               </h3>
-              <p className="text-gray-600 mb-6">
+              <p className="text-black mb-6">
                 ¿Estás seguro de que quieres eliminar el proyecto &quot;
                 {selectedProject?.name}&quot;? Esta acción no se puede deshacer.
               </p>
@@ -787,7 +787,7 @@ export default function ProjectsPage() {
               <div className="flex justify-end space-x-3">
                 <button
                   onClick={() => setShowDeleteModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-black hover:bg-gray-50"
                 >
                   Cancelar
                 </button>

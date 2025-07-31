@@ -9,7 +9,9 @@ import {
   Request,
   HttpException,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { PrismaService } from './prisma.service';
 
 interface AuthenticatedRequest extends Request {
@@ -29,7 +31,20 @@ interface QueryDto {
   query: string;
 }
 
+interface SaveCodeDto {
+  projectId: number;
+  fileName: string;
+  code: string;
+}
+
+interface N8nAnalysisDto {
+  projectId: number;
+  fileName: string;
+  code: string;
+}
+
 @Controller('ai')
+@UseGuards(AuthGuard('jwt'))
 export class AIController {
   constructor(private prisma: PrismaService) {}
 
@@ -61,6 +76,95 @@ export class AIController {
     } catch (error) {
       console.error('Error calling OpenAI:', error);
       return this.generateResponse(prompt, project);
+    }
+  }
+
+  // Función para enviar datos a n8n
+  private async sendToN8n(codigo: string, lenguaje: string): Promise<any> {
+    try {
+      const response = await fetch('https://n8n.useteam.io/webhook/071-maqueta_v2', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          codigo,
+          lenguaje,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error sending to n8n:', error);
+      throw new HttpException(
+        'Error al enviar datos a n8n',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  // Analizar código con n8n
+  @Post('analyze-with-n8n')
+  async analyzeWithN8n(
+    @Body() body: N8nAnalysisDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    try {
+      // Verificar que el proyecto pertenece al usuario
+      const project = await this.prisma.project.findFirst({
+        where: {
+          id: body.projectId,
+          OR: [
+            { ownerId: req.user.userId ?? req.user.id },
+            {
+              collaborators: {
+                some: { userId: req.user.userId ?? req.user.id },
+              },
+            },
+          ],
+        },
+      });
+
+      if (!project) {
+        throw new HttpException(
+          'Proyecto no encontrado o no tienes permisos',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      // Determinar el lenguaje basado en la extensión del archivo
+      const fileExtension = body.fileName.split('.').pop()?.toLowerCase();
+      let lenguaje = 'javascript'; // por defecto
+
+      if (fileExtension === 'py' || fileExtension === 'python') {
+        lenguaje = 'python';
+      } else if (fileExtension === 'js' || fileExtension === 'jsx' || fileExtension === 'ts' || fileExtension === 'tsx') {
+        lenguaje = 'javascript';
+      } else if (fileExtension === 'java') {
+        lenguaje = 'java';
+      } else if (fileExtension === 'cpp' || fileExtension === 'c') {
+        lenguaje = 'cpp';
+      }
+
+      // Enviar a n8n
+      const n8nResponse = await this.sendToN8n(body.code, lenguaje);
+
+      return {
+        success: true,
+        analysis: n8nResponse,
+        language: lenguaje,
+      };
+    } catch (error) {
+      console.error('Error analyzing with n8n:', error);
+      throw new HttpException(
+        'Error al analizar código con n8n',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -140,6 +244,127 @@ export class AIController {
       console.error('Error analyzing code:', error);
       throw new HttpException(
         'Error interno del servidor',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  // Guardar código editado
+  @Post('save-code')
+  async saveCode(
+    @Body() body: SaveCodeDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    try {
+      // Verificar que el proyecto pertenece al usuario
+      const project = await this.prisma.project.findFirst({
+        where: {
+          id: body.projectId,
+          OR: [
+            { ownerId: req.user.userId ?? req.user.id },
+            {
+              collaborators: {
+                some: { userId: req.user.userId ?? req.user.id },
+              },
+            },
+          ],
+        },
+      });
+
+      if (!project) {
+        throw new HttpException('Proyecto no encontrado', HttpStatus.NOT_FOUND);
+      }
+
+      // Buscar si ya existe un registro para este archivo
+      const existingCode = await this.prisma.aICodeFile.findFirst({
+        where: {
+          projectId: body.projectId,
+          fileName: body.fileName,
+        },
+      });
+
+      if (existingCode) {
+        // Actualizar código existente
+        await this.prisma.aICodeFile.update({
+          where: { id: existingCode.id },
+          data: {
+            code: body.code,
+            updatedAt: new Date(),
+          },
+        });
+      } else {
+        // Crear nuevo registro
+        await this.prisma.aICodeFile.create({
+          data: {
+            projectId: body.projectId,
+            fileName: body.fileName,
+            code: body.code,
+          },
+        });
+      }
+
+      return {
+        success: true,
+        message: 'Código guardado exitosamente',
+        projectId: body.projectId,
+        fileName: body.fileName,
+      };
+    } catch (error) {
+      console.error('Error saving code:', error);
+      throw new HttpException(
+        'Error interno del servidor',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  // Cargar código guardado para un archivo específico
+  @Get('load-code/:projectId/:fileName')
+  async loadCode(
+    @Request() req: AuthenticatedRequest,
+    projectId: number,
+    fileName: string,
+  ) {
+    try {
+      // Verificar que el proyecto pertenece al usuario
+      const project = await this.prisma.project.findFirst({
+        where: {
+          id: projectId,
+          OR: [
+            { ownerId: req.user.userId ?? req.user.id },
+            {
+              collaborators: {
+                some: { userId: req.user.userId ?? req.user.id },
+              },
+            },
+          ],
+        },
+      });
+
+      if (!project) {
+        throw new HttpException(
+          'Proyecto no encontrado o no tienes permisos',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      // Buscar el archivo guardado
+      const savedFile = await this.prisma.aICodeFile.findFirst({
+        where: {
+          projectId,
+          fileName,
+        },
+      });
+
+      if (savedFile) {
+        return { code: savedFile.code };
+      } else {
+        return { code: null };
+      }
+    } catch (error) {
+      console.error('Error loading code:', error);
+      throw new HttpException(
+        'Error al cargar el código',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
