@@ -76,4 +76,42 @@ export class UserService {
     });
     return user;
   }
+
+  async getUserStats(userId: number) {
+    // Contar proyectos del usuario
+    const projectsCount = await this.prisma.project.count({
+      where: {
+        OR: [
+          { ownerId: userId },
+          {
+            collaborators: {
+              some: { userId: userId },
+            },
+          },
+        ],
+      },
+    });
+
+    // Contar análisis de IA (mensajes de chat)
+    const aiAnalysisCount = await this.prisma.aIChatMessage.count({
+      where: {
+        userId: userId,
+        isAI: true,
+      },
+    });
+
+    // Obtener fecha de creación del usuario
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { createdAt: true },
+    });
+
+    return {
+      projects: projectsCount,
+      aiAnalysis: aiAnalysisCount,
+      memberSince: user?.createdAt
+        ? new Date(user.createdAt).getFullYear()
+        : 2024,
+    };
+  }
 }
