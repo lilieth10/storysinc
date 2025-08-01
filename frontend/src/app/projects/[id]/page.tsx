@@ -1322,18 +1322,18 @@ console.log("¡Hola mundo!");`;
                             
                             {/* Modal de Loader de IA - Flotante dentro del editor */}
                             {showIAModal && (
-                              <div className="absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center z-10">
-                                <div className="bg-white rounded-2xl p-8 shadow-2xl border border-gray-200">
+                              <div className="absolute inset-0 bg-white bg-opacity-95 flex items-center justify-center z-10">
+                                <div className="bg-white rounded-3xl p-12 shadow-2xl border border-gray-200 max-w-md w-full mx-4">
                                   <div className="text-center">
                                     {/* Spinner principal con SVG */}
-                                    <div className="mb-4">
+                                    <div className="mb-6">
                                       <svg
-                                        width={80}
-                                        height={80}
+                                        width={100}
+                                        height={100}
                                         viewBox="0 0 100 100"
                                         fill="none"
                                         xmlns="http://www.w3.org/2000/svg"
-                                        className="w-20 h-20 mx-auto"
+                                        className="w-24 h-24 mx-auto"
                                       >
                                         {/* Central "Brain" Node - Pulsing */}
                                         <circle cx="50" cy="50" r="15" fill="#4CAF50" opacity="0.8">
@@ -1459,8 +1459,21 @@ console.log("¡Hola mundo!");`;
                                       </svg>
                                     </div>
 
-                                    {/* Texto dinámico */}
-                                    <p className="text-gray-600 font-medium">Analizando código con IA...</p>
+                                    {/* Título principal */}
+                                    <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                                      Analizando código con IA
+                                    </h3>
+                                    
+                                    {/* Mensaje específico */}
+                                    <p className="text-gray-600 font-medium mb-4">
+                                      Analizando archivo: {selectedFile?.name || 'archivo seleccionado'}
+                                    </p>
+                                    
+                                    {/* Descripción del proceso */}
+                                    <p className="text-sm text-gray-500 leading-relaxed">
+                                      La IA está revisando tu código para detectar oportunidades de mejora, 
+                                      optimizaciones y mejores prácticas. Esto puede tomar unos segundos...
+                                    </p>
                                   </div>
                                 </div>
                               </div>
@@ -1471,7 +1484,7 @@ console.log("¡Hola mundo!");`;
                         {/* Right Panel - Output & IA Analysis */}
                         <div className="w-full lg:w-96 bg-white border-l border-gray-200 flex flex-col">
                           {/* Output Section */}
-                          <div className="flex-1 border-b border-gray-200">
+                          <div className="h-1/2 border-b border-gray-200">
                             <div className="p-4">
                               <div className="flex items-center justify-between mb-3">
                                 <h3 className="text-sm font-medium text-gray-900">
@@ -1505,7 +1518,7 @@ console.log("¡Hola mundo!");`;
                               {showPreview &&
                               getLanguageFromFile(selectedFile?.name || "") ===
                                 "html" ? (
-                                <div className="bg-white border border-gray-200 rounded-lg h-48 overflow-hidden">
+                                <div className="bg-white border border-gray-200 rounded-lg h-40 overflow-hidden">
                                   <iframe
                                     srcDoc={previewContent}
                                     className="w-full h-full"
@@ -1514,7 +1527,7 @@ console.log("¡Hola mundo!");`;
                                   />
                                 </div>
                               ) : (
-                                <div className="bg-gray-50 rounded-lg p-3 h-48 overflow-y-auto">
+                                <div className="bg-gray-50 rounded-lg p-3 h-40 overflow-y-auto">
                                   <pre className="text-xs text-gray-700 whitespace-pre-wrap">
                                     {executionOutput ||
                                       "Ejecuta el código para ver la salida..."}
@@ -1525,11 +1538,16 @@ console.log("¡Hola mundo!");`;
                           </div>
 
                           {/* IA Analysis Section */}
-                          <div className="flex-1">
+                          <div className="h-1/2 overflow-y-auto">
                             <div className="p-4">
-                              <h3 className="text-sm font-medium text-gray-900 mb-3">
-                                Análisis de IA
-                              </h3>
+                              <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-sm font-semibold text-gray-900 flex items-center">
+                                  <svg className="w-4 h-4 mr-2 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                  Análisis de IA
+                                </h3>
+                              </div>
                               {iaAnalysis ? (
                                 <div className="space-y-4">
                                   {/* Estructura real de n8n (071-maqueta) */}
@@ -1539,46 +1557,60 @@ console.log("¡Hola mundo!");`;
                                       {iaAnalysis.output?.Sugerencias &&
                                         iaAnalysis.output.Sugerencias.length >
                                           0 && (
-                                          <Card className="p-3">
-                                            <h4 className="text-sm font-medium text-gray-900 mb-2">
-                                              Sugerencias
-                                            </h4>
-                                            <div className="space-y-1">
+                                          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 shadow-sm">
+                                            <div className="flex items-center mb-3">
+                                              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                                                <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                                </svg>
+                                              </div>
+                                              <h4 className="text-sm font-semibold text-blue-900">
+                                                Sugerencias
+                                              </h4>
+                                            </div>
+                                            <div className="space-y-3">
                                               {iaAnalysis.output.Sugerencias.map(
                                                 (sugerencia, idx) => (
-                                                  <p
-                                                    key={idx}
-                                                    className="text-xs text-gray-600"
-                                                  >
-                                                    • {sugerencia}
-                                                  </p>
+                                                  <div key={idx} className="flex items-start">
+                                                    <div className="w-2 h-2 bg-blue-400 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                                                    <p className="text-sm text-blue-800 leading-relaxed">
+                                                      {sugerencia}
+                                                    </p>
+                                                  </div>
                                                 ),
                                               )}
                                             </div>
-                                          </Card>
+                                          </div>
                                         )}
 
                                       {/* Advertencias */}
                                       {iaAnalysis.output?.Advertencias &&
                                         iaAnalysis.output.Advertencias.length >
                                           0 && (
-                                          <Card className="p-3">
-                                            <h4 className="text-sm font-medium text-gray-900 mb-2">
-                                              Advertencias
-                                            </h4>
-                                            <div className="space-y-1">
+                                          <div className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-xl p-4 shadow-sm">
+                                            <div className="flex items-center mb-3">
+                                              <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center mr-3">
+                                                <svg className="w-4 h-4 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                                                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                                </svg>
+                                              </div>
+                                              <h4 className="text-sm font-semibold text-red-900">
+                                                Advertencias
+                                              </h4>
+                                            </div>
+                                            <div className="space-y-3">
                                               {iaAnalysis.output.Advertencias.map(
                                                 (advertencia, idx) => (
-                                                  <p
-                                                    key={idx}
-                                                    className="text-xs text-red-600"
-                                                  >
-                                                    ⚠ {advertencia}
-                                                  </p>
+                                                  <div key={idx} className="flex items-start">
+                                                    <div className="w-2 h-2 bg-red-400 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                                                    <p className="text-sm text-red-800 leading-relaxed">
+                                                      {advertencia}
+                                                    </p>
+                                                  </div>
                                                 ),
                                               )}
                                             </div>
-                                          </Card>
+                                          </div>
                                         )}
                                     </>
                                   )}
