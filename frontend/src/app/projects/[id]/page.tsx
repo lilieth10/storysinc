@@ -1141,7 +1141,7 @@ console.log("¡Hola mundo!");`;
                       <select
                         value={currentBranch}
                         onChange={(e) => setCurrentBranch(e.target.value)}
-                        className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-gray-50"
+                        className="text-black px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-gray-50"
                       >
                         <option value="main">Principal</option>
                         <option value="develop">develop</option>
@@ -1161,7 +1161,7 @@ console.log("¡Hola mundo!");`;
                         <input
                           type="text"
                           placeholder="Ir al archivo..."
-                          className="pl-10 pr-4 py-1.5 border border-gray-300 rounded-lg text-sm w-full sm:w-80 focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-gray-50"
+                          className="text-black pl-10 pr-4 py-1.5 border border-gray-300 rounded-lg text-sm w-full sm:w-80 focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-gray-50"
                         />
                       </div>
                     </div>
@@ -1875,7 +1875,7 @@ console.log("¡Hola mundo!");`;
                         onChange={(e) =>
                           setNewColab({ ...newColab, name: e.target.value })
                         }
-                        className="w-full mb-3 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500"
+                        className="text-black w-full mb-3 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500"
                       />
                       <input
                         type="email"
@@ -1884,7 +1884,7 @@ console.log("¡Hola mundo!");`;
                         onChange={(e) =>
                           setNewColab({ ...newColab, email: e.target.value })
                         }
-                        className="w-full mb-3 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500"
+                        className="text-black w-full mb-3 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500"
                       />
                       <div className="flex justify-end gap-2 mt-4">
                         <Button
@@ -2005,7 +2005,7 @@ console.log("¡Hola mundo!");`;
                           project.owner?.fullName || project.owner?.name || ""
                         }
                         readOnly
-                        className="w-full px-4 py-3 border border-gray-300 rounded-md bg-gray-100 text-gray-700 cursor-not-allowed"
+                        className="text-black w-full px-4 py-3 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
                       />
                     </div>
                     <div>
@@ -2018,7 +2018,7 @@ console.log("¡Hola mundo!");`;
                         name="name"
                         value={editConfig.name}
                         onChange={handleConfigChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        className="text-black w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
                         readOnly={!isEditingConfig}
                       />
                     </div>
@@ -2032,7 +2032,7 @@ console.log("¡Hola mundo!");`;
                       value={editConfig.description}
                       onChange={handleConfigChange}
                       rows={4}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      className="text-black w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
                       readOnly={!isEditingConfig}
                     />
                   </div>

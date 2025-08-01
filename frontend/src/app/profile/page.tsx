@@ -163,7 +163,7 @@ export default function ProfilePage() {
                   {!edit && (
                     <button
                       onClick={() => setEdit(true)}
-                      className="bg-white text-black hover:bg-gray-50 border-2 border-green-600 px-6 py-3 rounded-full font-semibold text-black"
+                      className="bg-white text-black hover:bg-gray-50 border-2 border-green-600 px-6 py-3 rounded-full font-semibold"
                     >
                       Editar Perfil
                     </button>

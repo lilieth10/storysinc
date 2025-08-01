@@ -306,7 +306,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-black">Filtrar:</span>
-                    <select className="text-sm border border-gray-300 rounded px-2 py-1">
+                    <select className="text-black text-sm border border-gray-300 rounded px-2 py-1">
                       <option>Últimos 6 meses</option>
                       <option>Último año</option>
                       <option>Últimos 30 días</option>

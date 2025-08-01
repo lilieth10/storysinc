@@ -10,7 +10,7 @@ export const FeaturesSection: React.FC = () => {
         <div className="grid md:grid-cols-2 gap-12 items-center">
           {/* Beneficios principales */}
           <div>
-            <h2 className="text-4xl font-bold mb-6">
+            <h2 className="text-black text-4xl font-bold mb-6">
               Más rápido, más inteligente:
               <br />
               por qué elegir Proogia
