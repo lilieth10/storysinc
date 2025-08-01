@@ -267,7 +267,26 @@ export class ProjectService {
       throw new Error('Proyecto no encontrado o sin acceso');
     }
 
-    // Estructura de archivos optimizada (menos contenido inicial)
+    // Obtener archivos guardados desde la base de datos
+    const savedFiles = await this.prisma.aICodeFile.findMany({
+      where: {
+        projectId: projectId,
+      },
+      orderBy: {
+        fileName: 'asc',
+      },
+    });
+
+    // Función helper para obtener contenido guardado
+    const getSavedFileContent = (fileName: string): string | null => {
+      const savedFile = savedFiles.find((file) => file.fileName === fileName);
+      if (savedFile) {
+        return savedFile.code;
+      }
+      return null;
+    };
+
+    // Estructura de archivos optimizada con contenido de la base de datos
     const fileTree = [
       {
         id: '1',
@@ -286,7 +305,9 @@ export class ProjectService {
                 name: 'Button.tsx',
                 type: 'file',
                 path: '/src/components/Button.tsx',
-                content: `import React from 'react';
+                content:
+                  getSavedFileContent('Button.tsx') ||
+                  `import React from 'react';
 
 interface ButtonProps {
   children: React.ReactNode;
@@ -318,7 +339,9 @@ export const Button: React.FC<ButtonProps> = ({
                 name: 'App.tsx',
                 type: 'file',
                 path: '/src/App.tsx',
-                content: `import React from 'react';
+                content:
+                  getSavedFileContent('App.tsx') ||
+                  `import React from 'react';
 import { Button } from './components/Button';
 
 function App() {
@@ -342,7 +365,9 @@ export default App;`,
             name: 'index.tsx',
             type: 'file',
             path: '/src/index.tsx',
-            content: `import React from 'react';
+            content:
+              getSavedFileContent('index.tsx') ||
+              `import React from 'react';
 import ReactDOM from 'react-dom';
 import App from './App';
 
@@ -589,7 +614,7 @@ ReactDOM.render(
 
       try {
         writeFileSync(tempFile, code);
-        console.log("Archivo temporal creado:", tempFile);
+        console.log('Archivo temporal creado:', tempFile);
 
         const pythonProcess = spawn('python', [tempFile], {
           timeout: 10000, // 10 segundos máximo
@@ -600,12 +625,12 @@ ReactDOM.render(
 
         pythonProcess.stdout.on('data', (data) => {
           output += data.toString();
-          console.log("Python stdout:", data.toString());
+          console.log('Python stdout:', data.toString());
         });
 
         pythonProcess.stderr.on('data', (data) => {
           errorOutput += data.toString();
-          console.log("Python stderr:", data.toString());
+          console.log('Python stderr:', data.toString());
         });
 
         pythonProcess.on('close', (code) => {
@@ -624,7 +649,7 @@ ReactDOM.render(
         });
 
         pythonProcess.on('error', (err) => {
-          console.log("Python process error:", err.message);
+          console.log('Python process error:', err.message);
           try {
             unlinkSync(tempFile);
           } catch (e) {
@@ -633,7 +658,7 @@ ReactDOM.render(
           resolve(`Error ejecutando Python: ${err.message}`);
         });
       } catch (err) {
-        console.log("Error creando archivo temporal:", err.message);
+        console.log('Error creando archivo temporal:', err.message);
         resolve(`Error creando archivo temporal: ${err.message}`);
       }
     });

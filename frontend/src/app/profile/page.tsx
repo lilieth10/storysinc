@@ -9,14 +9,8 @@ import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 
 export default function ProfilePage() {
-  const {
-    user,
-    fetchProfile,
-    updateProfile,
-    loading,
-    error,
-    initialized,
-  } = useAuth();
+  const { user, fetchProfile, updateProfile, loading, error, initialized } =
+    useAuth();
   const [form, setForm] = useState({
     username: user?.username || "",
     fullName: user?.fullName || "",

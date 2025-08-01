@@ -115,7 +115,7 @@ interface IAAnalysis {
 interface IASuggestion {
   id: string;
   text: string;
-  type: 'suggestion' | 'warning';
+  type: "suggestion" | "warning";
   accepted?: boolean;
   rejected?: boolean;
 }
@@ -240,21 +240,24 @@ export default function ProjectDetailPage() {
   }, [fetchProject, fetchFileTree, projectId, token]);
 
   // Función para guardar automáticamente en localStorage
-  const saveToLocalStorage = useCallback((content: string) => {
-    if (selectedFile) {
-      const localStorageKey = `project_${projectId}_file_${selectedFile.id}`;
-      const savedData = {
-        content,
-        timestamp: new Date().toISOString(),
-        fileName: selectedFile.name,
-      };
-      localStorage.setItem(localStorageKey, JSON.stringify(savedData));
-      
-      // Mostrar indicador de guardado automático
-      setAutoSaved(true);
-      setTimeout(() => setAutoSaved(false), 2000);
-    }
-  }, [selectedFile, projectId]);
+  const saveToLocalStorage = useCallback(
+    (content: string) => {
+      if (selectedFile) {
+        const localStorageKey = `project_${projectId}_file_${selectedFile.id}`;
+        const savedData = {
+          content,
+          timestamp: new Date().toISOString(),
+          fileName: selectedFile.name,
+        };
+        localStorage.setItem(localStorageKey, JSON.stringify(savedData));
+
+        // Mostrar indicador de guardado automático
+        setAutoSaved(true);
+        setTimeout(() => setAutoSaved(false), 2000);
+      }
+    },
+    [selectedFile, projectId],
+  );
 
   const getLanguageFromFile = (filename: string, content?: string): string => {
     const ext = filename.split(".").pop()?.toLowerCase();
@@ -280,12 +283,17 @@ export default function ProjectDetailPage() {
       if (firstLine.includes("<!doctype html") || firstLine.includes("<html")) {
         return "html";
       }
-      
+
       // Verificar si es Python primero (más específico)
-      if (firstLine.includes("def ") || firstLine.includes("import ") || firstLine.includes("print(") || firstLine.includes("from ")) {
+      if (
+        firstLine.includes("def ") ||
+        firstLine.includes("import ") ||
+        firstLine.includes("print(") ||
+        firstLine.includes("from ")
+      ) {
         return "python";
       }
-      
+
       // Verificar si es JavaScript/TypeScript
       if (firstLine.includes("import") || firstLine.includes("export")) {
         return "javascript";
@@ -307,11 +315,11 @@ export default function ProjectDetailPage() {
 
   const handleFileSelect = (file: FileNode) => {
     setSelectedFile(file);
-    
+
     // Cargar contenido guardado en localStorage si existe
     const localStorageKey = `project_${projectId}_file_${file.id}`;
     const savedData = localStorage.getItem(localStorageKey);
-    
+
     if (savedData) {
       try {
         const parsed = JSON.parse(savedData);
@@ -322,7 +330,7 @@ export default function ProjectDetailPage() {
     } else {
       setEditorContent(file.content || "");
     }
-    
+
     setIaAnalysis(null); // Limpiar análisis anterior
   };
 
@@ -349,21 +357,36 @@ export default function ProjectDetailPage() {
       let optimizedCodeResult = null;
 
       // Buscar código optimizado en la respuesta
-      if (response.data.output?.optimizedCode && typeof response.data.output.optimizedCode === "string") {
+      if (
+        response.data.output?.optimizedCode &&
+        typeof response.data.output.optimizedCode === "string"
+      ) {
         optimizedCodeResult = response.data.output.optimizedCode;
-      } else if (response.data.optimizedCode && typeof response.data.optimizedCode === "string") {
+      } else if (
+        response.data.optimizedCode &&
+        typeof response.data.optimizedCode === "string"
+      ) {
         optimizedCodeResult = response.data.optimizedCode;
-      } else if (response.data.iaAnalysis?.output?.optimizedCode && typeof response.data.iaAnalysis.output.optimizedCode === "string") {
+      } else if (
+        response.data.iaAnalysis?.output?.optimizedCode &&
+        typeof response.data.iaAnalysis.output.optimizedCode === "string"
+      ) {
         optimizedCodeResult = response.data.iaAnalysis.output.optimizedCode;
-      } else if (response.data.output?.optimizacion && typeof response.data.output.optimizacion === "string") {
+      } else if (
+        response.data.output?.optimizacion &&
+        typeof response.data.output.optimizacion === "string"
+      ) {
         optimizedCodeResult = response.data.output.optimizacion;
-      } else if (response.data.optimizacion && typeof response.data.optimizacion === "string") {
+      } else if (
+        response.data.optimizacion &&
+        typeof response.data.optimizacion === "string"
+      ) {
         optimizedCodeResult = response.data.optimizacion;
       }
 
       // Procesar sugerencias y advertencias
       const output = response.data.iaAnalysis?.output || response.data.output;
-      
+
       if (output) {
         // Procesar sugerencias
         if (output.Sugerencias && Array.isArray(output.Sugerencias)) {
@@ -371,7 +394,7 @@ export default function ProjectDetailPage() {
             suggestions.push({
               id: `suggestion_${index}`,
               text: sugerencia,
-              type: 'suggestion'
+              type: "suggestion",
             });
           });
         } else if (output.sugerencias && Array.isArray(output.sugerencias)) {
@@ -379,7 +402,7 @@ export default function ProjectDetailPage() {
             suggestions.push({
               id: `suggestion_${index}`,
               text: sugerencia,
-              type: 'suggestion'
+              type: "suggestion",
             });
           });
         }
@@ -390,7 +413,7 @@ export default function ProjectDetailPage() {
             suggestions.push({
               id: `warning_${index}`,
               text: advertencia,
-              type: 'warning'
+              type: "warning",
             });
           });
         } else if (output.advertencias && Array.isArray(output.advertencias)) {
@@ -398,14 +421,16 @@ export default function ProjectDetailPage() {
             suggestions.push({
               id: `warning_${index}`,
               text: advertencia,
-              type: 'warning'
+              type: "warning",
             });
           });
         }
       }
 
       // Guardar el análisis de IA
-      setIaAnalysis({ output: response.data.iaAnalysis?.output || response.data.output });
+      setIaAnalysis({
+        output: response.data.iaAnalysis?.output || response.data.output,
+      });
 
       if (suggestions.length > 0) {
         // Si hay sugerencias, mostrar el modal de sugerencias
@@ -431,22 +456,18 @@ export default function ProjectDetailPage() {
 
   // Funciones para manejar sugerencias de IA
   const acceptSuggestion = useCallback((suggestionId: string) => {
-    setIaSuggestions(prev =>
-      prev.map(s =>
-        s.id === suggestionId
-          ? { ...s, accepted: true, rejected: false }
-          : s
-      )
+    setIaSuggestions((prev) =>
+      prev.map((s) =>
+        s.id === suggestionId ? { ...s, accepted: true, rejected: false } : s,
+      ),
     );
   }, []);
 
   const rejectSuggestion = useCallback((suggestionId: string) => {
-    setIaSuggestions(prev =>
-      prev.map(s =>
-        s.id === suggestionId
-          ? { ...s, rejected: true, accepted: false }
-          : s
-      )
+    setIaSuggestions((prev) =>
+      prev.map((s) =>
+        s.id === suggestionId ? { ...s, rejected: true, accepted: false } : s,
+      ),
     );
   }, []);
 
@@ -478,10 +499,10 @@ export default function ProjectDetailPage() {
   // Función para analizar archivos src/ con IA
   const analyzeSrcFileWithIA = async (file: FileNode) => {
     if (!file || file.type !== "file") return;
-    
+
     setLoadingIA(true);
     setShowIAModal(true);
-    
+
     try {
       const response = await api.post(
         `/ai/optimize-code-with-n8n`,
@@ -500,21 +521,36 @@ export default function ProjectDetailPage() {
       let optimizedCodeResult = null;
 
       // Buscar código optimizado en la respuesta
-      if (response.data.output?.optimizedCode && typeof response.data.output.optimizedCode === "string") {
+      if (
+        response.data.output?.optimizedCode &&
+        typeof response.data.output.optimizedCode === "string"
+      ) {
         optimizedCodeResult = response.data.output.optimizedCode;
-      } else if (response.data.optimizedCode && typeof response.data.optimizedCode === "string") {
+      } else if (
+        response.data.optimizedCode &&
+        typeof response.data.optimizedCode === "string"
+      ) {
         optimizedCodeResult = response.data.optimizedCode;
-      } else if (response.data.iaAnalysis?.output?.optimizedCode && typeof response.data.iaAnalysis.output.optimizedCode === "string") {
+      } else if (
+        response.data.iaAnalysis?.output?.optimizedCode &&
+        typeof response.data.iaAnalysis.output.optimizedCode === "string"
+      ) {
         optimizedCodeResult = response.data.iaAnalysis.output.optimizedCode;
-      } else if (response.data.output?.optimizacion && typeof response.data.output.optimizacion === "string") {
+      } else if (
+        response.data.output?.optimizacion &&
+        typeof response.data.output.optimizacion === "string"
+      ) {
         optimizedCodeResult = response.data.output.optimizacion;
-      } else if (response.data.optimizacion && typeof response.data.optimizacion === "string") {
+      } else if (
+        response.data.optimizacion &&
+        typeof response.data.optimizacion === "string"
+      ) {
         optimizedCodeResult = response.data.optimizacion;
       }
 
       // Procesar sugerencias y advertencias
       const output = response.data.iaAnalysis?.output || response.data.output;
-      
+
       if (output) {
         // Procesar sugerencias
         if (output.Sugerencias && Array.isArray(output.Sugerencias)) {
@@ -522,7 +558,7 @@ export default function ProjectDetailPage() {
             suggestions.push({
               id: `suggestion_${index}`,
               text: sugerencia,
-              type: 'suggestion'
+              type: "suggestion",
             });
           });
         } else if (output.sugerencias && Array.isArray(output.sugerencias)) {
@@ -530,7 +566,7 @@ export default function ProjectDetailPage() {
             suggestions.push({
               id: `suggestion_${index}`,
               text: sugerencia,
-              type: 'suggestion'
+              type: "suggestion",
             });
           });
         }
@@ -541,7 +577,7 @@ export default function ProjectDetailPage() {
             suggestions.push({
               id: `warning_${index}`,
               text: advertencia,
-              type: 'warning'
+              type: "warning",
             });
           });
         } else if (output.advertencias && Array.isArray(output.advertencias)) {
@@ -549,14 +585,16 @@ export default function ProjectDetailPage() {
             suggestions.push({
               id: `warning_${index}`,
               text: advertencia,
-              type: 'warning'
+              type: "warning",
             });
           });
         }
       }
 
       // Guardar el análisis de IA
-      setIaAnalysis({ output: response.data.iaAnalysis?.output || response.data.output });
+      setIaAnalysis({
+        output: response.data.iaAnalysis?.output || response.data.output,
+      });
 
       if (suggestions.length > 0) {
         // Si hay sugerencias, mostrar el modal de sugerencias
@@ -572,11 +610,11 @@ export default function ProjectDetailPage() {
           fileName: file.name,
         };
         localStorage.setItem(localStorageKey, JSON.stringify(savedData));
-        
+
         // Actualizar el archivo en el árbol
-        setFileTree(prevFiles => {
+        setFileTree((prevFiles) => {
           const updateFileInTree = (files: FileNode[]): FileNode[] => {
-            return files.map(f => {
+            return files.map((f) => {
               if (f.id === file.id) {
                 return { ...f, content: String(optimizedCodeResult) };
               }
@@ -588,7 +626,7 @@ export default function ProjectDetailPage() {
           };
           return updateFileInTree(prevFiles);
         });
-        
+
         toast.success("Código optimizado aplicado");
       } else {
         toast.error("No se pudo obtener código optimizado");
@@ -640,11 +678,12 @@ export default function ProjectDetailPage() {
 
     setSaving(true);
     try {
-      await api.put(
-        `/projects/${projectId}/files`,
+      await api.post(
+        `/ai/save-code`,
         {
-          filePath: selectedFile.path,
-          content: editorContent,
+          projectId: parseInt(projectId),
+          fileName: selectedFile.name,
+          code: editorContent,
         },
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -706,16 +745,28 @@ export default function ProjectDetailPage() {
   const createExecutableFile = () => {
     // Detectar el lenguaje basándose SOLO en el contenido del editor, no en el nombre del archivo
     let detectedLanguage = "javascript"; // Por defecto
-    
+
     if (editorContent) {
       const content = editorContent.toLowerCase();
-      
+
       // Detectar Python primero (más específico)
-      if (content.includes("def ") || content.includes("import ") || content.includes("print(") || content.includes("from ") || content.includes("if __name__") || content.includes("class ") && content.includes(":")) {
+      if (
+        content.includes("def ") ||
+        content.includes("import ") ||
+        content.includes("print(") ||
+        content.includes("from ") ||
+        content.includes("if __name__") ||
+        (content.includes("class ") && content.includes(":"))
+      ) {
         detectedLanguage = "python";
       }
       // Detectar HTML
-      else if (content.includes("<!doctype html") || content.includes("<html") || content.includes("<head") || content.includes("<body")) {
+      else if (
+        content.includes("<!doctype html") ||
+        content.includes("<html") ||
+        content.includes("<head") ||
+        content.includes("<body")
+      ) {
         detectedLanguage = "html";
       }
       // JavaScript por defecto
@@ -723,7 +774,7 @@ export default function ProjectDetailPage() {
         detectedLanguage = "javascript";
       }
     }
-    
+
     let template = "";
 
     switch (detectedLanguage) {
@@ -784,18 +835,20 @@ console.log("¡Hola mundo!");`;
     };
 
     // Agregar el archivo a la carpeta "ejecutables" en el fileTree
-    setFileTree(prevFiles => {
+    setFileTree((prevFiles) => {
       const updateFileTree = (files: FileNode[]): FileNode[] => {
         // Buscar si ya existe la carpeta "ejecutables"
-        const ejecutablesFolder = files.find(f => f.name === "ejecutables" && f.type === "folder");
-        
+        const ejecutablesFolder = files.find(
+          (f) => f.name === "ejecutables" && f.type === "folder",
+        );
+
         if (ejecutablesFolder) {
           // Si existe, agregar el archivo a la carpeta
-          return files.map(f => {
+          return files.map((f) => {
             if (f.id === ejecutablesFolder.id) {
               return {
                 ...f,
-                children: [...(f.children || []), newExecutableFile]
+                children: [...(f.children || []), newExecutableFile],
               };
             }
             return f;
@@ -807,12 +860,12 @@ console.log("¡Hola mundo!");`;
             name: "ejecutables",
             type: "folder",
             path: "/ejecutables",
-            children: [newExecutableFile]
+            children: [newExecutableFile],
           };
           return [...files, newEjecutablesFolder];
         }
       };
-      
+
       return updateFileTree(prevFiles);
     });
 
@@ -1274,7 +1327,9 @@ console.log("¡Hola mundo!");`;
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => analyzeSrcFileWithIA(selectedFile)}
+                                onClick={() =>
+                                  analyzeSrcFileWithIA(selectedFile)
+                                }
                                 disabled={loadingIA}
                                 className="bg-purple-500 hover:bg-purple-600 text-white text-xs"
                               >
@@ -1319,24 +1374,30 @@ console.log("¡Hola mundo!");`;
                                 onMount={() => {}}
                               />
                             </Suspense>
-                            
+
                             {/* Modal de Loader de IA - Flotante dentro del editor */}
                             {showIAModal && (
-                              <div className="absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center z-10">
-                                <div className="bg-white rounded-2xl p-8 shadow-2xl border border-gray-200">
+                              <div className="absolute inset-0 bg-white bg-opacity-95 flex items-center justify-center z-10">
+                                <div className="bg-white rounded-3xl p-12 shadow-2xl border border-gray-200 max-w-md w-full mx-4">
                                   <div className="text-center">
                                     {/* Spinner principal con SVG */}
-                                    <div className="mb-4">
+                                    <div className="mb-6">
                                       <svg
-                                        width={80}
-                                        height={80}
+                                        width={100}
+                                        height={100}
                                         viewBox="0 0 100 100"
                                         fill="none"
                                         xmlns="http://www.w3.org/2000/svg"
-                                        className="w-20 h-20 mx-auto"
+                                        className="w-24 h-24 mx-auto"
                                       >
                                         {/* Central "Brain" Node - Pulsing */}
-                                        <circle cx="50" cy="50" r="15" fill="#4CAF50" opacity="0.8">
+                                        <circle
+                                          cx="50"
+                                          cy="50"
+                                          r="15"
+                                          fill="#4CAF50"
+                                          opacity="0.8"
+                                        >
                                           <animate
                                             attributeName="r"
                                             values="15;18;15"
@@ -1371,7 +1432,13 @@ console.log("¡Hola mundo!");`;
                                           />
 
                                           {/* Node 1 */}
-                                          <circle cx="50" cy="25" r="6" fill="#8BC34A" opacity="0.9">
+                                          <circle
+                                            cx="50"
+                                            cy="25"
+                                            r="6"
+                                            fill="#8BC34A"
+                                            opacity="0.9"
+                                          >
                                             <animate
                                               attributeName="opacity"
                                               values="0.9;0.6;0.9"
@@ -1399,7 +1466,13 @@ console.log("¡Hola mundo!");`;
                                           </line>
 
                                           {/* Node 2 */}
-                                          <circle cx="71.65" cy="62.5" r="6" fill="#8BC34A" opacity="0.9">
+                                          <circle
+                                            cx="71.65"
+                                            cy="62.5"
+                                            r="6"
+                                            fill="#8BC34A"
+                                            opacity="0.9"
+                                          >
                                             <animate
                                               attributeName="opacity"
                                               values="0.9;0.6;0.9"
@@ -1428,7 +1501,13 @@ console.log("¡Hola mundo!");`;
                                           </line>
 
                                           {/* Node 3 */}
-                                          <circle cx="28.35" cy="62.5" r="6" fill="#8BC34A" opacity="0.9">
+                                          <circle
+                                            cx="28.35"
+                                            cy="62.5"
+                                            r="6"
+                                            fill="#8BC34A"
+                                            opacity="0.9"
+                                          >
                                             <animate
                                               attributeName="opacity"
                                               values="0.9;0.6;0.9"
@@ -1459,8 +1538,25 @@ console.log("¡Hola mundo!");`;
                                       </svg>
                                     </div>
 
-                                    {/* Texto dinámico */}
-                                    <p className="text-gray-600 font-medium">Analizando código con IA...</p>
+                                    {/* Título principal */}
+                                    <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                                      Analizando código con IA
+                                    </h3>
+
+                                    {/* Mensaje específico */}
+                                    <p className="text-gray-600 font-medium mb-4">
+                                      Analizando archivo:{" "}
+                                      {selectedFile?.name ||
+                                        "archivo seleccionado"}
+                                    </p>
+
+                                    {/* Descripción del proceso */}
+                                    <p className="text-sm text-gray-500 leading-relaxed">
+                                      La IA está revisando tu código para
+                                      detectar oportunidades de mejora,
+                                      optimizaciones y mejores prácticas. Esto
+                                      puede tomar unos segundos...
+                                    </p>
                                   </div>
                                 </div>
                               </div>
@@ -1471,7 +1567,7 @@ console.log("¡Hola mundo!");`;
                         {/* Right Panel - Output & IA Analysis */}
                         <div className="w-full lg:w-96 bg-white border-l border-gray-200 flex flex-col">
                           {/* Output Section */}
-                          <div className="flex-1 border-b border-gray-200">
+                          <div className="h-1/2 border-b border-gray-200">
                             <div className="p-4">
                               <div className="flex items-center justify-between mb-3">
                                 <h3 className="text-sm font-medium text-gray-900">
@@ -1505,7 +1601,7 @@ console.log("¡Hola mundo!");`;
                               {showPreview &&
                               getLanguageFromFile(selectedFile?.name || "") ===
                                 "html" ? (
-                                <div className="bg-white border border-gray-200 rounded-lg h-48 overflow-hidden">
+                                <div className="bg-white border border-gray-200 rounded-lg h-40 overflow-hidden">
                                   <iframe
                                     srcDoc={previewContent}
                                     className="w-full h-full"
@@ -1514,7 +1610,7 @@ console.log("¡Hola mundo!");`;
                                   />
                                 </div>
                               ) : (
-                                <div className="bg-gray-50 rounded-lg p-3 h-48 overflow-y-auto">
+                                <div className="bg-gray-50 rounded-lg p-3 h-40 overflow-y-auto">
                                   <pre className="text-xs text-gray-700 whitespace-pre-wrap">
                                     {executionOutput ||
                                       "Ejecuta el código para ver la salida..."}
@@ -1525,11 +1621,20 @@ console.log("¡Hola mundo!");`;
                           </div>
 
                           {/* IA Analysis Section */}
-                          <div className="flex-1">
+                          <div className="h-1/2 overflow-y-auto">
                             <div className="p-4">
-                              <h3 className="text-sm font-medium text-gray-900 mb-3">
-                                Análisis de IA
-                              </h3>
+                              <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-sm font-semibold text-gray-900 flex items-center">
+                                  <svg
+                                    className="w-4 h-4 mr-2 text-purple-600"
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                  Análisis de IA
+                                </h3>
+                              </div>
                               {iaAnalysis ? (
                                 <div className="space-y-4">
                                   {/* Estructura real de n8n (071-maqueta) */}
@@ -1539,46 +1644,82 @@ console.log("¡Hola mundo!");`;
                                       {iaAnalysis.output?.Sugerencias &&
                                         iaAnalysis.output.Sugerencias.length >
                                           0 && (
-                                          <Card className="p-3">
-                                            <h4 className="text-sm font-medium text-gray-900 mb-2">
-                                              Sugerencias
-                                            </h4>
-                                            <div className="space-y-1">
+                                          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 shadow-sm">
+                                            <div className="flex items-center mb-3">
+                                              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                                                <svg
+                                                  className="w-4 h-4 text-blue-600"
+                                                  fill="currentColor"
+                                                  viewBox="0 0 20 20"
+                                                >
+                                                  <path
+                                                    fillRule="evenodd"
+                                                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                                    clipRule="evenodd"
+                                                  />
+                                                </svg>
+                                              </div>
+                                              <h4 className="text-sm font-semibold text-blue-900">
+                                                Sugerencias
+                                              </h4>
+                                            </div>
+                                            <div className="space-y-3">
                                               {iaAnalysis.output.Sugerencias.map(
                                                 (sugerencia, idx) => (
-                                                  <p
+                                                  <div
                                                     key={idx}
-                                                    className="text-xs text-gray-600"
+                                                    className="flex items-start"
                                                   >
-                                                    • {sugerencia}
-                                                  </p>
+                                                    <div className="w-2 h-2 bg-blue-400 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                                                    <p className="text-sm text-blue-800 leading-relaxed">
+                                                      {sugerencia}
+                                                    </p>
+                                                  </div>
                                                 ),
                                               )}
                                             </div>
-                                          </Card>
+                                          </div>
                                         )}
 
                                       {/* Advertencias */}
                                       {iaAnalysis.output?.Advertencias &&
                                         iaAnalysis.output.Advertencias.length >
                                           0 && (
-                                          <Card className="p-3">
-                                            <h4 className="text-sm font-medium text-gray-900 mb-2">
-                                              Advertencias
-                                            </h4>
-                                            <div className="space-y-1">
+                                          <div className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-xl p-4 shadow-sm">
+                                            <div className="flex items-center mb-3">
+                                              <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center mr-3">
+                                                <svg
+                                                  className="w-4 h-4 text-red-600"
+                                                  fill="currentColor"
+                                                  viewBox="0 0 20 20"
+                                                >
+                                                  <path
+                                                    fillRule="evenodd"
+                                                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                                                    clipRule="evenodd"
+                                                  />
+                                                </svg>
+                                              </div>
+                                              <h4 className="text-sm font-semibold text-red-900">
+                                                Advertencias
+                                              </h4>
+                                            </div>
+                                            <div className="space-y-3">
                                               {iaAnalysis.output.Advertencias.map(
                                                 (advertencia, idx) => (
-                                                  <p
+                                                  <div
                                                     key={idx}
-                                                    className="text-xs text-red-600"
+                                                    className="flex items-start"
                                                   >
-                                                    ⚠ {advertencia}
-                                                  </p>
+                                                    <div className="w-2 h-2 bg-red-400 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                                                    <p className="text-sm text-red-800 leading-relaxed">
+                                                      {advertencia}
+                                                    </p>
+                                                  </div>
                                                 ),
                                               )}
                                             </div>
-                                          </Card>
+                                          </div>
                                         )}
                                     </>
                                   )}
@@ -2012,22 +2153,26 @@ console.log("¡Hola mundo!");`;
                 <div
                   key={suggestion.id}
                   className={`p-4 rounded-lg border ${
-                    suggestion.type === 'warning'
-                      ? 'border-red-200 bg-red-50'
-                      : 'border-blue-200 bg-blue-50'
+                    suggestion.type === "warning"
+                      ? "border-red-200 bg-red-50"
+                      : "border-blue-200 bg-blue-50"
                   }`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-start space-x-3 flex-1">
-                      {suggestion.type === 'warning' ? (
+                      {suggestion.type === "warning" ? (
                         <ExclamationTriangleIcon className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
                       ) : (
                         <LightBulbIcon className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
                       )}
                       <div className="flex-1">
-                        <p className={`text-sm ${
-                          suggestion.type === 'warning' ? 'text-red-800' : 'text-blue-800'
-                        }`}>
+                        <p
+                          className={`text-sm ${
+                            suggestion.type === "warning"
+                              ? "text-red-800"
+                              : "text-blue-800"
+                          }`}
+                        >
                           {suggestion.text}
                         </p>
                       </div>
@@ -2037,8 +2182,8 @@ console.log("¡Hola mundo!");`;
                         onClick={() => acceptSuggestion(suggestion.id)}
                         className={`p-1 rounded-full ${
                           suggestion.accepted
-                            ? 'bg-green-100 text-green-600'
-                            : 'bg-gray-100 text-gray-600 hover:bg-green-100 hover:text-green-600'
+                            ? "bg-green-100 text-green-600"
+                            : "bg-gray-100 text-gray-600 hover:bg-green-100 hover:text-green-600"
                         }`}
                         disabled={suggestion.rejected}
                       >
@@ -2048,8 +2193,8 @@ console.log("¡Hola mundo!");`;
                         onClick={() => rejectSuggestion(suggestion.id)}
                         className={`p-1 rounded-full ${
                           suggestion.rejected
-                            ? 'bg-red-100 text-red-600'
-                            : 'bg-gray-100 text-gray-600 hover:bg-red-100 hover:text-red-600'
+                            ? "bg-red-100 text-red-600"
+                            : "bg-gray-100 text-gray-600 hover:bg-red-100 hover:text-red-600"
                         }`}
                         disabled={suggestion.accepted}
                       >

@@ -293,8 +293,8 @@ export default function SyncPage() {
   const fetchSyncProjects = async () => {
     try {
       // Simular delay de red
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
+      await new Promise((resolve) => setTimeout(resolve, 800));
+
       // Datos mock que representan componentes BFF/Sidecar de proyectos existentes
       const mockComponents: SyncProject[] = [
         {
@@ -309,7 +309,7 @@ export default function SyncPage() {
           contact: "maria.lopez@empresa.com",
           functions: JSON.stringify([
             "Autenticación de usuarios",
-            "Gestión de productos", 
+            "Gestión de productos",
             "Procesamiento de pedidos",
             "Integración con pagos",
           ]),
@@ -1621,7 +1621,6 @@ export default function SyncPage() {
                   className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 w-80 text-black placeholder-gray-500"
                 />
               </div>
-             
             </div>
 
             {/* Explicación clara de qué es esta página */}
@@ -1630,9 +1629,24 @@ export default function SyncPage() {
                 🔗 Sincronización de Componentes
               </h3>
               <div className="text-xs text-blue-700 space-y-1">
-                <p><strong>Esta página muestra componentes especializados (BFF/Sidecar) que acompañan tus proyectos principales.</strong></p>
-                <p><strong>BFF:</strong> Backend dedicado para un frontend específico | <strong>Sidecar:</strong> Servicios auxiliares (notificaciones, logging, etc.)</p>
-                <p><em>Los proyectos principales están en la sección &quot;Proyectos&quot; → Aquí solo vemos sus componentes especializados</em></p>
+                <p>
+                  <strong>
+                    Esta página muestra componentes especializados (BFF/Sidecar)
+                    que acompañan tus proyectos principales.
+                  </strong>
+                </p>
+                <p>
+                  <strong>BFF:</strong> Backend dedicado para un frontend
+                  específico | <strong>Sidecar:</strong> Servicios auxiliares
+                  (notificaciones, logging, etc.)
+                </p>
+                <p>
+                  <em>
+                    Los proyectos principales están en la sección
+                    &quot;Proyectos&quot; → Aquí solo vemos sus componentes
+                    especializados
+                  </em>
+                </p>
               </div>
             </div>
 
@@ -1693,7 +1707,7 @@ export default function SyncPage() {
                               : project.pattern === "sidecar"
                                 ? "bg-purple-100 text-purple-800"
                                 : project.pattern === "monolito" ||
-                                  project.pattern === "microservicio"
+                                    project.pattern === "microservicio"
                                   ? "bg-green-100 text-green-800"
                                   : "bg-gray-100 text-gray-800"
                           }`}
@@ -1703,7 +1717,7 @@ export default function SyncPage() {
                             : project.pattern === "sidecar"
                               ? "Sidecar"
                               : project.pattern === "monolito" ||
-                                project.pattern === "microservicio"
+                                  project.pattern === "microservicio"
                                 ? "Activo"
                                 : "Inactivo"}
                         </span>
