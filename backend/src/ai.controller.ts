@@ -656,7 +656,7 @@ export class AIController {
       // Verificar que el proyecto pertenece al usuario
       const project = await this.prisma.project.findFirst({
         where: {
-          id: body.projectId,
+          id: parseInt(body.projectId.toString()),
           OR: [
             { ownerId: req.user.userId ?? req.user.id },
             {
@@ -675,7 +675,7 @@ export class AIController {
       // Buscar si ya existe un registro para este archivo
       const existingCode = await this.prisma.aICodeFile.findFirst({
         where: {
-          projectId: body.projectId,
+          projectId: parseInt(body.projectId.toString()),
           fileName: body.fileName,
         },
       });
@@ -693,7 +693,7 @@ export class AIController {
         // Crear nuevo registro
         await this.prisma.aICodeFile.create({
           data: {
-            projectId: body.projectId,
+            projectId: parseInt(body.projectId.toString()),
             fileName: body.fileName,
             code: body.code,
           },

@@ -635,7 +635,8 @@ ${version.stats.files} archivos modificados
       !filters.branch ||
       version.branch.toLowerCase().includes(filters.branch.toLowerCase());
     const matchesStatus = !filters.status || version.status === filters.status;
-    const matchesProject = !filters.projectId || version.projectId === parseInt(filters.projectId);
+    const matchesProject =
+      !filters.projectId || version.projectId === parseInt(filters.projectId);
     const matchesSearch =
       !filters.searchTerm ||
       version.message
@@ -644,7 +645,13 @@ ${version.stats.files} archivos modificados
       version.hash.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
       version.author.toLowerCase().includes(filters.searchTerm.toLowerCase());
 
-    return matchesAuthor && matchesBranch && matchesStatus && matchesProject && matchesSearch;
+    return (
+      matchesAuthor &&
+      matchesBranch &&
+      matchesStatus &&
+      matchesProject &&
+      matchesSearch
+    );
   });
 
   if (loading) {

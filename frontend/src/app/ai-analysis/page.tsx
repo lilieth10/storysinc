@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
- 
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -70,7 +70,9 @@ export default function AIAnalysisPage() {
   const [projectFiles, setProjectFiles] = useState<FileNode[]>([]);
   const [availableFiles, setAvailableFiles] = useState<string[]>([]);
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
-  const [analysisType, setAnalysisType] = useState<'ai' | 'metrics' | null>(null);
+  const [analysisType, setAnalysisType] = useState<"ai" | "metrics" | null>(
+    null,
+  );
   const [processedAnalysis, setProcessedAnalysis] = useState<any>(null);
   const [processedMetrics, setProcessedMetrics] = useState<any>(null);
 
@@ -106,11 +108,11 @@ export default function AIAnalysisPage() {
       const response = await api.get(`/ai/projects/${projectId}/files`);
       const files = response.data;
       setProjectFiles(files);
-      
+
       // Extraer nombres de archivos disponibles
       const fileNames = extractFileNames(files);
       setAvailableFiles(fileNames);
-      
+
       return files;
     } catch (error) {
       console.error("Error loading project files:", error);
@@ -120,26 +122,29 @@ export default function AIAnalysisPage() {
   // Función para extraer nombres de archivos de la estructura de archivos
   const extractFileNames = (files: FileNode[]): string[] => {
     const fileNames: string[] = [];
-    
+
     const traverseFiles = (nodes: FileNode[]) => {
-      nodes.forEach(node => {
-        if (node.type === 'file') {
+      nodes.forEach((node) => {
+        if (node.type === "file") {
           fileNames.push(node.name);
         } else if (node.children) {
           traverseFiles(node.children);
         }
       });
     };
-    
+
     traverseFiles(files);
     return fileNames;
   };
 
   // Función para encontrar contenido de archivo por nombre
-  const findFileContent = (files: FileNode[], fileName: string): string | null => {
+  const findFileContent = (
+    files: FileNode[],
+    fileName: string,
+  ): string | null => {
     const findFile = (nodes: FileNode[]): FileNode | null => {
       for (const node of nodes) {
-        if (node.type === 'file' && node.name === fileName) {
+        if (node.type === "file" && node.name === fileName) {
           return node;
         } else if (node.children) {
           const found = findFile(node.children);
@@ -148,81 +153,104 @@ export default function AIAnalysisPage() {
       }
       return null;
     };
-    
+
     const file = findFile(files);
     return file?.content || null;
   };
 
-
-
   // Función para procesar respuesta de IA
   const processAIResponse = (rawResponse: any) => {
     try {
-      console.log('Raw AI Response:', rawResponse);
-      
+      console.log("Raw AI Response:", rawResponse);
+
       // Extraer datos de diferentes formatos posibles
-      const output = rawResponse?.output || rawResponse?.analysis || rawResponse;
-      
+      const output =
+        rawResponse?.output || rawResponse?.analysis || rawResponse;
+
       // Buscar sugerencias en diferentes formatos - extraer solo el texto limpio
       let suggestions: string[] = [];
       if (output?.Sugerencias && Array.isArray(output.Sugerencias)) {
-        suggestions = output.Sugerencias.filter((item: any) => typeof item === 'string');
+        suggestions = output.Sugerencias.filter(
+          (item: any) => typeof item === "string",
+        );
       } else if (output?.sugerencias && Array.isArray(output.sugerencias)) {
-        suggestions = output.sugerencias.filter((item: any) => typeof item === 'string');
+        suggestions = output.sugerencias.filter(
+          (item: any) => typeof item === "string",
+        );
       } else if (output?.suggestions && Array.isArray(output.suggestions)) {
-        suggestions = output.suggestions.filter((item: any) => typeof item === 'string');
+        suggestions = output.suggestions.filter(
+          (item: any) => typeof item === "string",
+        );
       }
-      
+
       // Buscar advertencias en diferentes formatos - extraer solo el texto limpio
       let warnings: string[] = [];
       if (output?.Advertencias && Array.isArray(output.Advertencias)) {
-        warnings = output.Advertencias.filter((item: any) => typeof item === 'string');
+        warnings = output.Advertencias.filter(
+          (item: any) => typeof item === "string",
+        );
       } else if (output?.advertencias && Array.isArray(output.advertencias)) {
-        warnings = output.advertencias.filter((item: any) => typeof item === 'string');
+        warnings = output.advertencias.filter(
+          (item: any) => typeof item === "string",
+        );
       } else if (output?.warnings && Array.isArray(output.warnings)) {
-        warnings = output.warnings.filter((item: any) => typeof item === 'string');
+        warnings = output.warnings.filter(
+          (item: any) => typeof item === "string",
+        );
       }
-      
+
       // Si no hay sugerencias/advertencias estructuradas, buscar en la respuesta completa
       if (suggestions.length === 0 && warnings.length === 0) {
         // Buscar en el texto completo de la respuesta
         const fullText = JSON.stringify(rawResponse);
-        if (fullText.includes('Sugerencias') || fullText.includes('sugerencias')) {
+        if (
+          fullText.includes("Sugerencias") ||
+          fullText.includes("sugerencias")
+        ) {
           // Extraer sugerencias del texto
           const sugMatches = fullText.match(/"Sugerencias":\s*\[(.*?)\]/);
           if (sugMatches) {
-            suggestions = sugMatches[1].split(',').map(s => s.replace(/"/g, '').trim()).filter(s => s.length > 0);
+            suggestions = sugMatches[1]
+              .split(",")
+              .map((s) => s.replace(/"/g, "").trim())
+              .filter((s) => s.length > 0);
           }
         }
-        if (fullText.includes('Advertencias') || fullText.includes('advertencias')) {
+        if (
+          fullText.includes("Advertencias") ||
+          fullText.includes("advertencias")
+        ) {
           // Extraer advertencias del texto
           const warnMatches = fullText.match(/"Advertencias":\s*\[(.*?)\]/);
           if (warnMatches) {
-            warnings = warnMatches[1].split(',').map(s => s.replace(/"/g, '').trim()).filter(s => s.length > 0);
+            warnings = warnMatches[1]
+              .split(",")
+              .map((s) => s.replace(/"/g, "").trim())
+              .filter((s) => s.length > 0);
           }
         }
       }
-      
-      console.log('Final processed suggestions:', suggestions);
-      console.log('Final processed warnings:', warnings);
-      console.log('Raw response structure:', Object.keys(rawResponse));
+
+      console.log("Final processed suggestions:", suggestions);
+      console.log("Final processed warnings:", warnings);
+      console.log("Raw response structure:", Object.keys(rawResponse));
       if (rawResponse.output) {
-        console.log('Output structure:', Object.keys(rawResponse.output));
+        console.log("Output structure:", Object.keys(rawResponse.output));
       }
-      
+
       return {
         suggestions,
         warnings,
-        language: rawResponse?.language || 'javascript',
+        language: rawResponse?.language || "javascript",
         fileName: selectedFile,
         rawData: rawResponse,
       };
     } catch (error) {
-      console.error('Error processing AI response:', error);
+      console.error("Error processing AI response:", error);
       return {
         suggestions: [],
         warnings: [],
-        language: 'javascript',
+        language: "javascript",
         fileName: selectedFile,
         rawData: rawResponse,
       };
@@ -232,148 +260,224 @@ export default function AIAnalysisPage() {
   // Función para procesar métricas
   const processMetricsResponse = (rawResponse: any) => {
     try {
-      console.log('Raw Metrics Response:', rawResponse);
-      
+      console.log("Raw Metrics Response:", rawResponse);
+
       // Extraer datos de diferentes formatos posibles
-      const output = rawResponse?.output || rawResponse?.analysis || rawResponse;
-      
+      const output =
+        rawResponse?.output || rawResponse?.analysis || rawResponse;
+
       // Buscar sugerencias en diferentes formatos - extraer solo el texto limpio
       let suggestions: string[] = [];
       if (output?.Sugerencias && Array.isArray(output.Sugerencias)) {
-        suggestions = output.Sugerencias.filter((item: any) => typeof item === 'string');
+        suggestions = output.Sugerencias.filter(
+          (item: any) => typeof item === "string",
+        );
       } else if (output?.sugerencias && Array.isArray(output.sugerencias)) {
-        suggestions = output.sugerencias.filter((item: any) => typeof item === 'string');
+        suggestions = output.sugerencias.filter(
+          (item: any) => typeof item === "string",
+        );
       } else if (output?.suggestions && Array.isArray(output.suggestions)) {
-        suggestions = output.suggestions.filter((item: any) => typeof item === 'string');
+        suggestions = output.suggestions.filter(
+          (item: any) => typeof item === "string",
+        );
       }
-      
+
       // Buscar advertencias en diferentes formatos - extraer solo el texto limpio
       let warnings: string[] = [];
       if (output?.Advertencias && Array.isArray(output.Advertencias)) {
-        warnings = output.Advertencias.filter((item: any) => typeof item === 'string');
+        warnings = output.Advertencias.filter(
+          (item: any) => typeof item === "string",
+        );
       } else if (output?.advertencias && Array.isArray(output.advertencias)) {
-        warnings = output.advertencias.filter((item: any) => typeof item === 'string');
+        warnings = output.advertencias.filter(
+          (item: any) => typeof item === "string",
+        );
       } else if (output?.warnings && Array.isArray(output.warnings)) {
-        warnings = output.warnings.filter((item: any) => typeof item === 'string');
+        warnings = output.warnings.filter(
+          (item: any) => typeof item === "string",
+        );
       }
-      
+
       // Buscar métricas en diferentes formatos - extraer números reales
       let complexity = 0;
-      if (output?.Complejidad !== undefined) complexity = parseInt(output.Complejidad);
-      else if (output?.complejidad !== undefined) complexity = parseInt(output.complejidad);
-      else if (output?.Complejida !== undefined) complexity = parseInt(output.Complejida);
-      else if (output?.complexity !== undefined) complexity = parseInt(output.complexity);
-      else if (output?.Complexity !== undefined) complexity = parseInt(output.Complexity);
-      
+      if (output?.Complejidad !== undefined)
+        complexity = parseInt(output.Complejidad);
+      else if (output?.complejidad !== undefined)
+        complexity = parseInt(output.complejidad);
+      else if (output?.Complejida !== undefined)
+        complexity = parseInt(output.Complejida);
+      else if (output?.complexity !== undefined)
+        complexity = parseInt(output.complexity);
+      else if (output?.Complexity !== undefined)
+        complexity = parseInt(output.Complexity);
+
       let scalability = 0;
-      if (output?.Escalabilidad !== undefined) scalability = parseInt(output.Escalabilidad);
-      else if (output?.escalabilidad !== undefined) scalability = parseInt(output.escalabilidad);
-      else if (output?.Scalability !== undefined) scalability = parseInt(output.Scalability);
-      
+      if (output?.Escalabilidad !== undefined)
+        scalability = parseInt(output.Escalabilidad);
+      else if (output?.escalabilidad !== undefined)
+        scalability = parseInt(output.escalabilidad);
+      else if (output?.Scalability !== undefined)
+        scalability = parseInt(output.Scalability);
+
       let security = 0;
-      if (output?.Seguridad !== undefined) security = parseInt(output.Seguridad);
-      else if (output?.seguridad !== undefined) security = parseInt(output.seguridad);
-      else if (output?.Security !== undefined) security = parseInt(output.Security);
-      
+      if (output?.Seguridad !== undefined)
+        security = parseInt(output.Seguridad);
+      else if (output?.seguridad !== undefined)
+        security = parseInt(output.seguridad);
+      else if (output?.Security !== undefined)
+        security = parseInt(output.Security);
+
       let performance = 0;
-      if (output?.Rendimiento !== undefined) performance = parseInt(output.Rendimiento);
-      else if (output?.rendimiento !== undefined) performance = parseInt(output.rendimiento);
-      else if (output?.Performance !== undefined) performance = parseInt(output.Performance);
-      
+      if (output?.Rendimiento !== undefined)
+        performance = parseInt(output.Rendimiento);
+      else if (output?.rendimiento !== undefined)
+        performance = parseInt(output.rendimiento);
+      else if (output?.Performance !== undefined)
+        performance = parseInt(output.Performance);
+
       // Si no hay métricas estructuradas, buscar en la respuesta completa
-      if (complexity === 0 && scalability === 0 && security === 0 && performance === 0) {
+      if (
+        complexity === 0 &&
+        scalability === 0 &&
+        security === 0 &&
+        performance === 0
+      ) {
         const fullText = JSON.stringify(rawResponse);
-        console.log('Searching for metrics in full text:', fullText);
-        
+        console.log("Searching for metrics in full text:", fullText);
+
         // Buscar métricas en el texto con diferentes patrones
-        const complexityMatch = fullText.match(/"Complejidad":\s*(\d+)/) || fullText.match(/"complejidad":\s*(\d+)/) || fullText.match(/"Complejida":\s*(\d+)/) || fullText.match(/"complexity":\s*(\d+)/) || fullText.match(/"Complexity":\s*(\d+)/);
+        const complexityMatch =
+          fullText.match(/"Complejidad":\s*(\d+)/) ||
+          fullText.match(/"complejidad":\s*(\d+)/) ||
+          fullText.match(/"Complejida":\s*(\d+)/) ||
+          fullText.match(/"complexity":\s*(\d+)/) ||
+          fullText.match(/"Complexity":\s*(\d+)/);
         if (complexityMatch) {
           complexity = parseInt(complexityMatch[1]);
-          console.log('Found complexity:', complexity);
+          console.log("Found complexity:", complexity);
         }
-        
-        const scalabilityMatch = fullText.match(/"Escalabilidad":\s*(\d+)/) || fullText.match(/"escalabilidad":\s*(\d+)/) || fullText.match(/"Scalability":\s*(\d+)/);
+
+        const scalabilityMatch =
+          fullText.match(/"Escalabilidad":\s*(\d+)/) ||
+          fullText.match(/"escalabilidad":\s*(\d+)/) ||
+          fullText.match(/"Scalability":\s*(\d+)/);
         if (scalabilityMatch) {
           scalability = parseInt(scalabilityMatch[1]);
-          console.log('Found scalability:', scalability);
+          console.log("Found scalability:", scalability);
         }
-        
-        const securityMatch = fullText.match(/"Seguridad":\s*(\d+)/) || fullText.match(/"seguridad":\s*(\d+)/) || fullText.match(/"Security":\s*(\d+)/);
+
+        const securityMatch =
+          fullText.match(/"Seguridad":\s*(\d+)/) ||
+          fullText.match(/"seguridad":\s*(\d+)/) ||
+          fullText.match(/"Security":\s*(\d+)/);
         if (securityMatch) {
           security = parseInt(securityMatch[1]);
-          console.log('Found security:', security);
+          console.log("Found security:", security);
         }
-        
-        const performanceMatch = fullText.match(/"Rendimiento":\s*(\d+)/) || fullText.match(/"rendimiento":\s*(\d+)/) || fullText.match(/"Performance":\s*(\d+)/);
+
+        const performanceMatch =
+          fullText.match(/"Rendimiento":\s*(\d+)/) ||
+          fullText.match(/"rendimiento":\s*(\d+)/) ||
+          fullText.match(/"Performance":\s*(\d+)/);
         if (performanceMatch) {
           performance = parseInt(performanceMatch[1]);
-          console.log('Found performance:', performance);
+          console.log("Found performance:", performance);
         }
-        
+
         // Si aún no encontramos, buscar en el output anidado
-        if (complexity === 0 && scalability === 0 && security === 0 && performance === 0) {
+        if (
+          complexity === 0 &&
+          scalability === 0 &&
+          security === 0 &&
+          performance === 0
+        ) {
           const outputMatch = fullText.match(/"output":\s*\{([^}]+)\}/);
           if (outputMatch) {
             const outputText = outputMatch[1];
-            console.log('Searching in output:', outputText);
-            
-            const complexityInOutput = outputText.match(/"Complejidad":\s*(\d+)/) || outputText.match(/"complejidad":\s*(\d+)/) || outputText.match(/"Complejida":\s*(\d+)/) || outputText.match(/"complexity":\s*(\d+)/);
-            if (complexityInOutput) complexity = parseInt(complexityInOutput[1]);
-            
-            const scalabilityInOutput = outputText.match(/"Escalabilidad":\s*(\d+)/) || outputText.match(/"escalabilidad":\s*(\d+)/);
-            if (scalabilityInOutput) scalability = parseInt(scalabilityInOutput[1]);
-            
-            const securityInOutput = outputText.match(/"Seguridad":\s*(\d+)/) || outputText.match(/"seguridad":\s*(\d+)/);
+            console.log("Searching in output:", outputText);
+
+            const complexityInOutput =
+              outputText.match(/"Complejidad":\s*(\d+)/) ||
+              outputText.match(/"complejidad":\s*(\d+)/) ||
+              outputText.match(/"Complejida":\s*(\d+)/) ||
+              outputText.match(/"complexity":\s*(\d+)/);
+            if (complexityInOutput)
+              complexity = parseInt(complexityInOutput[1]);
+
+            const scalabilityInOutput =
+              outputText.match(/"Escalabilidad":\s*(\d+)/) ||
+              outputText.match(/"escalabilidad":\s*(\d+)/);
+            if (scalabilityInOutput)
+              scalability = parseInt(scalabilityInOutput[1]);
+
+            const securityInOutput =
+              outputText.match(/"Seguridad":\s*(\d+)/) ||
+              outputText.match(/"seguridad":\s*(\d+)/);
             if (securityInOutput) security = parseInt(securityInOutput[1]);
-            
-            const performanceInOutput = outputText.match(/"Rendimiento":\s*(\d+)/) || outputText.match(/"rendimiento":\s*(\d+)/);
-            if (performanceInOutput) performance = parseInt(performanceInOutput[1]);
+
+            const performanceInOutput =
+              outputText.match(/"Rendimiento":\s*(\d+)/) ||
+              outputText.match(/"rendimiento":\s*(\d+)/);
+            if (performanceInOutput)
+              performance = parseInt(performanceInOutput[1]);
           }
         }
       }
-      
+
       // Si no hay sugerencias/advertencias estructuradas, buscar en la respuesta completa
       if (suggestions.length === 0 && warnings.length === 0) {
         const fullText = JSON.stringify(rawResponse);
-        if (fullText.includes('Sugerencias') || fullText.includes('sugerencias')) {
+        if (
+          fullText.includes("Sugerencias") ||
+          fullText.includes("sugerencias")
+        ) {
           const sugMatches = fullText.match(/"Sugerencias":\s*\[(.*?)\]/);
           if (sugMatches) {
-            suggestions = sugMatches[1].split(',').map(s => s.replace(/"/g, '').trim()).filter(s => s.length > 0);
+            suggestions = sugMatches[1]
+              .split(",")
+              .map((s) => s.replace(/"/g, "").trim())
+              .filter((s) => s.length > 0);
           }
         }
-        if (fullText.includes('Advertencias') || fullText.includes('advertencias')) {
+        if (
+          fullText.includes("Advertencias") ||
+          fullText.includes("advertencias")
+        ) {
           const warnMatches = fullText.match(/"Advertencias":\s*\[(.*?)\]/);
           if (warnMatches) {
-            warnings = warnMatches[1].split(',').map(s => s.replace(/"/g, '').trim()).filter(s => s.length > 0);
+            warnings = warnMatches[1]
+              .split(",")
+              .map((s) => s.replace(/"/g, "").trim())
+              .filter((s) => s.length > 0);
           }
         }
       }
-      
+
       const metrics = {
         complexity: complexity || 0,
         scalability: scalability || 0,
         security: security || 0,
         performance: performance || 0,
       };
-      
-      console.log('Final processed metrics:', metrics);
-      console.log('Final processed suggestions:', suggestions);
-      console.log('Final processed warnings:', warnings);
-      console.log('Raw response structure:', Object.keys(rawResponse));
+
+      console.log("Final processed metrics:", metrics);
+      console.log("Final processed suggestions:", suggestions);
+      console.log("Final processed warnings:", warnings);
+      console.log("Raw response structure:", Object.keys(rawResponse));
       if (rawResponse.output) {
-        console.log('Output structure:', Object.keys(rawResponse.output));
+        console.log("Output structure:", Object.keys(rawResponse.output));
       }
-      
+
       return {
         suggestions,
         warnings,
         metrics,
-        language: rawResponse?.language || 'javascript',
+        language: rawResponse?.language || "javascript",
         fileName: selectedFile,
         rawData: rawResponse,
       };
     } catch (error) {
-      console.error('Error processing metrics response:', error);
+      console.error("Error processing metrics response:", error);
       return {
         suggestions: [],
         warnings: [],
@@ -383,7 +487,7 @@ export default function AIAnalysisPage() {
           security: 0,
           performance: 0,
         },
-        language: 'javascript',
+        language: "javascript",
         fileName: selectedFile,
         rawData: rawResponse,
       };
@@ -397,8 +501,8 @@ export default function AIAnalysisPage() {
     try {
       setAnalyzingWithN8n(true);
       setShowAnalysisModal(true);
-      setAnalysisType('ai');
-      
+      setAnalysisType("ai");
+
       const response = await api.post("/ai/analyze-with-n8n", {
         projectId: selectedProject.id,
         fileName: selectedFile,
@@ -426,8 +530,8 @@ export default function AIAnalysisPage() {
     try {
       setAnalyzingMetrics(true);
       setShowAnalysisModal(true);
-      setAnalysisType('metrics');
-      
+      setAnalysisType("metrics");
+
       const response = await api.post("/ai/analyze-metrics-with-n8n", {
         projectId: selectedProject.id,
         fileName: selectedFile,
@@ -472,17 +576,17 @@ export default function AIAnalysisPage() {
         if (projects.length > 0) {
           const firstProject = projects[0];
           setSelectedProject(firstProject);
-          
+
           // Cargar archivos reales del proyecto
           await loadProjectFiles(firstProject.id);
-          
+
           // Establecer el primer archivo disponible o un archivo por defecto
           const files = await loadProjectFiles(firstProject.id);
           if (files && files.length > 0) {
             const firstFile = extractFileNames(files)[0];
             setSelectedFile(firstFile || "main.js");
           } else {
-          setSelectedFile("main.js");
+            setSelectedFile("main.js");
           }
         }
       } catch (error) {
@@ -498,14 +602,14 @@ export default function AIAnalysisPage() {
     if (selectedProject && selectedFile && projectFiles.length > 0) {
       // Buscar contenido real del archivo en los archivos del proyecto
       const realFileContent = findFileContent(projectFiles, selectedFile);
-      
+
       if (realFileContent) {
         // Usar contenido real del archivo
         setCodeContent(realFileContent);
-          } else {
+      } else {
         // Fallback: generar código nuevo si no se encuentra el archivo real
-            setCodeContent(generateProjectCode(selectedProject, selectedFile));
-          }
+        setCodeContent(generateProjectCode(selectedProject, selectedFile));
+      }
     }
   }, [selectedProject, selectedFile, projectFiles]);
 
@@ -812,7 +916,13 @@ module.exports = {
                       className="w-24 h-24 mx-auto"
                     >
                       {/* Central "Brain" Node - Pulsing */}
-                      <circle cx="50" cy="50" r="15" fill="#4CAF50" opacity="0.8">
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r="15"
+                        fill="#4CAF50"
+                        opacity="0.8"
+                      >
                         <animate
                           attributeName="r"
                           values="15;18;15"
@@ -847,7 +957,13 @@ module.exports = {
                         />
 
                         {/* Node 1 */}
-                        <circle cx="50" cy="25" r="6" fill="#8BC34A" opacity="0.9">
+                        <circle
+                          cx="50"
+                          cy="25"
+                          r="6"
+                          fill="#8BC34A"
+                          opacity="0.9"
+                        >
                           <animate
                             attributeName="opacity"
                             values="0.9;0.6;0.9"
@@ -875,7 +991,13 @@ module.exports = {
                         </line>
 
                         {/* Node 2 */}
-                        <circle cx="71.65" cy="62.5" r="6" fill="#8BC34A" opacity="0.9">
+                        <circle
+                          cx="71.65"
+                          cy="62.5"
+                          r="6"
+                          fill="#8BC34A"
+                          opacity="0.9"
+                        >
                           <animate
                             attributeName="opacity"
                             values="0.9;0.6;0.9"
@@ -904,7 +1026,13 @@ module.exports = {
                         </line>
 
                         {/* Node 3 */}
-                        <circle cx="28.35" cy="62.5" r="6" fill="#8BC34A" opacity="0.9">
+                        <circle
+                          cx="28.35"
+                          cy="62.5"
+                          r="6"
+                          fill="#8BC34A"
+                          opacity="0.9"
+                        >
                           <animate
                             attributeName="opacity"
                             values="0.9;0.6;0.9"
@@ -937,23 +1065,23 @@ module.exports = {
 
                   {/* Título principal */}
                   <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                    {analysisType === 'ai' ? 'Analizando código con IA' : 'Analizando métricas'}
+                    {analysisType === "ai"
+                      ? "Analizando código con IA"
+                      : "Analizando métricas"}
                   </h3>
-                  
+
                   {/* Mensaje específico */}
                   <p className="text-gray-600 font-medium mb-4">
-                    {analysisType === 'ai' 
+                    {analysisType === "ai"
                       ? `Analizando archivo: ${selectedFile}`
-                      : `Calculando métricas de: ${selectedFile}`
-                    }
+                      : `Calculando métricas de: ${selectedFile}`}
                   </p>
-                  
+
                   {/* Descripción del proceso */}
                   <p className="text-sm text-gray-500 leading-relaxed">
-                    {analysisType === 'ai'
-                      ? 'La IA está revisando tu código para detectar oportunidades de mejora, optimizaciones y mejores prácticas. Esto puede tomar unos segundos...'
-                      : 'Calculando métricas de complejidad, escalabilidad, seguridad y rendimiento de tu código. Esto puede tomar unos segundos...'
-                    }
+                    {analysisType === "ai"
+                      ? "La IA está revisando tu código para detectar oportunidades de mejora, optimizaciones y mejores prácticas. Esto puede tomar unos segundos..."
+                      : "Calculando métricas de complejidad, escalabilidad, seguridad y rendimiento de tu código. Esto puede tomar unos segundos..."}
                   </p>
                 </div>
               </div>
@@ -1198,39 +1326,65 @@ module.exports = {
                       <MagnifyingGlassIcon className="w-5 h-5 text-blue-500 mr-2" />
                       Análisis de IA
                     </h3>
-                    {processedAnalysis.suggestions.length === 0 && processedAnalysis.warnings.length === 0 ? (
-                      <div className="text-gray-500 text-sm py-4 text-center">No se encontraron sugerencias ni advertencias para este archivo.</div>
+                    {processedAnalysis.suggestions.length === 0 &&
+                    processedAnalysis.warnings.length === 0 ? (
+                      <div className="text-gray-500 text-sm py-4 text-center">
+                        No se encontraron sugerencias ni advertencias para este
+                        archivo.
+                      </div>
                     ) : (
                       <>
                         {processedAnalysis.suggestions.length > 0 && (
                           <div className="mb-4">
                             <div className="font-semibold text-blue-700 mb-2 flex items-center">
-                              <svg className="w-5 h-5 mr-2 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" /></svg>
+                              <svg
+                                className="w-5 h-5 mr-2 text-blue-500"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" />
+                              </svg>
                               Sugerencias
                             </div>
                             <ul className="space-y-2">
-                              {processedAnalysis.suggestions.map((s: string, i: number) => (
-                                <li key={i} className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2 text-blue-900 flex items-start">
-                                  <span className="w-2 h-2 rounded-full bg-blue-400 mt-2 mr-2 flex-shrink-0"></span>
-                                  <span>{s}</span>
-                                </li>
-                              ))}
+                              {processedAnalysis.suggestions.map(
+                                (s: string, i: number) => (
+                                  <li
+                                    key={i}
+                                    className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2 text-blue-900 flex items-start"
+                                  >
+                                    <span className="w-2 h-2 rounded-full bg-blue-400 mt-2 mr-2 flex-shrink-0"></span>
+                                    <span>{s}</span>
+                                  </li>
+                                ),
+                              )}
                             </ul>
                           </div>
                         )}
                         {processedAnalysis.warnings.length > 0 && (
                           <div>
                             <div className="font-semibold text-red-700 mb-2 flex items-center">
-                              <svg className="w-5 h-5 mr-2 text-red-500" fill="currentColor" viewBox="0 0 20 20"><path d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" /></svg>
+                              <svg
+                                className="w-5 h-5 mr-2 text-red-500"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" />
+                              </svg>
                               Advertencias
                             </div>
                             <ul className="space-y-2">
-                              {processedAnalysis.warnings.map((w: string, i: number) => (
-                                <li key={i} className="bg-red-50 border border-red-200 rounded-lg px-4 py-2 text-red-900 flex items-start">
-                                  <span className="w-2 h-2 rounded-full bg-red-400 mt-2 mr-2 flex-shrink-0"></span>
-                                  <span>{w}</span>
-                                </li>
-                              ))}
+                              {processedAnalysis.warnings.map(
+                                (w: string, i: number) => (
+                                  <li
+                                    key={i}
+                                    className="bg-red-50 border border-red-200 rounded-lg px-4 py-2 text-red-900 flex items-start"
+                                  >
+                                    <span className="w-2 h-2 rounded-full bg-red-400 mt-2 mr-2 flex-shrink-0"></span>
+                                    <span>{w}</span>
+                                  </li>
+                                ),
+                              )}
                             </ul>
                           </div>
                         )}
@@ -1245,82 +1399,129 @@ module.exports = {
                       <LightBulbIcon className="w-5 h-5 text-purple-500 mr-2" />
                       Análisis de Métricas
                     </h3>
-                                         <div className="space-y-4">
-                       <div className="flex items-center justify-between">
-                         <span className="text-sm font-medium text-purple-800">Complejidad</span>
-                         <span className="text-sm font-bold text-purple-900">{processedMetrics.metrics.complexity}%</span>
-                       </div>
-                       <div className="w-full bg-purple-200 rounded-full h-3">
-                         <div 
-                           className="bg-purple-600 h-3 rounded-full transition-all duration-500" 
-                           style={{ width: `${processedMetrics.metrics.complexity}%` }}
-                         ></div>
-                       </div>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-purple-800">
+                          Complejidad
+                        </span>
+                        <span className="text-sm font-bold text-purple-900">
+                          {processedMetrics.metrics.complexity}%
+                        </span>
+                      </div>
+                      <div className="w-full bg-purple-200 rounded-full h-3">
+                        <div
+                          className="bg-purple-600 h-3 rounded-full transition-all duration-500"
+                          style={{
+                            width: `${processedMetrics.metrics.complexity}%`,
+                          }}
+                        ></div>
+                      </div>
 
-                       <div className="flex items-center justify-between">
-                         <span className="text-sm font-medium text-purple-800">Escalabilidad</span>
-                         <span className="text-sm font-bold text-purple-900">{processedMetrics.metrics.scalability}%</span>
-                       </div>
-                       <div className="w-full bg-purple-200 rounded-full h-3">
-                         <div 
-                           className="bg-purple-600 h-3 rounded-full transition-all duration-500" 
-                           style={{ width: `${processedMetrics.metrics.scalability}%` }}
-                         ></div>
-                       </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-purple-800">
+                          Escalabilidad
+                        </span>
+                        <span className="text-sm font-bold text-purple-900">
+                          {processedMetrics.metrics.scalability}%
+                        </span>
+                      </div>
+                      <div className="w-full bg-purple-200 rounded-full h-3">
+                        <div
+                          className="bg-purple-600 h-3 rounded-full transition-all duration-500"
+                          style={{
+                            width: `${processedMetrics.metrics.scalability}%`,
+                          }}
+                        ></div>
+                      </div>
 
-                       <div className="flex items-center justify-between">
-                         <span className="text-sm font-medium text-purple-800">Seguridad</span>
-                         <span className="text-sm font-bold text-purple-900">{processedMetrics.metrics.security}%</span>
-                       </div>
-                       <div className="w-full bg-purple-200 rounded-full h-3">
-                         <div 
-                           className="bg-purple-600 h-3 rounded-full transition-all duration-500" 
-                           style={{ width: `${processedMetrics.metrics.security}%` }}
-                         ></div>
-                       </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-purple-800">
+                          Seguridad
+                        </span>
+                        <span className="text-sm font-bold text-purple-900">
+                          {processedMetrics.metrics.security}%
+                        </span>
+                      </div>
+                      <div className="w-full bg-purple-200 rounded-full h-3">
+                        <div
+                          className="bg-purple-600 h-3 rounded-full transition-all duration-500"
+                          style={{
+                            width: `${processedMetrics.metrics.security}%`,
+                          }}
+                        ></div>
+                      </div>
 
-                       <div className="flex items-center justify-between">
-                         <span className="text-sm font-medium text-purple-800">Rendimiento</span>
-                         <span className="text-sm font-bold text-purple-900">{processedMetrics.metrics.performance}%</span>
-                       </div>
-                       <div className="w-full bg-purple-200 rounded-full h-3">
-                         <div 
-                           className="bg-purple-600 h-3 rounded-full transition-all duration-500" 
-                           style={{ width: `${processedMetrics.metrics.performance}%` }}
-                         ></div>
-                       </div>
-                     </div>
-                    {(processedMetrics.suggestions.length > 0 || processedMetrics.warnings.length > 0) && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-purple-800">
+                          Rendimiento
+                        </span>
+                        <span className="text-sm font-bold text-purple-900">
+                          {processedMetrics.metrics.performance}%
+                        </span>
+                      </div>
+                      <div className="w-full bg-purple-200 rounded-full h-3">
+                        <div
+                          className="bg-purple-600 h-3 rounded-full transition-all duration-500"
+                          style={{
+                            width: `${processedMetrics.metrics.performance}%`,
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+                    {(processedMetrics.suggestions.length > 0 ||
+                      processedMetrics.warnings.length > 0) && (
                       <div className="mt-6">
                         {processedMetrics.suggestions.length > 0 && (
                           <div className="mb-4">
                             <div className="font-semibold text-blue-700 mb-2 flex items-center">
-                              <svg className="w-5 h-5 mr-2 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" /></svg>
+                              <svg
+                                className="w-5 h-5 mr-2 text-blue-500"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" />
+                              </svg>
                               Sugerencias
                             </div>
                             <ul className="space-y-2">
-                              {processedMetrics.suggestions.map((s: string, i: number) => (
-                                <li key={i} className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2 text-blue-900 flex items-start">
-                                  <span className="w-2 h-2 rounded-full bg-blue-400 mt-2 mr-2 flex-shrink-0"></span>
-                                  <span>{s}</span>
-                                </li>
-                              ))}
+                              {processedMetrics.suggestions.map(
+                                (s: string, i: number) => (
+                                  <li
+                                    key={i}
+                                    className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2 text-blue-900 flex items-start"
+                                  >
+                                    <span className="w-2 h-2 rounded-full bg-blue-400 mt-2 mr-2 flex-shrink-0"></span>
+                                    <span>{s}</span>
+                                  </li>
+                                ),
+                              )}
                             </ul>
                           </div>
                         )}
                         {processedMetrics.warnings.length > 0 && (
                           <div>
                             <div className="font-semibold text-red-700 mb-2 flex items-center">
-                              <svg className="w-5 h-5 mr-2 text-red-500" fill="currentColor" viewBox="0 0 20 20"><path d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" /></svg>
+                              <svg
+                                className="w-5 h-5 mr-2 text-red-500"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" />
+                              </svg>
                               Advertencias
                             </div>
                             <ul className="space-y-2">
-                              {processedMetrics.warnings.map((w: string, i: number) => (
-                                <li key={i} className="bg-red-50 border border-red-200 rounded-lg px-4 py-2 text-red-900 flex items-start">
-                                  <span className="w-2 h-2 rounded-full bg-red-400 mt-2 mr-2 flex-shrink-0"></span>
-                                  <span>{w}</span>
-                                </li>
-                              ))}
+                              {processedMetrics.warnings.map(
+                                (w: string, i: number) => (
+                                  <li
+                                    key={i}
+                                    className="bg-red-50 border border-red-200 rounded-lg px-4 py-2 text-red-900 flex items-start"
+                                  >
+                                    <span className="w-2 h-2 rounded-full bg-red-400 mt-2 mr-2 flex-shrink-0"></span>
+                                    <span>{w}</span>
+                                  </li>
+                                ),
+                              )}
                             </ul>
                           </div>
                         )}
