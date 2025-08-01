@@ -589,6 +589,7 @@ ReactDOM.render(
 
       try {
         writeFileSync(tempFile, code);
+        console.log("Archivo temporal creado:", tempFile);
 
         const pythonProcess = spawn('python', [tempFile], {
           timeout: 10000, // 10 segundos máximo
@@ -599,10 +600,12 @@ ReactDOM.render(
 
         pythonProcess.stdout.on('data', (data) => {
           output += data.toString();
+          console.log("Python stdout:", data.toString());
         });
 
         pythonProcess.stderr.on('data', (data) => {
           errorOutput += data.toString();
+          console.log("Python stderr:", data.toString());
         });
 
         pythonProcess.on('close', (code) => {
@@ -621,6 +624,7 @@ ReactDOM.render(
         });
 
         pythonProcess.on('error', (err) => {
+          console.log("Python process error:", err.message);
           try {
             unlinkSync(tempFile);
           } catch (e) {
@@ -629,6 +633,7 @@ ReactDOM.render(
           resolve(`Error ejecutando Python: ${err.message}`);
         });
       } catch (err) {
+        console.log("Error creando archivo temporal:", err.message);
         resolve(`Error creando archivo temporal: ${err.message}`);
       }
     });

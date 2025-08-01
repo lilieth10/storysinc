@@ -29,6 +29,10 @@ import {
   MagnifyingGlassIcon,
   LockClosedIcon,
   EyeIcon,
+  CheckIcon,
+  XMarkIcon,
+  ExclamationTriangleIcon,
+  LightBulbIcon,
 } from "@heroicons/react/24/outline";
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
@@ -108,6 +112,14 @@ interface IAAnalysis {
   [key: string]: unknown; // Para permitir otras propiedades que puedan venir de n8n
 }
 
+interface IASuggestion {
+  id: string;
+  text: string;
+  type: 'suggestion' | 'warning';
+  accepted?: boolean;
+  rejected?: boolean;
+}
+
 // Componente de loading optimizado
 const EditorLoading = () => (
   <div className="flex items-center justify-center h-full bg-gray-50">
@@ -139,6 +151,11 @@ export default function ProjectDetailPage() {
   const [executionOutput, setExecutionOutput] = useState<string>("");
   const [iaAnalysis, setIaAnalysis] = useState<IAAnalysis | null>(null);
   const [loadingIA, setLoadingIA] = useState(false);
+  const [showIAModal, setShowIAModal] = useState(false);
+  const [showSuggestionsModal, setShowSuggestionsModal] = useState(false);
+  const [iaSuggestions, setIaSuggestions] = useState<IASuggestion[]>([]);
+  const [optimizedCode, setOptimizedCode] = useState<string>("");
+  const [autoSaved, setAutoSaved] = useState(false);
   const [activeTab, setActiveTab] = useState<
     "code" | "collaborators" | "settings"
   >("code");
@@ -221,6 +238,369 @@ export default function ProjectDetailPage() {
       Promise.all([fetchProject(), fetchFileTree()]).catch(console.error);
     }
   }, [fetchProject, fetchFileTree, projectId, token]);
+
+  // Función para guardar automáticamente en localStorage
+  const saveToLocalStorage = useCallback((content: string) => {
+    if (selectedFile) {
+      const localStorageKey = `project_${projectId}_file_${selectedFile.id}`;
+      const savedData = {
+        content,
+        timestamp: new Date().toISOString(),
+        fileName: selectedFile.name,
+      };
+      localStorage.setItem(localStorageKey, JSON.stringify(savedData));
+      
+      // Mostrar indicador de guardado automático
+      setAutoSaved(true);
+      setTimeout(() => setAutoSaved(false), 2000);
+    }
+  }, [selectedFile, projectId]);
+
+  const getLanguageFromFile = (filename: string, content?: string): string => {
+    const ext = filename.split(".").pop()?.toLowerCase();
+    const languageMap: { [key: string]: string } = {
+      js: "javascript",
+      jsx: "javascript",
+      ts: "typescript",
+      tsx: "typescript",
+      html: "html",
+      css: "css",
+      json: "json",
+      md: "markdown",
+      py: "python",
+      java: "java",
+      cpp: "cpp",
+      c: "c",
+    };
+
+    // Si tenemos contenido, intentar detectar el lenguaje por contenido
+    if (typeof content === "string" && content.length > 0) {
+      const firstLine = content.trim().split("\n")[0].toLowerCase();
+
+      if (firstLine.includes("<!doctype html") || firstLine.includes("<html")) {
+        return "html";
+      }
+      
+      // Verificar si es Python primero (más específico)
+      if (firstLine.includes("def ") || firstLine.includes("import ") || firstLine.includes("print(") || firstLine.includes("from ")) {
+        return "python";
+      }
+      
+      // Verificar si es JavaScript/TypeScript
+      if (firstLine.includes("import") || firstLine.includes("export")) {
+        return "javascript";
+      }
+    }
+
+    return languageMap[ext || ""] || "javascript";
+  };
+
+  const toggleExpanded = (nodeId: string) => {
+    const newExpanded = new Set(expanded);
+    if (newExpanded.has(nodeId)) {
+      newExpanded.delete(nodeId);
+    } else {
+      newExpanded.add(nodeId);
+    }
+    setExpanded(newExpanded);
+  };
+
+  const handleFileSelect = (file: FileNode) => {
+    setSelectedFile(file);
+    
+    // Cargar contenido guardado en localStorage si existe
+    const localStorageKey = `project_${projectId}_file_${file.id}`;
+    const savedData = localStorage.getItem(localStorageKey);
+    
+    if (savedData) {
+      try {
+        const parsed = JSON.parse(savedData);
+        setEditorContent(parsed.content || file.content || "");
+      } catch {
+        setEditorContent(file.content || "");
+      }
+    } else {
+      setEditorContent(file.content || "");
+    }
+    
+    setIaAnalysis(null); // Limpiar análisis anterior
+  };
+
+  const analyzeWithIA = useCallback(async () => {
+    if (!selectedFile) return;
+
+    setLoadingIA(true);
+    setShowIAModal(true);
+    try {
+      const response = await api.post(
+        `/ai/optimize-code-with-n8n`,
+        {
+          projectId: parseInt(projectId),
+          fileName: selectedFile.name,
+          code: editorContent,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+
+      // Procesar sugerencias y advertencias
+      const suggestions: IASuggestion[] = [];
+      let optimizedCodeResult = null;
+
+      // Buscar código optimizado en la respuesta
+      if (response.data.output?.optimizedCode && typeof response.data.output.optimizedCode === "string") {
+        optimizedCodeResult = response.data.output.optimizedCode;
+      } else if (response.data.optimizedCode && typeof response.data.optimizedCode === "string") {
+        optimizedCodeResult = response.data.optimizedCode;
+      } else if (response.data.iaAnalysis?.output?.optimizedCode && typeof response.data.iaAnalysis.output.optimizedCode === "string") {
+        optimizedCodeResult = response.data.iaAnalysis.output.optimizedCode;
+      } else if (response.data.output?.optimizacion && typeof response.data.output.optimizacion === "string") {
+        optimizedCodeResult = response.data.output.optimizacion;
+      } else if (response.data.optimizacion && typeof response.data.optimizacion === "string") {
+        optimizedCodeResult = response.data.optimizacion;
+      }
+
+      // Procesar sugerencias y advertencias
+      const output = response.data.iaAnalysis?.output || response.data.output;
+      
+      if (output) {
+        // Procesar sugerencias
+        if (output.Sugerencias && Array.isArray(output.Sugerencias)) {
+          output.Sugerencias.forEach((sugerencia: string, index: number) => {
+            suggestions.push({
+              id: `suggestion_${index}`,
+              text: sugerencia,
+              type: 'suggestion'
+            });
+          });
+        } else if (output.sugerencias && Array.isArray(output.sugerencias)) {
+          output.sugerencias.forEach((sugerencia: string, index: number) => {
+            suggestions.push({
+              id: `suggestion_${index}`,
+              text: sugerencia,
+              type: 'suggestion'
+            });
+          });
+        }
+
+        // Procesar advertencias
+        if (output.Advertencias && Array.isArray(output.Advertencias)) {
+          output.Advertencias.forEach((advertencia: string, index: number) => {
+            suggestions.push({
+              id: `warning_${index}`,
+              text: advertencia,
+              type: 'warning'
+            });
+          });
+        } else if (output.advertencias && Array.isArray(output.advertencias)) {
+          output.advertencias.forEach((advertencia: string, index: number) => {
+            suggestions.push({
+              id: `warning_${index}`,
+              text: advertencia,
+              type: 'warning'
+            });
+          });
+        }
+      }
+
+      // Guardar el análisis de IA
+      setIaAnalysis({ output: response.data.iaAnalysis?.output || response.data.output });
+
+      if (suggestions.length > 0) {
+        // Si hay sugerencias, mostrar el modal de sugerencias
+        setIaSuggestions(suggestions);
+        setOptimizedCode(optimizedCodeResult || editorContent);
+        setShowSuggestionsModal(true);
+      } else if (optimizedCodeResult) {
+        // Si no hay sugerencias pero hay código optimizado, aplicarlo directamente
+        setEditorContent(String(optimizedCodeResult));
+        saveToLocalStorage(String(optimizedCodeResult));
+        toast.success("Código optimizado aplicado");
+      } else {
+        toast.error("No se pudo obtener código optimizado");
+      }
+    } catch (error) {
+      console.error("Error al optimizar código con IA:", error);
+      toast.error("Error al optimizar código con IA");
+    } finally {
+      setLoadingIA(false);
+      setShowIAModal(false);
+    }
+  }, [selectedFile, editorContent, projectId, token, saveToLocalStorage]);
+
+  // Funciones para manejar sugerencias de IA
+  const acceptSuggestion = useCallback((suggestionId: string) => {
+    setIaSuggestions(prev =>
+      prev.map(s =>
+        s.id === suggestionId
+          ? { ...s, accepted: true, rejected: false }
+          : s
+      )
+    );
+  }, []);
+
+  const rejectSuggestion = useCallback((suggestionId: string) => {
+    setIaSuggestions(prev =>
+      prev.map(s =>
+        s.id === suggestionId
+          ? { ...s, rejected: true, accepted: false }
+          : s
+      )
+    );
+  }, []);
+
+  const applyAcceptedSuggestions = useCallback(() => {
+    if (optimizedCode) {
+      // Aplicar el código optimizado
+      if (selectedFile) {
+        const localStorageKey = `project_${projectId}_file_${selectedFile.id}`;
+        const savedData = {
+          content: String(optimizedCode),
+          timestamp: new Date().toISOString(),
+          fileName: selectedFile.name,
+        };
+        localStorage.setItem(localStorageKey, JSON.stringify(savedData));
+        setEditorContent(String(optimizedCode));
+      }
+    }
+    setShowSuggestionsModal(false);
+    setIaSuggestions([]);
+    setOptimizedCode("");
+  }, [optimizedCode, selectedFile, projectId]);
+
+  const closeSuggestionsModal = useCallback(() => {
+    setShowSuggestionsModal(false);
+    setIaSuggestions([]);
+    setOptimizedCode("");
+  }, []);
+
+  // Función para analizar archivos src/ con IA
+  const analyzeSrcFileWithIA = async (file: FileNode) => {
+    if (!file || file.type !== "file") return;
+    
+    setLoadingIA(true);
+    setShowIAModal(true);
+    
+    try {
+      const response = await api.post(
+        `/ai/optimize-code-with-n8n`,
+        {
+          projectId: parseInt(projectId),
+          fileName: file.name,
+          code: file.content || "",
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+
+      // Procesar sugerencias y advertencias
+      const suggestions: IASuggestion[] = [];
+      let optimizedCodeResult = null;
+
+      // Buscar código optimizado en la respuesta
+      if (response.data.output?.optimizedCode && typeof response.data.output.optimizedCode === "string") {
+        optimizedCodeResult = response.data.output.optimizedCode;
+      } else if (response.data.optimizedCode && typeof response.data.optimizedCode === "string") {
+        optimizedCodeResult = response.data.optimizedCode;
+      } else if (response.data.iaAnalysis?.output?.optimizedCode && typeof response.data.iaAnalysis.output.optimizedCode === "string") {
+        optimizedCodeResult = response.data.iaAnalysis.output.optimizedCode;
+      } else if (response.data.output?.optimizacion && typeof response.data.output.optimizacion === "string") {
+        optimizedCodeResult = response.data.output.optimizacion;
+      } else if (response.data.optimizacion && typeof response.data.optimizacion === "string") {
+        optimizedCodeResult = response.data.optimizacion;
+      }
+
+      // Procesar sugerencias y advertencias
+      const output = response.data.iaAnalysis?.output || response.data.output;
+      
+      if (output) {
+        // Procesar sugerencias
+        if (output.Sugerencias && Array.isArray(output.Sugerencias)) {
+          output.Sugerencias.forEach((sugerencia: string, index: number) => {
+            suggestions.push({
+              id: `suggestion_${index}`,
+              text: sugerencia,
+              type: 'suggestion'
+            });
+          });
+        } else if (output.sugerencias && Array.isArray(output.sugerencias)) {
+          output.sugerencias.forEach((sugerencia: string, index: number) => {
+            suggestions.push({
+              id: `suggestion_${index}`,
+              text: sugerencia,
+              type: 'suggestion'
+            });
+          });
+        }
+
+        // Procesar advertencias
+        if (output.Advertencias && Array.isArray(output.Advertencias)) {
+          output.Advertencias.forEach((advertencia: string, index: number) => {
+            suggestions.push({
+              id: `warning_${index}`,
+              text: advertencia,
+              type: 'warning'
+            });
+          });
+        } else if (output.advertencias && Array.isArray(output.advertencias)) {
+          output.advertencias.forEach((advertencia: string, index: number) => {
+            suggestions.push({
+              id: `warning_${index}`,
+              text: advertencia,
+              type: 'warning'
+            });
+          });
+        }
+      }
+
+      // Guardar el análisis de IA
+      setIaAnalysis({ output: response.data.iaAnalysis?.output || response.data.output });
+
+      if (suggestions.length > 0) {
+        // Si hay sugerencias, mostrar el modal de sugerencias
+        setIaSuggestions(suggestions);
+        setOptimizedCode(optimizedCodeResult || file.content || "");
+        setShowSuggestionsModal(true);
+      } else if (optimizedCodeResult) {
+        // Si no hay sugerencias pero hay código optimizado, aplicarlo directamente al fileTree
+        const localStorageKey = `project_${projectId}_file_${file.id}`;
+        const savedData = {
+          content: String(optimizedCodeResult),
+          timestamp: new Date().toISOString(),
+          fileName: file.name,
+        };
+        localStorage.setItem(localStorageKey, JSON.stringify(savedData));
+        
+        // Actualizar el archivo en el árbol
+        setFileTree(prevFiles => {
+          const updateFileInTree = (files: FileNode[]): FileNode[] => {
+            return files.map(f => {
+              if (f.id === file.id) {
+                return { ...f, content: String(optimizedCodeResult) };
+              }
+              if (f.children) {
+                return { ...f, children: updateFileInTree(f.children) };
+              }
+              return f;
+            });
+          };
+          return updateFileInTree(prevFiles);
+        });
+        
+        toast.success("Código optimizado aplicado");
+      } else {
+        toast.error("No se pudo obtener código optimizado");
+      }
+    } catch (error) {
+      console.error("Error al analizar archivo con IA:", error);
+      toast.error("Error al analizar el archivo con IA");
+    } finally {
+      setLoadingIA(false);
+      setShowIAModal(false);
+    }
+  };
 
   // Verificar autenticación
   useEffect(() => {
@@ -318,193 +698,35 @@ export default function ProjectDetailPage() {
     }
   }, [selectedFile, editorContent, projectId, token]);
 
-  const analyzeWithIA = useCallback(async () => {
-    if (!selectedFile) return;
-
-    setLoadingIA(true);
-    try {
-      const response = await api.post(
-        `/ai/optimize-code-with-n8n`,
-        {
-          projectId: parseInt(projectId),
-          fileName: selectedFile.name,
-          code: editorContent,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-
-      // Buscar código optimizado en la respuesta
-      let optimizedCode = null;
-
-      // Buscar en la estructura correcta: response.data.output.optimizedCode
-      if (
-        response.data.output?.optimizedCode &&
-        typeof response.data.output.optimizedCode === "string"
-      ) {
-        optimizedCode = response.data.output.optimizedCode;
-      }
-
-      // Fallback para estructuras anteriores
-      if (!optimizedCode) {
-        if (
-          response.data.optimizedCode &&
-          typeof response.data.optimizedCode === "string"
-        ) {
-          optimizedCode = response.data.optimizedCode;
-        }
-      }
-
-      if (optimizedCode) {
-        setEditorContent(String(optimizedCode));
-
-        // Guardar el análisis de IA
-        if (response.data.iaAnalysis?.output) {
-          setIaAnalysis({ output: response.data.iaAnalysis.output });
-          toast.success("Código optimizado y análisis de IA generado");
-        } else if (response.data.output) {
-          // Fallback para estructura anterior
-          setIaAnalysis({ output: response.data.output });
-          toast.success("Código optimizado y análisis de IA generado");
-        } else {
-          toast.success("Código optimizado");
-        }
-      } else {
-        toast.error("No se pudo obtener código optimizado");
-      }
-    } catch (error) {
-      toast.error("Error al optimizar código con IA");
-    } finally {
-      setLoadingIA(false);
-    }
-  }, [selectedFile, editorContent, projectId, token]);
-
-  // Funciones auxiliares
-  const toggleExpanded = (nodeId: string) => {
-    const newExpanded = new Set(expanded);
-    if (newExpanded.has(nodeId)) {
-      newExpanded.delete(nodeId);
-    } else {
-      newExpanded.add(nodeId);
-    }
-    setExpanded(newExpanded);
-  };
-
-  const handleFileSelect = (file: FileNode) => {
-    setSelectedFile(file);
-    setEditorContent(file.content || "");
-    setIaAnalysis(null); // Limpiar análisis anterior
-  };
-
-  const getLanguageFromFile = (filename: string, content?: string): string => {
-    const ext = filename.split(".").pop()?.toLowerCase();
-    const languageMap: { [key: string]: string } = {
-      js: "javascript",
-      jsx: "javascript",
-      ts: "typescript",
-      tsx: "typescript",
-      html: "html",
-      css: "css",
-      json: "json",
-      md: "markdown",
-      py: "python",
-      java: "java",
-      cpp: "cpp",
-      c: "c",
-    };
-
-    // Si tenemos contenido, intentar detectar el lenguaje por contenido
-    if (typeof content === "string" && content.length > 0) {
-      const firstLine = content.trim().split("\n")[0].toLowerCase();
-
-      // Detectar archivos de proyecto React/TypeScript PRIMERO
-      if (
-        content.includes("import React") ||
-        content.includes("ReactDOM.render") ||
-        content.includes("export default") ||
-        content.includes("from 'react") ||
-        content.includes('from "react') ||
-        content.includes("<React.StrictMode>") ||
-        content.includes("document.getElementById") ||
-        content.includes("JSX.Element")
-      ) {
-        return "typescript"; // Para archivos .tsx/.ts
-      }
-
-      // Detectar Python por palabras clave (solo si NO es React)
-      if (
-        (content.includes("def ") ||
-          content.includes("print(") ||
-          content.includes("import ") ||
-          content.includes("from ") ||
-          firstLine.includes("python") ||
-          content.includes("if __name__")) &&
-        !content.includes("import React") &&
-        !content.includes("ReactDOM")
-      ) {
-        return "python";
-      }
-
-      // Detectar JavaScript puro (solo si NO es React)
-      if (
-        (content.includes("function ") ||
-          content.includes("const ") ||
-          content.includes("let ") ||
-          content.includes("var ") ||
-          content.includes("console.log")) &&
-        !content.includes("import React") &&
-        !content.includes("ReactDOM")
-      ) {
-        return ext === "ts" || ext === "tsx" ? "typescript" : "javascript";
-      }
-
-      // Detectar HTML
-      if (
-        content.includes("<!DOCTYPE html>") ||
-        content.includes("<html>") ||
-        content.includes("<head>") ||
-        content.includes("<body>")
-      ) {
-        return "html";
-      }
-
-      // Detectar CSS
-      if (
-        content.includes("{") &&
-        content.includes("}") &&
-        (content.includes(":") || content.includes("@media"))
-      ) {
-        return "css";
-      }
-
-      // Detectar JSON
-      if (content.trim().startsWith("{") || content.trim().startsWith("[")) {
-        try {
-          JSON.parse(content);
-          return "json";
-        } catch {
-          // No es JSON válido
-        }
-      }
-    }
-
-    return languageMap[ext || ""] || "plaintext";
-  };
-
   const copyCode = () => {
     navigator.clipboard.writeText(editorContent);
     toast.success("Código copiado al portapapeles");
   };
 
   const createExecutableFile = () => {
-    const language = getLanguageFromFile(
-      selectedFile?.name || "",
-      editorContent,
-    );
+    // Detectar el lenguaje basándose SOLO en el contenido del editor, no en el nombre del archivo
+    let detectedLanguage = "javascript"; // Por defecto
+    
+    if (editorContent) {
+      const content = editorContent.toLowerCase();
+      
+      // Detectar Python primero (más específico)
+      if (content.includes("def ") || content.includes("import ") || content.includes("print(") || content.includes("from ") || content.includes("if __name__") || content.includes("class ") && content.includes(":")) {
+        detectedLanguage = "python";
+      }
+      // Detectar HTML
+      else if (content.includes("<!doctype html") || content.includes("<html") || content.includes("<head") || content.includes("<body")) {
+        detectedLanguage = "html";
+      }
+      // JavaScript por defecto
+      else {
+        detectedLanguage = "javascript";
+      }
+    }
+    
     let template = "";
 
-    switch (language) {
+    switch (detectedLanguage) {
       case "javascript":
         template = `// Código JavaScript ejecutable
 console.log("¡Hola mundo!");
@@ -551,8 +773,52 @@ print(f"Suma de números: {sum(numeros)}")`;
 console.log("¡Hola mundo!");`;
     }
 
-    setEditorContent(template);
-    toast.success("Plantilla de código ejecutable creada");
+    // Crear un nuevo archivo ejecutable
+    const newExecutableFile: FileNode = {
+      id: `executable_${Date.now()}`,
+      name: `ejecutable.${detectedLanguage === "javascript" ? "js" : detectedLanguage === "python" ? "py" : "html"}`,
+      type: "file",
+      path: `/ejecutable.${detectedLanguage === "javascript" ? "js" : detectedLanguage === "python" ? "py" : "html"}`,
+      content: template,
+      language: detectedLanguage,
+    };
+
+    // Agregar el archivo a la carpeta "ejecutables" en el fileTree
+    setFileTree(prevFiles => {
+      const updateFileTree = (files: FileNode[]): FileNode[] => {
+        // Buscar si ya existe la carpeta "ejecutables"
+        const ejecutablesFolder = files.find(f => f.name === "ejecutables" && f.type === "folder");
+        
+        if (ejecutablesFolder) {
+          // Si existe, agregar el archivo a la carpeta
+          return files.map(f => {
+            if (f.id === ejecutablesFolder.id) {
+              return {
+                ...f,
+                children: [...(f.children || []), newExecutableFile]
+              };
+            }
+            return f;
+          });
+        } else {
+          // Si no existe, crear la carpeta y agregar el archivo
+          const newEjecutablesFolder: FileNode = {
+            id: `folder_ejecutables_${Date.now()}`,
+            name: "ejecutables",
+            type: "folder",
+            path: "/ejecutables",
+            children: [newExecutableFile]
+          };
+          return [...files, newEjecutablesFolder];
+        }
+      };
+      
+      return updateFileTree(prevFiles);
+    });
+
+    // Seleccionar automáticamente el nuevo archivo
+    handleFileSelect(newExecutableFile);
+    toast.success("Archivo ejecutable creado en carpeta 'ejecutables'");
   };
 
   const togglePreview = () => {
@@ -815,7 +1081,7 @@ console.log("¡Hola mundo!");`;
             <div className="flex-1 flex flex-col bg-white">
               {/* Barra de controles Git - fondo blanco */}
               <div className="bg-white border-b border-gray-200 px-6 py-4">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0 sm:space-x-6">
                   <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-6">
                     {/* Selector de ramas */}
                     <div className="flex items-center space-x-3">
@@ -906,6 +1172,11 @@ console.log("¡Hola mundo!");`;
                             <span className="ml-2 text-xs text-gray-500">
                               {selectedFile.path}
                             </span>
+                            {autoSaved && (
+                              <span className="ml-2 text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">
+                                Guardado
+                              </span>
+                            )}
                           </div>
                           <div className="flex flex-wrap items-center gap-2">
                             <Button
@@ -939,6 +1210,23 @@ console.log("¡Hola mundo!");`;
                               <BookmarkIcon className="w-4 h-4 mr-1" />
                               <span className="hidden sm:inline">
                                 {saving ? "Guardando..." : "Guardar"}
+                              </span>
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                if (selectedFile) {
+                                  const localStorageKey = `project_${projectId}_file_${selectedFile.id}`;
+                                  localStorage.removeItem(localStorageKey);
+                                  setEditorContent(selectedFile.content || "");
+                                  toast.success("Datos locales limpiados");
+                                }
+                              }}
+                              className="text-xs text-orange-600 border-orange-300 hover:bg-orange-50"
+                            >
+                              <span className="hidden sm:inline">
+                                Limpiar Local
                               </span>
                             </Button>
                             {getLanguageFromFile(
@@ -982,6 +1270,20 @@ console.log("¡Hola mundo!");`;
                                   : "Optimizar con IA"}
                               </span>
                             </Button>
+                            {selectedFile.name.startsWith("src/") && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => analyzeSrcFileWithIA(selectedFile)}
+                                disabled={loadingIA}
+                                className="bg-purple-500 hover:bg-purple-600 text-white text-xs"
+                              >
+                                <Cog6ToothIcon className="w-4 h-4 mr-1" />
+                                <span className="hidden sm:inline">
+                                  Analizar con IA
+                                </span>
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -998,9 +1300,10 @@ console.log("¡Hola mundo!");`;
                                   editorContent,
                                 )}
                                 value={editorContent}
-                                onChange={(value) =>
-                                  setEditorContent(value || "")
-                                }
+                                onChange={(value) => {
+                                  setEditorContent(value || "");
+                                  saveToLocalStorage(value || "");
+                                }}
                                 options={{
                                   minimap: { enabled: false },
                                   fontSize: 14,
@@ -1016,6 +1319,152 @@ console.log("¡Hola mundo!");`;
                                 onMount={() => {}}
                               />
                             </Suspense>
+                            
+                            {/* Modal de Loader de IA - Flotante dentro del editor */}
+                            {showIAModal && (
+                              <div className="absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center z-10">
+                                <div className="bg-white rounded-2xl p-8 shadow-2xl border border-gray-200">
+                                  <div className="text-center">
+                                    {/* Spinner principal con SVG */}
+                                    <div className="mb-4">
+                                      <svg
+                                        width={80}
+                                        height={80}
+                                        viewBox="0 0 100 100"
+                                        fill="none"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        className="w-20 h-20 mx-auto"
+                                      >
+                                        {/* Central "Brain" Node - Pulsing */}
+                                        <circle cx="50" cy="50" r="15" fill="#4CAF50" opacity="0.8">
+                                          <animate
+                                            attributeName="r"
+                                            values="15;18;15"
+                                            dur="3s"
+                                            repeatCount="indefinite"
+                                            keyTimes="0;0.5;1"
+                                            calcMode="spline"
+                                            keySplines="0.4 0 0.2 1; 0.4 0 0.2 1"
+                                          />
+                                          <animate
+                                            attributeName="opacity"
+                                            values="0.8;1;0.8"
+                                            dur="3s"
+                                            repeatCount="indefinite"
+                                            keyTimes="0;0.5;1"
+                                            calcMode="spline"
+                                            keySplines="0.4 0 0.2 1; 0.4 0 0.2 1"
+                                          />
+                                        </circle>
+
+                                        {/* Orbiting Nodes and Connecting Lines */}
+                                        <g transform="rotate(0 50 50)">
+                                          {/* Group for rotation */}
+                                          <animateTransform
+                                            attributeName="transform"
+                                            attributeType="XML"
+                                            type="rotate"
+                                            from="0 50 50"
+                                            to="360 50 50"
+                                            dur="8s"
+                                            repeatCount="indefinite"
+                                          />
+
+                                          {/* Node 1 */}
+                                          <circle cx="50" cy="25" r="6" fill="#8BC34A" opacity="0.9">
+                                            <animate
+                                              attributeName="opacity"
+                                              values="0.9;0.6;0.9"
+                                              dur="2.5s"
+                                              begin="0s"
+                                              repeatCount="indefinite"
+                                            />
+                                          </circle>
+                                          <line
+                                            x1="50"
+                                            y1="50"
+                                            x2="50"
+                                            y2="25"
+                                            stroke="#388E3C"
+                                            strokeWidth="3.125"
+                                            strokeLinecap="round"
+                                            strokeDasharray="10 10"
+                                          >
+                                            <animate
+                                              attributeName="stroke-dashoffset"
+                                              values="0; -20"
+                                              dur="2s"
+                                              repeatCount="indefinite"
+                                            />
+                                          </line>
+
+                                          {/* Node 2 */}
+                                          <circle cx="71.65" cy="62.5" r="6" fill="#8BC34A" opacity="0.9">
+                                            <animate
+                                              attributeName="opacity"
+                                              values="0.9;0.6;0.9"
+                                              dur="2.5s"
+                                              begin="0.8s"
+                                              repeatCount="indefinite"
+                                            />
+                                          </circle>
+                                          <line
+                                            x1="50"
+                                            y1="50"
+                                            x2="71.65"
+                                            y2="62.5"
+                                            stroke="#388E3C"
+                                            strokeWidth="3.125"
+                                            strokeLinecap="round"
+                                            strokeDasharray="10 10"
+                                          >
+                                            <animate
+                                              attributeName="stroke-dashoffset"
+                                              values="0; -20"
+                                              dur="2s"
+                                              begin="0.5s"
+                                              repeatCount="indefinite"
+                                            />
+                                          </line>
+
+                                          {/* Node 3 */}
+                                          <circle cx="28.35" cy="62.5" r="6" fill="#8BC34A" opacity="0.9">
+                                            <animate
+                                              attributeName="opacity"
+                                              values="0.9;0.6;0.9"
+                                              dur="2.5s"
+                                              begin="1.6s"
+                                              repeatCount="indefinite"
+                                            />
+                                          </circle>
+                                          <line
+                                            x1="50"
+                                            y1="50"
+                                            x2="28.35"
+                                            y2="62.5"
+                                            stroke="#388E3C"
+                                            strokeWidth="3.125"
+                                            strokeLinecap="round"
+                                            strokeDasharray="10 10"
+                                          >
+                                            <animate
+                                              attributeName="stroke-dashoffset"
+                                              values="0; -20"
+                                              dur="2s"
+                                              begin="1s"
+                                              repeatCount="indefinite"
+                                            />
+                                          </line>
+                                        </g>
+                                      </svg>
+                                    </div>
+
+                                    {/* Texto dinámico */}
+                                    <p className="text-gray-600 font-medium">Analizando código con IA...</p>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
 
@@ -1541,6 +1990,95 @@ console.log("¡Hola mundo!");`;
 
       {/* Footer existente */}
       <Footer />
+
+      {/* Modal de Sugerencias de IA */}
+      {showSuggestionsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-8 shadow-2xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-gray-900">
+                Sugerencias de IA
+              </h3>
+              <button
+                onClick={closeSuggestionsModal}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <XMarkIcon className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              {iaSuggestions.map((suggestion) => (
+                <div
+                  key={suggestion.id}
+                  className={`p-4 rounded-lg border ${
+                    suggestion.type === 'warning'
+                      ? 'border-red-200 bg-red-50'
+                      : 'border-blue-200 bg-blue-50'
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start space-x-3 flex-1">
+                      {suggestion.type === 'warning' ? (
+                        <ExclamationTriangleIcon className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+                      ) : (
+                        <LightBulbIcon className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                      )}
+                      <div className="flex-1">
+                        <p className={`text-sm ${
+                          suggestion.type === 'warning' ? 'text-red-800' : 'text-blue-800'
+                        }`}>
+                          {suggestion.text}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2 ml-4">
+                      <button
+                        onClick={() => acceptSuggestion(suggestion.id)}
+                        className={`p-1 rounded-full ${
+                          suggestion.accepted
+                            ? 'bg-green-100 text-green-600'
+                            : 'bg-gray-100 text-gray-600 hover:bg-green-100 hover:text-green-600'
+                        }`}
+                        disabled={suggestion.rejected}
+                      >
+                        <CheckIcon className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => rejectSuggestion(suggestion.id)}
+                        className={`p-1 rounded-full ${
+                          suggestion.rejected
+                            ? 'bg-red-100 text-red-600'
+                            : 'bg-gray-100 text-gray-600 hover:bg-red-100 hover:text-red-600'
+                        }`}
+                        disabled={suggestion.accepted}
+                      >
+                        <XMarkIcon className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+              <Button
+                variant="outline"
+                onClick={closeSuggestionsModal}
+                className="text-gray-600"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={applyAcceptedSuggestions}
+                className="bg-green-500 hover:bg-green-600 text-white"
+              >
+                Aplicar Cambios
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
