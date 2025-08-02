@@ -16,6 +16,8 @@ import { Button } from "@/components/ui/button";
 import dynamic from "next/dynamic";
 import toast from "react-hot-toast";
 import { useNotifications } from "@/store/notifications";
+import { useAuth } from "@/store/auth";
+import { api } from "@/lib/api";
 
 // Importar ApexCharts dinámicamente para evitar errores de SSR
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
@@ -79,6 +81,7 @@ interface AIMetrics {
 }
 
 export default function SyncPage() {
+  const { token } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [createType, setCreateType] = useState<"bff" | "sidecar">("bff");
@@ -116,6 +119,20 @@ export default function SyncPage() {
     aiMetrics: true,
   });
   const { fetchNotifications } = useNotifications();
+
+  // Git integration state
+  const [gitSyncStatus, setGitSyncStatus] = useState<Record<number, 'idle' | 'syncing' | 'success' | 'error'>>({});
+  const [versionHistory, setVersionHistory] = useState<Array<{
+    id: string;
+    hash: string;
+    message: string;
+    author: string;
+    date: string;
+    projectId: number;
+    syncType: 'bff' | 'sidecar' | 'general';
+  }>>([]);
+  const [showHistory, setShowHistory] = useState(false);
+  const [syncLoading, setSyncLoading] = useState<Record<number, boolean>>({});
 
   // Cargar proyectos de sincronización
   useEffect(() => {
@@ -292,11 +309,19 @@ export default function SyncPage() {
 
   const fetchSyncProjects = async () => {
     try {
-      // Simular delay de red
-      await new Promise((resolve) => setTimeout(resolve, 800));
-
-      // Datos mock que representan componentes BFF/Sidecar de proyectos existentes
-      const mockComponents: SyncProject[] = [
+      setLoading(true);
+      
+      // Call real API to get sync projects
+      const response = await api.get('/sync/projects', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      setSyncProjects(response.data);
+      
+      // If no real projects, show mock data for demo
+      if (response.data.length === 0) {
+        // Datos mock que representan componentes BFF/Sidecar de proyectos existentes
+        const mockComponents: SyncProject[] = [
         {
           id: 1,
           name: "Frontend API (BFF)",
@@ -362,9 +387,12 @@ export default function SyncPage() {
         },
       ];
 
-      setSyncProjects(mockComponents);
+        setSyncProjects(mockComponents);
+      }
     } catch (error) {
       console.error("Error fetching sync projects:", error);
+      // Fallback to mock data on error
+      setSyncProjects([]);
     } finally {
       setLoading(false);
     }
@@ -438,6 +466,54 @@ export default function SyncPage() {
       ...prev,
       functions: prev.functions.filter((f) => f !== functionName),
     }));
+  };
+
+  // Real sync function using backend API
+  const performRealSync = async (project: SyncProject) => {
+    setGitSyncStatus(prev => ({ ...prev, [project.id]: 'syncing' }));
+    setSyncLoading(prev => ({ ...prev, [project.id]: true }));
+
+    try {
+      // Call real backend API for sync
+      const response = await api.post(
+        `/sync/projects/${project.id}/sync`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (response.data.success) {
+        console.log(`✅ Sync completed for project ${project.id}: ${project.name}`);
+
+        // Update sync status
+        setGitSyncStatus(prev => ({ ...prev, [project.id]: 'success' }));
+        
+        // Update project last sync with real data
+        setSyncProjects(prev => prev.map(p => 
+          p.id === project.id 
+            ? { ...p, lastSync: response.data.lastSync }
+            : p
+        ));
+
+        toast.success(`✅ ${project.name} sincronizado - Ver en Historial de Versiones`);
+        
+        // Reset status after 3 seconds
+        setTimeout(() => {
+          setGitSyncStatus(prev => ({ ...prev, [project.id]: 'idle' }));
+        }, 3000);
+
+      } else {
+        throw new Error('Sync failed');
+      }
+
+    } catch (error) {
+      console.error('Sync error:', error);
+      setGitSyncStatus(prev => ({ ...prev, [project.id]: 'error' }));
+      toast.error(`Error en sincronización de ${project.name}`);
+    } finally {
+      setSyncLoading(prev => ({ ...prev, [project.id]: false }));
+    }
   };
 
   if (showCreateForm) {
@@ -1101,48 +1177,12 @@ export default function SyncPage() {
                   <button
                     onClick={async () => {
                       setSyncing(true);
-                      setSyncError(null);
                       setSyncSuccess(false);
                       try {
-                        const start = Date.now();
-                        const response = await fetch(
-                          `/sync/projects/${selectedProject.id}/sync`,
-                          {
-                            method: "POST",
-                            headers: {
-                              Authorization: `Bearer ${localStorage.getItem("token")}`,
-                            },
-                          },
-                        );
-                        const elapsed = Date.now() - start;
-                        const minLoader = 1500;
-                        if (elapsed < minLoader) {
-                          await new Promise((res) =>
-                            setTimeout(res, minLoader - elapsed),
-                          );
-                        }
-                        if (response.ok) {
-                          const data = await response.json();
-                          setSyncSuccess(true);
-                          setSelectedProject({
-                            ...selectedProject,
-                            lastSync: data.lastSync,
-                          });
-                          setLastSyncHighlight(true);
-                          setTimeout(() => setLastSyncHighlight(false), 1200);
-                          // Recargar historial después de sincronizar
-                          await fetchSyncHistory();
-                          // Recargar notificaciones
-                          const token = localStorage.getItem("token");
-                          if (token) {
-                            await fetchNotifications(token);
-                          }
-                        } else {
-                          setSyncError("Error al sincronizar");
-                          toast.error("Error al sincronizar el proyecto");
-                        }
-                      } catch (err) {
-                        setSyncError("Error de red");
+                        await performRealSync(selectedProject);
+                        setSyncSuccess(true);
+                      } catch (error) {
+                        console.error("Error de red al sincronizar");
                         toast.error("Error de red al sincronizar");
                       } finally {
                         setSyncing(false);
@@ -1150,9 +1190,20 @@ export default function SyncPage() {
                       }
                     }}
                     className="px-4 py-2 rounded font-semibold border border-green-400 bg-green-100 text-black hover:bg-green-200 transition-colors duration-150"
-                    disabled={syncing}
+                    disabled={syncing || syncLoading[selectedProject.id]}
                   >
-                    Sincronizar ahora
+                    {syncing || syncLoading[selectedProject.id] ? (
+                      <div className="flex items-center">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600 mr-2"></div>
+                        Sincronizando...
+                      </div>
+                    ) : gitSyncStatus[selectedProject.id] === 'success' ? (
+                      '✅ Sincronizado'
+                    ) : gitSyncStatus[selectedProject.id] === 'error' ? (
+                      '❌ Error'
+                    ) : (
+                      'Sincronizar ahora'
+                    )}
                   </button>
                   <button
                     onClick={() => setEditMode(true)}
@@ -1259,8 +1310,16 @@ export default function SyncPage() {
                 </div>
               </div>
               {syncSuccess && (
-                <div className="text-green-600 mt-4">
-                  ¡Sincronización exitosa!
+                <div className="text-green-600 mt-4 space-y-2">
+                  <div>¡Sincronización exitosa!</div>
+                  <div className="text-sm">
+                    <a 
+                      href="/version-history" 
+                      className="text-blue-600 hover:text-blue-800 underline"
+                    >
+                      📋 Ver en Historial de Versiones
+                    </a>
+                  </div>
                 </div>
               )}
               {syncError && (
@@ -1594,6 +1653,66 @@ export default function SyncPage() {
                 </>
               )}
             </div>
+
+            {/* Connection Status */}
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <h3 className="text-sm font-semibold text-green-800 mb-2 flex items-center">
+                <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                Estado de Conexión con Otros Módulos
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                  <span className="text-green-700">Versiones: {versionHistory.length} sincronizaciones registradas</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                  <span className="text-blue-700">Proyectos: {syncProjects.length} proyectos conectados</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
+                  <span className="text-purple-700">Colaboradores: {syncProjects.reduce((sum, p) => sum + (p.owner ? 1 : 0), 0)} colaboradores activos</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Version History Connection */}
+            {versionHistory.length > 0 && (
+              <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h3 className="text-sm font-semibold text-blue-800 mb-3 flex items-center">
+                  <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                  </svg>
+                  Historial de Versiones Generado
+                </h3>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {versionHistory.slice(0, 3).map((version) => (
+                    <div key={version.id} className="bg-white rounded p-3 border border-blue-200">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-mono text-blue-600">
+                          {version.hash.substring(0, 7)}
+                        </span>
+                        <span className="text-xs text-blue-500 capitalize">
+                          {version.syncType}
+                        </span>
+                      </div>
+                      <p className="text-sm font-medium text-blue-900 mb-1">
+                        {version.message}
+                      </p>
+                      <div className="flex items-center justify-between text-xs text-blue-600">
+                        <span>{version.author}</span>
+                        <span>{new Date(version.date).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3 text-xs text-blue-600">
+                  <p>💡 <strong>Flujo integrado:</strong> Las sincronizaciones se registran automáticamente en el historial de versiones.</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
         <Footer />
@@ -1647,6 +1766,30 @@ export default function SyncPage() {
                     especializados
                   </em>
                 </p>
+              </div>
+            </div>
+
+            {/* Connection Status */}
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <h3 className="text-sm font-semibold text-green-800 mb-2 flex items-center">
+                <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                Estado de Conexión con Otros Módulos
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                  <span className="text-green-700">Versiones: {syncProjects.length} componentes sincronizados</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                  <span className="text-blue-700">Proyectos: {syncProjects.length} proyectos conectados</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
+                  <span className="text-purple-700">Colaboradores: {syncProjects.reduce((sum, p) => sum + (p.owner ? 1 : 0), 0)} colaboradores activos</span>
+                </div>
               </div>
             </div>
 

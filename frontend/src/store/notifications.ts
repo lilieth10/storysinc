@@ -3,6 +3,7 @@ import { create } from "zustand";
 import { Notification } from "@/types";
 import { api } from "@/lib/api";
 import { io, Socket } from "socket.io-client";
+import toast from "react-hot-toast";
 
 interface NotificationsState {
   notifications: Notification[];
@@ -52,6 +53,23 @@ export const useNotifications = create<NotificationsState>((set, get) => ({
     );
     socket.on("notification", (notification: Notification) => {
       get().addNotification(notification);
+      
+      // Show beautiful toast instead of ugly notification
+      if (notification.type === 'success') {
+        toast.success(`✅ ${notification.title}: ${notification.message}`);
+      } else if (notification.type === 'error') {
+        toast.error(`❌ ${notification.title}: ${notification.message}`);
+      } else if (notification.type === 'warning') {
+        toast(`⚠️ ${notification.title}: ${notification.message}`, {
+          icon: '⚠️',
+          style: { background: '#fff3cd', color: '#856404' }
+        });
+      } else {
+        toast(`📢 ${notification.title}: ${notification.message}`, {
+          icon: '📢',
+          style: { background: '#d1ecf1', color: '#0c5460' }
+        });
+      }
     });
     set({ socket });
   },

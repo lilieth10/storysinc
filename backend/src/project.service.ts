@@ -94,7 +94,7 @@ export class ProjectService {
     });
   }
 
-  async getProjectById(id: number) {
+  async getProjectById(id: number, userId?: number) {
     // Optimización: Consulta más simple y rápida
     const project = await this.prisma.project.findUnique({
       where: { id },
@@ -110,6 +110,7 @@ export class ProjectService {
         components: true,
         createdAt: true,
         updatedAt: true,
+        ownerId: true, // Necesario para verificación de acceso
         owner: {
           select: {
             id: true,
@@ -122,6 +123,7 @@ export class ProjectService {
           select: {
             id: true,
             role: true,
+            userId: true, // Necesario para verificación de acceso
             user: {
               select: {
                 id: true,
@@ -136,6 +138,16 @@ export class ProjectService {
 
     if (!project) {
       throw new Error('Proyecto no encontrado');
+    }
+
+    // ✅ VERIFICACIÓN DE ACCESO REAL: Solo owner o colaboradores pueden acceder
+    if (userId) {
+      const hasAccess = project.ownerId === userId || 
+                       project.collaborators.some(collab => collab.userId === userId);
+      
+      if (!hasAccess) {
+        throw new Error('❌ No tienes acceso a este proyecto. Solo el propietario y colaboradores pueden verlo.');
+      }
     }
 
     return project;
@@ -213,9 +225,14 @@ export class ProjectService {
     });
   }
 
-  async syncProject(id: number) {
+  async syncProject(id: number, userId?: number) {
     const project = await this.prisma.project.findUnique({
       where: { id },
+      include: {
+        owner: {
+          select: { fullName: true, username: true }
+        }
+      }
     });
 
     if (!project) {
@@ -233,13 +250,35 @@ export class ProjectService {
         typeof component.version === 'number' ? component.version + 0.1 : 1.0,
     }));
 
-    return this.prisma.project.update({
+    const updatedProject = await this.prisma.project.update({
       where: { id },
       data: {
         components: JSON.stringify(updatedComponents),
         lastSync: new Date(),
       },
     });
+
+    // Crear entrada en historial de versiones
+    try {
+      // Usar el nombre real del propietario del proyecto
+      const authorName = project.owner?.fullName || project.owner?.username || 'Propietario';
+      
+      const newVersion = await this.prisma.version.create({
+        data: {
+          hash: Math.random().toString(36).substring(2, 9),
+          message: `Project sync: ${updatedComponents.map(c => c.name).join(', ')} updated`,
+          author: authorName,
+          branch: 'main',
+          filesChanged: JSON.stringify(updatedComponents.map(c => `${c.name}.js`)),
+          projectId: id,
+        },
+      });
+      console.log(`✅ Version created for project ${id}:`, newVersion);
+    } catch (versionError) {
+      console.error('❌ Error creating version entry:', versionError);
+    }
+
+    return updatedProject;
   }
 
   // Nuevos métodos para el editor de código
@@ -438,6 +477,34 @@ ReactDOM.render(
       where: { id: projectId },
       data: { updatedAt: new Date() },
     });
+
+    // ✅ CREAR VERSIÓN REAL CUANDO COLABORADOR EDITA CÓDIGO
+    try {
+      // Obtener información del usuario que está editando
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { fullName: true, username: true }
+      });
+
+      const authorName = user?.fullName || user?.username || 'Colaborador';
+      const fileName = filePath.split('/').pop() || filePath;
+      
+      // Crear entrada en historial de versiones
+      const newVersion = await this.prisma.version.create({
+        data: {
+          hash: Math.random().toString(36).substring(2, 9),
+          message: `Code edit: ${fileName} updated by ${authorName}`,
+          author: authorName,
+          branch: 'main',
+          filesChanged: JSON.stringify([fileName]),
+          projectId: projectId,
+        },
+      });
+      
+      console.log(`✅ Version created for file edit by ${authorName}:`, newVersion);
+    } catch (versionError) {
+      console.error('❌ Error creating version entry for file edit:', versionError);
+    }
 
     return {
       success: true,
@@ -881,5 +948,34 @@ ReactDOM.render(
     await this.prisma.projectCollaborator.deleteMany({
       where: { projectId, userId },
     });
+  }
+
+  async createSyncFolder(
+    projectId: number,
+    userId: number,
+    userName: string,
+    syncFiles: any[],
+    lastSync: string,
+    changes: any[]
+  ) {
+    // Crear un registro de sincronización para el colaborador
+    // Por ahora lo guardamos como JSON en un campo de texto
+    // En el futuro podríamos crear una tabla específica para esto
+    
+    const syncData = {
+      projectId,
+      userId,
+      userName,
+      syncFiles,
+      lastSync,
+      changes,
+      createdAt: new Date().toISOString()
+    };
+
+    console.log(`📁 Creating sync folder for user ${userName} (${userId}) in project ${projectId}`);
+    console.log(`📄 Sync data:`, JSON.stringify(syncData, null, 2));
+
+    // Por ahora solo loggeamos, en el futuro podríamos guardarlo en una tabla
+    return syncData;
   }
 }

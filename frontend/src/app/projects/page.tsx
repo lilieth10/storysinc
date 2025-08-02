@@ -23,9 +23,20 @@ interface Project {
   components?: string;
   owner: {
     id: number;
-    name: string;
+    fullName?: string;
+    name?: string;
     email: string;
   };
+  collaborators?: {
+    id: number;
+    role: string;
+    user: {
+      id: number;
+      fullName?: string;
+      name?: string;
+      email: string;
+    };
+  }[];
   createdAt: string;
 }
 
@@ -368,8 +379,14 @@ export default function ProjectsPage() {
                           {new Date(project.lastSync).toLocaleDateString()}
                         </div>
                         <div className="text-xs text-black">
-                          Propietario: {project.owner?.name || "John Doe"}
+                          Propietario: {project.owner?.fullName || project.owner?.name || "John Doe"}
                         </div>
+                        {/* ✅ INDICADOR DE COLABORACIÓN REAL */}
+                        {project.collaborators && project.collaborators.length > 0 && (
+                          <div className="text-xs text-blue-600 font-medium">
+                            🤝 {project.collaborators.length} colaborador{project.collaborators.length > 1 ? 'es' : ''}
+                          </div>
+                        )}
                       </div>
 
                       {/* Tags */}

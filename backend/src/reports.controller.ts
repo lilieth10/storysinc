@@ -103,33 +103,187 @@ export class ReportsController {
     @Req() req: AuthRequest,
   ) {
     try {
-      // Simular análisis IA
-      const iaResults = {
-        recommendations: [
+      // Obtener datos reales del usuario y sus proyectos
+      const userProjects = await this.prisma.project.findMany({
+        where: {
+          OR: [
+            { ownerId: req.user.userId },
+            {
+              collaborators: {
+                some: { userId: req.user.userId },
+              },
+            },
+          ],
+        },
+        include: {
+          collaborators: {
+            include: {
+              user: {
+                select: { id: true, fullName: true, email: true },
+              },
+            },
+          },
+          owner: {
+            select: { id: true, fullName: true, email: true },
+          },
+        },
+      });
+
+      // Generar métricas dinámicas basadas en datos reales
+      const totalProjects = userProjects.length;
+      const totalCollaborators = userProjects.reduce(
+        (sum, project) => sum + project.collaborators.length,
+        0,
+      );
+      const projectsByPattern = userProjects.reduce((acc, project) => {
+        acc[project.pattern] = (acc[project.pattern] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+      // Generar métricas específicas según el tipo de reporte
+      let metrics = {};
+      let iaResults = {};
+
+      if (createReportDto.type === 'project') {
+        // Métricas de proyectos
+        metrics = {
+          totalProjects,
+          totalCollaborators,
+          projectsByPattern,
+          averageCollaboratorsPerProject: totalProjects > 0 ? (totalCollaborators / totalProjects).toFixed(2) : 0,
+          activeProjects: userProjects.filter(p => p.status === 'active').length,
+          recentProjects: userProjects.filter(p => {
+            const projectDate = new Date(p.createdAt);
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            return projectDate > thirtyDaysAgo;
+          }).length,
+        };
+
+        // IA Results para proyectos
+        const performanceScore = Math.floor(Math.random() * 30) + 70;
+        const recommendations = [
           {
             type: 'performance',
-            message: 'Optimiza las consultas de base de datos',
-            priority: 'high',
+            message: totalProjects > 5 ? 'Considera consolidar proyectos similares' : 'Excelente gestión de proyectos',
+            priority: totalProjects > 5 ? 'high' : 'low',
           },
           {
-            type: 'security',
-            message: 'Implementa autenticación de dos factores',
+            type: 'collaboration',
+            message: totalCollaborators > 10 ? 'Gran trabajo en equipo detectado' : 'Considera agregar más colaboradores',
+            priority: totalCollaborators > 10 ? 'low' : 'medium',
+          },
+          {
+            type: 'architecture',
+            message: projectsByPattern['microservices'] > 2 ? 'Arquitectura escalable detectada' : 'Considera migrar a microservicios',
+            priority: projectsByPattern['microservices'] > 2 ? 'low' : 'medium',
+          },
+        ];
+
+        iaResults = {
+          recommendations,
+          alerts: [
+            {
+              type: 'info',
+              message: `Gestión de ${totalProjects} proyectos activos`,
+              severity: 'low',
+            },
+          ],
+          insights: {
+            performanceScore,
+            collaborationScore: Math.floor(Math.random() * 20) + 80,
+            architectureScore: Math.floor(Math.random() * 15) + 85,
+            recommendations: recommendations.length,
+          },
+        };
+      } else if (createReportDto.type === 'collaboration') {
+        // Métricas de colaboración
+        const allCollaborators = userProjects.flatMap(p => p.collaborators);
+        const uniqueCollaborators = new Set(allCollaborators.map(c => c.user.id));
+        const collaboratorsByRole = allCollaborators.reduce((acc, colab) => {
+          acc[colab.role] = (acc[colab.role] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+
+        metrics = {
+          totalCollaborators: uniqueCollaborators.size,
+          totalCollaborations: allCollaborators.length,
+          collaboratorsByRole,
+          averageProjectsPerCollaborator: uniqueCollaborators.size > 0 ? (totalProjects / uniqueCollaborators.size).toFixed(2) : 0,
+          mostCollaborativeProject: userProjects.reduce((max, project) => 
+            project.collaborators.length > max.collaborators.length ? project : max
+          , userProjects[0] || { name: 'N/A', collaborators: [] }),
+        };
+
+        // IA Results para colaboración
+        const collaborationScore = Math.floor(Math.random() * 25) + 75;
+        const recommendations = [
+          {
+            type: 'team',
+            message: uniqueCollaborators.size > 5 ? 'Excelente diversidad de equipo' : 'Considera expandir el equipo',
+            priority: uniqueCollaborators.size > 5 ? 'low' : 'medium',
+          },
+          {
+            type: 'communication',
+            message: 'Implementa herramientas de comunicación en tiempo real',
             priority: 'medium',
           },
-        ],
-        alerts: [
           {
-            type: 'warning',
-            message: 'Uso de CPU por encima del 80%',
-            severity: 'medium',
+            type: 'roles',
+            message: Object.keys(collaboratorsByRole).length > 3 ? 'Buena distribución de roles' : 'Considera definir roles más específicos',
+            priority: Object.keys(collaboratorsByRole).length > 3 ? 'low' : 'medium',
           },
-        ],
-        insights: {
-          performanceScore: Math.floor(Math.random() * 30) + 70,
-          securityScore: Math.floor(Math.random() * 20) + 80,
-          recommendations: Math.floor(Math.random() * 5) + 3,
-        },
-      };
+        ];
+
+        iaResults = {
+          recommendations,
+          alerts: [
+            {
+              type: 'success',
+              message: `${uniqueCollaborators.size} colaboradores activos`,
+              severity: 'low',
+            },
+          ],
+          insights: {
+            collaborationScore,
+            teamDiversityScore: Math.floor(Math.random() * 20) + 80,
+            communicationScore: Math.floor(Math.random() * 15) + 85,
+            recommendations: recommendations.length,
+          },
+        };
+      } else {
+        // Reporte general
+        metrics = {
+          totalProjects,
+          totalCollaborators,
+          projectsByPattern,
+          userActivity: {
+            projectsCreated: userProjects.filter(p => p.ownerId === req.user.userId).length,
+            collaborations: userProjects.filter(p => p.ownerId !== req.user.userId).length,
+          },
+        };
+
+        iaResults = {
+          recommendations: [
+            {
+              type: 'general',
+              message: 'Mantén un buen balance entre proyectos propios y colaboraciones',
+              priority: 'medium',
+            },
+          ],
+          alerts: [
+            {
+              type: 'info',
+              message: 'Reporte general generado exitosamente',
+              severity: 'low',
+            },
+          ],
+          insights: {
+            overallScore: Math.floor(Math.random() * 30) + 70,
+            recommendations: 1,
+          },
+        };
+      }
 
       const report = await this.prisma.report.create({
         data: {
@@ -137,7 +291,7 @@ export class ReportsController {
           type: createReportDto.type,
           title: createReportDto.title,
           description: createReportDto.description || '',
-          metrics: JSON.stringify(createReportDto.metrics || {}),
+          metrics: JSON.stringify(metrics),
           iaResults: JSON.stringify(iaResults),
           dateRange: JSON.stringify(createReportDto.dateRange || {}),
           fileUrl: null,

@@ -25,6 +25,7 @@ interface AuthState {
   loading: boolean;
   error: string | null;
   initialized: boolean;
+  initialize: () => Promise<void>;
   register: (
     data: Omit<User, "id" | "createdAt" | "avatar"> & { password: string },
   ) => Promise<boolean>;
