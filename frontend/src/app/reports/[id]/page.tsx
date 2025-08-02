@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
-import { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Footer } from "@/components/landing/Footer";
@@ -147,7 +147,8 @@ function SuccessModal({ isOpen, onClose }: SuccessModalProps) {
   );
 }
 
-export default function ReportPage({ params }: { params: { id: string } }) {
+export default function ReportPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = React.use(params);
   const [loading, setLoading] = useState(true);
   const [report, setReport] = useState<Report | null>(null);
   const [downloadModalOpen, setDownloadModalOpen] = useState(false);
@@ -157,7 +158,7 @@ export default function ReportPage({ params }: { params: { id: string } }) {
   const loadReport = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await api.get(`/reports/${params.id}`);
+      const res = await api.get(`/reports/${resolvedParams.id}`);
       setReport(res.data);
     } catch (error) {
       console.error("Error loading report:", error);
@@ -165,7 +166,7 @@ export default function ReportPage({ params }: { params: { id: string } }) {
     } finally {
       setLoading(false);
     }
-  }, [params.id]);
+  }, [resolvedParams.id]);
 
   useEffect(() => {
     loadReport();

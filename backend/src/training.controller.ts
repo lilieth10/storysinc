@@ -9,7 +9,10 @@ import {
   UseGuards,
   Put,
   Delete,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthGuard } from '@nestjs/passport';
 import { Request } from 'express';
 import { PrismaService } from './prisma.service';
@@ -332,6 +335,68 @@ export class TrainingController {
     } catch (error) {
       console.error('Error updating training resource:', error);
       throw new Error('Error al actualizar recurso de capacitación');
+    }
+  }
+
+  @Post('admin/upload-material')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadTrainingMaterial(
+    @Body() uploadDto: {
+      title: string;
+      description: string;
+      type: string;
+      category: string;
+      videoUrl?: string;
+    },
+    @UploadedFile() file?: any,
+  ) {
+    try {
+      let fileUrl: string | null = null;
+      let videoUrl: string | null = uploadDto.videoUrl || null;
+
+      // Si se subió un archivo, procesarlo
+      if (file) {
+        // En un entorno real, aquí se guardaría el archivo en un servidor de archivos
+        // Por ahora, simulamos la URL del archivo
+        fileUrl = `https://example.com/uploads/${file.originalname}`;
+        
+        // Si es un video, también establecer videoUrl
+        if (file.mimetype.startsWith('video/')) {
+          videoUrl = fileUrl;
+        }
+      }
+
+      // Crear el recurso de capacitación
+      const resource = await this.prisma.trainingResource.create({
+        data: {
+          title: uploadDto.title,
+          description: uploadDto.description,
+          content: JSON.stringify({
+            type: uploadDto.type,
+            category: uploadDto.category,
+            videoUrl: videoUrl,
+            fileUrl: fileUrl,
+          }),
+          type: uploadDto.type,
+          category: uploadDto.category,
+          difficulty: 'beginner',
+          duration: 60,
+          isActive: true,
+          videoUrl: videoUrl,
+          fileUrl: fileUrl || 'https://example.com/files/training-material.pdf',
+        },
+      });
+
+      return {
+        success: true,
+        message: 'Material de capacitación subido exitosamente',
+        resource,
+      };
+    } catch (error) {
+      console.error('Error uploading training material:', error);
+      throw new Error('Error al subir material de capacitación');
     }
   }
 

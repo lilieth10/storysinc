@@ -946,56 +946,7 @@ ${version.stats.files} archivos modificados
               </div>
             </div>
 
-            {/* Connection Flow Indicator */}
-            <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-6 mb-6">
-              <h3 className="text-lg font-semibold text-green-800 mb-4 flex items-center">
-                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-                </svg>
-                Flujo de Conexión entre Módulos
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-white rounded-lg p-4 border border-green-200">
-                  <div className="flex items-center mb-2">
-                    <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-                    <h4 className="text-sm font-medium text-green-800">Proyectos</h4>
-                  </div>
-                  <p className="text-xs text-green-700">
-                    {filteredVersions.length} versiones activas
-                  </p>
-                </div>
-                <div className="bg-white rounded-lg p-4 border border-blue-200">
-                  <div className="flex items-center mb-2">
-                    <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
-                    <h4 className="text-sm font-medium text-blue-800">Sincronización</h4>
-                  </div>
-                  <p className="text-xs text-blue-700">
-                    {filteredVersions.filter(v => isSyncOperation(v.message)).length} sincronizaciones
-                  </p>
-                </div>
-                <div className="bg-white rounded-lg p-4 border border-purple-200">
-                  <div className="flex items-center mb-2">
-                    <div className="w-3 h-3 bg-purple-500 rounded-full mr-2"></div>
-                    <h4 className="text-sm font-medium text-purple-800">Colaboradores</h4>
-                  </div>
-                  <p className="text-xs text-purple-700">
-                    {new Set(filteredVersions.map(v => v.author)).size} autores únicos
-                  </p>
-                </div>
-                <div className="bg-white rounded-lg p-4 border border-orange-200">
-                  <div className="flex items-center mb-2">
-                    <div className="w-3 h-3 bg-orange-500 rounded-full mr-2"></div>
-                    <h4 className="text-sm font-medium text-orange-800">Reportes</h4>
-                  </div>
-                  <p className="text-xs text-orange-700">
-                    {filteredVersions.filter(v => v.status === 'deployed').length} desplegados
-                  </p>
-                </div>
-              </div>
-              <div className="mt-4 text-xs text-green-600">
-                <p>💡 <strong>Flujo integrado:</strong> Los cambios en versiones se reflejan automáticamente en sincronización, colaboradores y reportes.</p>
-              </div>
-            </div>
+        
 
             {/* Filtros */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 mb-6">

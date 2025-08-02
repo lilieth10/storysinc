@@ -347,6 +347,8 @@ export default function ProjectDetailPage() {
       }
       
       // 🔥 VERIFICAR CAMBIOS EN ARCHIVOS ESPECÍFICOS
+      // DESHABILITADO: No actualizar automáticamente el contenido del editor
+      // para evitar interferencias con el trabajo del usuario
       if (selectedFile) {
         try {
           const fileResponse = await api.get(`/projects/${projectId}/files/${selectedFile.name}`, {
@@ -355,46 +357,38 @@ export default function ProjectDetailPage() {
           
           const updatedFileContent = fileResponse.data?.content;
           
-          // Si el contenido del archivo cambió y no es el contenido actual
+          // Solo notificar si hay cambios pero NO actualizar automáticamente
           if (updatedFileContent && updatedFileContent !== editorContent) {
-
+            // Verificar si hay cambios locales no guardados
+            const localStorageKey = `project_${projectId}_file_${selectedFile.id}`;
+            const savedData = localStorage.getItem(localStorageKey);
+            let hasLocalChanges = false;
             
-            // Actualizar el contenido del editor
-            setEditorContent(updatedFileContent);
-            
-            // ✅ SOLO NOTIFICAR A OTROS COLABORADORES, NO AL QUE HIZO EL CAMBIO
-            const currentUserId = user?.id;
-            const lastModifiedBy = updatedProject.lastModifiedBy; // Usar el lastModifiedBy del proyecto para la notificación del archivo
-            const isMyChange = currentUserId === lastModifiedBy;
-            
-            // 🔥 MEJORAR LÓGICA: Solo notificar si NO es mi cambio Y hay un modificador Y ha pasado tiempo suficiente
-            const timeSinceLastUpdate = projectLastUpdate.getTime() - lastUpdate.getTime();
-            const hasEnoughTimePassed = timeSinceLastUpdate > 1000; // Al menos 1 segundo
-            
-            if (!isMyChange && lastModifiedBy && lastModifiedBy !== currentUserId && hasEnoughTimePassed) {
-              const authorName = updatedProject.lastModifiedByUser || 'Otro colaborador';
-              toast(`📝 ${selectedFile.name} fue editado por ${authorName}`, {
-                duration: 4000,
-                icon: '👤',
-                style: { background: '#E3F2FD', color: '#1565C0' }
-              });
+            if (savedData) {
+              try {
+                const parsed = JSON.parse(savedData);
+                const localContent = parsed.content || "";
+                // Si el contenido local es diferente al contenido del archivo original, hay cambios locales
+                hasLocalChanges = localContent !== selectedFile.content;
+              } catch {
+                hasLocalChanges = false;
+              }
             }
             
-            // Actualizar también el archivo en el árbol
-            setFileTree(prevTree => {
-              const updateFileInTree = (files: FileNode[]): FileNode[] => {
-                return files.map(file => {
-                  if (file.id === selectedFile.id) {
-                    return { ...file, content: updatedFileContent };
-                  }
-                  if (file.children) {
-                    return { ...file, children: updateFileInTree(file.children) };
-                  }
-                  return file;
-                });
-              };
-              return updateFileInTree(prevTree);
-            });
+                      // Comentado: Notificaciones removidas por solicitud del usuario
+          // if (hasLocalChanges) {
+          //   toast(`⚠️ Hay cambios locales en ${selectedFile.name}. Los cambios del servidor no se aplicaron automáticamente.`, {
+          //     duration: 5000,
+          //     icon: '⚠️',
+          //     style: { background: '#FFF3CD', color: '#856404' }
+          //   });
+          // } else {
+          //   toast(`📝 ${selectedFile.name} tiene cambios disponibles en el servidor. Recarga para ver los cambios.`, {
+          //     duration: 4000,
+          //     icon: '📝',
+          //     style: { background: '#E3F2FD', color: '#1565C0' }
+          //   });
+          // }
           }
         } catch (fileError) {
           console.error("Error checking file updates:", fileError);
@@ -469,24 +463,24 @@ export default function ProjectDetailPage() {
 
     // Si tenemos contenido, intentar detectar el lenguaje por contenido
     if (typeof content === "string" && content.length > 0) {
-      const firstLine = content.trim().split("\n")[0].toLowerCase();
+      const contentLower = content.toLowerCase();
 
-      if (firstLine.includes("<!doctype html") || firstLine.includes("<html")) {
+      if (contentLower.includes("<!doctype html") || contentLower.includes("<html")) {
         return "html";
       }
 
       // Verificar si es Python primero (más específico)
       if (
-        firstLine.includes("def ") ||
-        firstLine.includes("import ") ||
-        firstLine.includes("print(") ||
-        firstLine.includes("from ")
+        contentLower.includes("def ") ||
+        contentLower.includes("import ") ||
+        contentLower.includes("print(") ||
+        contentLower.includes("from ")
       ) {
         return "python";
       }
 
       // Verificar si es JavaScript/TypeScript
-      if (firstLine.includes("import") || firstLine.includes("export")) {
+      if (contentLower.includes("console.log") || contentLower.includes("function ") || contentLower.includes("const ") || contentLower.includes("let ") || contentLower.includes("var ")) {
         return "javascript";
       }
     }
@@ -514,7 +508,23 @@ export default function ProjectDetailPage() {
     if (savedData) {
       try {
         const parsed = JSON.parse(savedData);
-        setEditorContent(parsed.content || file.content || "");
+        const savedContent = parsed.content || "";
+        const originalContent = file.content || "";
+        
+        // Si el contenido guardado es diferente al original, usar el guardado
+        if (savedContent !== originalContent) {
+          setEditorContent(savedContent);
+          // Mostrar indicador de que hay cambios locales
+          toast(`📝 Cargando cambios locales de ${file.name}`, {
+            duration: 2000,
+            icon: '💾',
+            style: { background: '#E8F5E8', color: '#2E7D32' }
+          });
+        } else {
+          // Si son iguales, limpiar localStorage y usar el contenido original
+          localStorage.removeItem(localStorageKey);
+          setEditorContent(originalContent);
+        }
       } catch {
         setEditorContent(file.content || "");
       }
@@ -994,14 +1004,23 @@ export default function ProjectDetailPage() {
     switch (detectedLanguage) {
       case "javascript":
         template = `// Código JavaScript ejecutable
+console.log("¡Hola desde JavaScript!");
+
 const suma = 2 + 2;
+console.log("Resultado de la suma:", suma);
 
 // Función simple
 function saludar(nombre) {
   return \`¡Hola \${nombre}!\`;
 }
 
-saludar("Desarrollador");`;
+const mensaje = saludar("Desarrollador");
+console.log(mensaje);
+
+// Array de números
+const numeros = [1, 2, 3, 4, 5];
+console.log("Array de números:", numeros);
+console.log("Suma total:", numeros.reduce((a, b) => a + b, 0));`;
         break;
       case "python":
         template = `# Código Python ejecutable
@@ -1645,50 +1664,7 @@ print(f"Suma de números: {sum(numeros)}")`;
               {/* Raya gris debajo de las pestañas */}
               <div className="border-b border-gray-200 mb-4"></div>
 
-              {/* Connection Flow Indicator - Responsive */}
-              <div className="mb-4 p-3 sm:p-4 bg-gradient-to-r from-blue-50 to-green-50 border border-blue-200 rounded-lg">
-                <h3 className="text-xs sm:text-sm font-semibold text-blue-800 mb-2 flex items-center">
-                  <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-                  </svg>
-                  <span className="hidden sm:inline">Flujo de Conexión del Proyecto</span>
-                  <span className="sm:hidden">Flujo del Proyecto</span>
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 text-xs">
-                  <div className="flex items-center">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
-                    <span className="text-blue-700">
-                      <span className="hidden sm:inline">Colaboradores: {project?.collaborators?.length || 0} activos</span>
-                      <span className="sm:hidden">Colab: {project?.collaborators?.length || 0}</span>
-                    </span>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                    <span className="text-green-700">
-                      <span className="hidden sm:inline">Versiones: Conectado al historial</span>
-                      <span className="sm:hidden">Versiones: OK</span>
-                    </span>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
-                    <span className="text-purple-700">
-                      <span className="hidden sm:inline">Sincronización: Componentes BFF/Sidecar</span>
-                      <span className="sm:hidden">Sync: BFF/Sidecar</span>
-                    </span>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="w-2 h-2 bg-orange-500 rounded-full mr-2"></div>
-                    <span className="text-orange-700">
-                      <span className="hidden sm:inline">Reportes: Métricas automáticas</span>
-                      <span className="sm:hidden">Reportes: OK</span>
-                    </span>
-                  </div>
-                </div>
-                <div className="mt-2 text-xs text-blue-600">
-                  <p className="hidden sm:block">💡 <strong>Flujo integrado:</strong> Los cambios en colaboradores se reflejan en versiones, sincronización y reportes automáticamente.</p>
-                  <p className="sm:hidden">💡 <strong>Flujo integrado:</strong> Cambios se reflejan automáticamente.</p>
-                </div>
-              </div>
+             
 
               {/* Badges en fila separada - solo en vista de código */}
               {activeTab === "code" && (

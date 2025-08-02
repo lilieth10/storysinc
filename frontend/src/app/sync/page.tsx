@@ -81,7 +81,7 @@ interface AIMetrics {
 }
 
 export default function SyncPage() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [createType, setCreateType] = useState<"bff" | "sidecar">("bff");
@@ -437,18 +437,19 @@ export default function SyncPage() {
 
   const handleDelete = async (id: number) => {
     try {
-      const response = await fetch(`/sync/projects/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
+      const response = await api.delete(`/sync/projects/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (response.ok) {
+      if (response.data.success) {
+        toast.success("✅ Proyecto eliminado exitosamente");
         fetchSyncProjects();
+      } else {
+        toast.error("❌ Error al eliminar el proyecto");
       }
     } catch (error) {
       console.error("Error deleting sync project:", error);
+      toast.error("❌ Error al eliminar el proyecto");
     }
   };
 
@@ -484,8 +485,6 @@ export default function SyncPage() {
       );
 
       if (response.data.success) {
-
-
         // Update sync status
         setGitSyncStatus(prev => ({ ...prev, [project.id]: 'success' }));
         
@@ -495,6 +494,21 @@ export default function SyncPage() {
             ? { ...p, lastSync: response.data.lastSync }
             : p
         ));
+
+        // Save to version history in localStorage
+        const versionHistory = JSON.parse(localStorage.getItem('versionHistory') || '[]');
+        const newVersion = {
+          id: Date.now().toString(),
+          hash: Math.random().toString(36).substring(2, 8),
+          message: `sync: ${project.name} synchronized successfully`,
+          author: user?.fullName || 'Usuario',
+          date: new Date().toISOString(),
+          projectId: project.id,
+          projectName: project.name
+        };
+        
+        versionHistory.unshift(newVersion);
+        localStorage.setItem('versionHistory', JSON.stringify(versionHistory));
 
         toast.success(`✅ ${project.name} sincronizado - Ver en Historial de Versiones`);
         
@@ -1836,7 +1850,10 @@ export default function SyncPage() {
                           </div>
                         </div>
                         <button
-                          onClick={() => handleDelete(project.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(project.id);
+                          }}
                           className="text-red-500 hover:text-red-700"
                         >
                           <TrashIcon className="w-5 h-5" />

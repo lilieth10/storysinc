@@ -193,7 +193,7 @@ export class SyncController {
         throw new HttpException('Proyecto no encontrado', HttpStatus.NOT_FOUND);
       }
 
-      await this.prisma.project.delete({
+      await this.prisma.syncProject.delete({
         where: { id: parseInt(id) },
       });
 
