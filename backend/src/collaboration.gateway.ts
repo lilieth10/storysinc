@@ -41,7 +41,7 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
   private socketUsers = new Map<string, { userId: number; userName: string; projectId?: number }>();
 
   handleConnection(socket: Socket) {
-    console.log(`Cliente conectado para colaboración: ${socket.id}`);
+
   }
 
   handleDisconnect(socket: Socket) {
@@ -50,7 +50,7 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
       this.leaveProject(socket, userInfo.projectId);
     }
     this.socketUsers.delete(socket.id);
-    console.log(`Cliente desconectado de colaboración: ${socket.id}`);
+
   }
 
   @SubscribeMessage('join-project')
@@ -83,7 +83,7 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
     const connectedUsers = this.getConnectedUsers(projectId);
     socket.emit('connected-users', connectedUsers);
 
-    console.log(`${userName} se unió al proyecto ${projectId}`);
+
   }
 
   @SubscribeMessage('leave-project')
@@ -110,7 +110,7 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
       timestamp: new Date().toISOString()
     });
 
-    console.log(`Cambio de código de ${userInfo.userName} en proyecto ${data.projectId}: ${data.filePath}`);
+
   }
 
   @SubscribeMessage('cursor-position')
@@ -160,7 +160,7 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
         timestamp: new Date().toISOString()
       });
       
-      console.log(`${userInfo.userName} dejó el proyecto ${projectId}`);
+  
     }
   }
 

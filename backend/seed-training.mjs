@@ -3,10 +3,10 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Iniciando seed de capacitaciones...');
+  
 
   // Crear recursos de capacitación
-  console.log('📚 Creando recursos de capacitación...');
+
 
   const trainingResources = [
     {
@@ -143,10 +143,10 @@ async function main() {
     }
   }
 
-  console.log('✅ Recursos de capacitación creados');
+
 
   // Crear progreso de usuarios en capacitación
-  console.log('👥 Creando progreso de usuarios...');
+
 
   const users = await prisma.user.findMany();
   const resources = await prisma.trainingResource.findMany();
@@ -183,10 +183,10 @@ async function main() {
     }
   }
 
-  console.log('✅ Progreso de usuarios creado');
+
 
   // Crear certificados para cursos completados
-  console.log('🏆 Creando certificados...');
+
 
   const completedProgress = await prisma.userTrainingProgress.findMany({
     where: { completed: true },
@@ -216,9 +216,9 @@ async function main() {
     });
   }
 
-  console.log('✅ Certificados creados');
 
-  console.log('🎉 Seed de capacitaciones completado exitosamente!');
+
+
 }
 
 main()

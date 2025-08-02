@@ -286,7 +286,7 @@ export class ProjectService {
           projectId: id,
         },
       });
-      console.log(`✅ Version created for project ${id} by ${authorName}:`, newVersion);
+  
     } catch (versionError) {
       console.error('❌ Error creating version entry:', versionError);
     }
@@ -583,10 +583,7 @@ module.exports = ${fileName.replace('.js', '')};`;
       throw new Error('Proyecto no encontrado o sin acceso');
     }
 
-    console.log(
-      `Saving file ${filePath} in project ${projectId}:`,
-      content.substring(0, 100) + '...',
-    );
+
 
     // ✅ GUARDAR CONTENIDO REAL EN LA BASE DE DATOS
     const fileName = filePath.split('/').pop() || filePath;
@@ -610,7 +607,7 @@ module.exports = ${fileName.replace('.js', '')};`;
       },
     });
 
-    console.log(`✅ File saved to database:`, savedFile.fileName);
+
 
     // Obtener información del usuario para la respuesta
     const userInfo = await this.prisma.user.findUnique({
@@ -650,7 +647,7 @@ module.exports = ${fileName.replace('.js', '')};`;
         },
       });
       
-      console.log(`✅ Version created for file edit by ${authorName}:`, newVersion);
+
     } catch (versionError) {
       console.error('❌ Error creating version entry for file edit:', versionError);
     }
@@ -832,7 +829,7 @@ module.exports = ${fileName.replace('.js', '')};`;
 
       try {
         writeFileSync(tempFile, code);
-        console.log('Archivo temporal creado:', tempFile);
+
 
         const pythonProcess = spawn('python', [tempFile], {
           timeout: 10000, // 10 segundos máximo
@@ -843,12 +840,10 @@ module.exports = ${fileName.replace('.js', '')};`;
 
         pythonProcess.stdout.on('data', (data) => {
           output += data.toString();
-          console.log('Python stdout:', data.toString());
         });
 
         pythonProcess.stderr.on('data', (data) => {
           errorOutput += data.toString();
-          console.log('Python stderr:', data.toString());
         });
 
         pythonProcess.on('close', (code) => {
@@ -867,7 +862,6 @@ module.exports = ${fileName.replace('.js', '')};`;
         });
 
         pythonProcess.on('error', (err) => {
-          console.log('Python process error:', err.message);
           try {
             unlinkSync(tempFile);
           } catch (e) {
@@ -876,7 +870,6 @@ module.exports = ${fileName.replace('.js', '')};`;
           resolve(`Error ejecutando Python: ${err.message}`);
         });
       } catch (err) {
-        console.log('Error creando archivo temporal:', err.message);
         resolve(`Error creando archivo temporal: ${err.message}`);
       }
     });
@@ -1123,8 +1116,7 @@ module.exports = ${fileName.replace('.js', '')};`;
       createdAt: new Date().toISOString()
     };
 
-    console.log(`📁 Creating sync folder for user ${userName} (${userId}) in project ${projectId}`);
-    console.log(`📄 Sync data:`, JSON.stringify(syncData, null, 2));
+
 
     // Por ahora solo loggeamos, en el futuro podríamos guardarlo en una tabla
     return syncData;

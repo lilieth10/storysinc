@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Seeding projects...');
+  
 
   // Crear proyectos de prueba
   const projects = [
@@ -77,7 +77,7 @@ async function main() {
     });
   }
 
-  console.log('✅ Projects seeded successfully!');
+
 }
 
 main()
