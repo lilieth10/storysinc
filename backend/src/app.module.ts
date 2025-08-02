@@ -6,6 +6,7 @@ import { UserModule } from './user.module';
 import { PrismaModule } from './prisma.module';
 import { DashboardController } from './dashboard.controller';
 import { NotificationGateway } from './notification.gateway';
+import { CollaborationGateway } from './collaboration.gateway';
 import { ReportsController } from './reports.controller';
 import { ProjectController } from './project.controller';
 import { ProjectService } from './project.service';
@@ -37,6 +38,7 @@ import { UserService } from './user.service';
   providers: [
     AppService,
     NotificationGateway,
+    CollaborationGateway,
     ProjectService,
     NotificationService,
     UserService,

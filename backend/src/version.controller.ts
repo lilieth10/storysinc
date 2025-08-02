@@ -8,6 +8,8 @@ import {
   Req,
   UseGuards,
   Delete,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Request } from 'express';
@@ -36,6 +38,64 @@ interface CreateVersionDto {
 @UseGuards(AuthGuard('jwt'))
 export class VersionController {
   constructor(private prisma: PrismaService) {}
+
+  @Get('project/:projectId')
+  async getVersionsByProject(
+    @Param('projectId') projectId: string, 
+    @Req() req: AuthenticatedRequest
+  ) {
+    try {
+      const userId = req.user.userId;
+      const id = parseInt(projectId);
+
+      // ✅ VERIFICAR ACCESO AL PROYECTO (owner o colaborador)
+      const project = await this.prisma.project.findUnique({
+        where: { id },
+        include: {
+          collaborators: {
+            where: { userId },
+            select: { userId: true }
+          }
+        }
+      });
+
+      if (!project) {
+        throw new HttpException('Proyecto no encontrado', HttpStatus.NOT_FOUND);
+      }
+
+      const hasAccess = project.ownerId === userId || project.collaborators.length > 0;
+      if (!hasAccess) {
+        throw new HttpException('No tienes acceso a este proyecto', HttpStatus.FORBIDDEN);
+      }
+
+      // Obtener todas las versiones del proyecto
+      const versions = await this.prisma.version.findMany({
+        where: { projectId: id },
+        orderBy: { createdAt: 'desc' },
+        include: {
+          project: {
+            select: { id: true, name: true }
+          }
+        }
+      });
+
+      return versions.map(version => ({
+        id: version.id,
+        hash: version.hash,
+        message: version.message,
+        author: version.author,
+        date: version.createdAt.toISOString(),
+        branch: version.branch,
+        status: version.status,
+        filesChanged: JSON.parse(version.filesChanged || '[]'),
+        projectId: version.project?.id || version.projectId,
+        projectName: version.project?.name || `Proyecto ${version.projectId}`,
+      }));
+    } catch (error) {
+      console.error('Error fetching project versions:', error);
+      throw error;
+    }
+  }
 
   @Get()
   async getVersions(

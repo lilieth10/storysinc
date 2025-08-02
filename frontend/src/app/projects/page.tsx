@@ -112,7 +112,7 @@ export default function ProjectsPage() {
         chooseLicense: formData.chooseLicense || false,
       };
 
-      console.log("Enviando datos al backend:", projectData);
+
 
       const response = await api.post("/projects", projectData);
 

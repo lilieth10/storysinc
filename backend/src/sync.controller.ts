@@ -273,7 +273,7 @@ export class SyncController {
             projectId: parseInt(id), // Este es el SyncProject ID
           },
         });
-        console.log(`✅ Version created for sync project ${id}:`, newVersion);
+        // Version created for sync project
       } catch (versionError) {
         console.error('❌ Error creating version entry for sync:', versionError);
       }

@@ -161,7 +161,7 @@ export default function AIAnalysisPage() {
   // Función para procesar respuesta de IA
   const processAIResponse = (rawResponse: any) => {
     try {
-      console.log("Raw AI Response:", rawResponse);
+
 
       // Extraer datos de diferentes formatos posibles
       const output =
@@ -231,12 +231,7 @@ export default function AIAnalysisPage() {
         }
       }
 
-      console.log("Final processed suggestions:", suggestions);
-      console.log("Final processed warnings:", warnings);
-      console.log("Raw response structure:", Object.keys(rawResponse));
-      if (rawResponse.output) {
-        console.log("Output structure:", Object.keys(rawResponse.output));
-      }
+
 
       return {
         suggestions,
@@ -260,7 +255,7 @@ export default function AIAnalysisPage() {
   // Función para procesar métricas
   const processMetricsResponse = (rawResponse: any) => {
     try {
-      console.log("Raw Metrics Response:", rawResponse);
+
 
       // Extraer datos de diferentes formatos posibles
       const output =
@@ -343,7 +338,7 @@ export default function AIAnalysisPage() {
         performance === 0
       ) {
         const fullText = JSON.stringify(rawResponse);
-        console.log("Searching for metrics in full text:", fullText);
+
 
         // Buscar métricas en el texto con diferentes patrones
         const complexityMatch =
@@ -354,7 +349,7 @@ export default function AIAnalysisPage() {
           fullText.match(/"Complexity":\s*(\d+)/);
         if (complexityMatch) {
           complexity = parseInt(complexityMatch[1]);
-          console.log("Found complexity:", complexity);
+          
         }
 
         const scalabilityMatch =
@@ -363,7 +358,7 @@ export default function AIAnalysisPage() {
           fullText.match(/"Scalability":\s*(\d+)/);
         if (scalabilityMatch) {
           scalability = parseInt(scalabilityMatch[1]);
-          console.log("Found scalability:", scalability);
+          
         }
 
         const securityMatch =
@@ -372,7 +367,7 @@ export default function AIAnalysisPage() {
           fullText.match(/"Security":\s*(\d+)/);
         if (securityMatch) {
           security = parseInt(securityMatch[1]);
-          console.log("Found security:", security);
+          
         }
 
         const performanceMatch =
@@ -381,7 +376,7 @@ export default function AIAnalysisPage() {
           fullText.match(/"Performance":\s*(\d+)/);
         if (performanceMatch) {
           performance = parseInt(performanceMatch[1]);
-          console.log("Found performance:", performance);
+          
         }
 
         // Si aún no encontramos, buscar en el output anidado
@@ -394,7 +389,7 @@ export default function AIAnalysisPage() {
           const outputMatch = fullText.match(/"output":\s*\{([^}]+)\}/);
           if (outputMatch) {
             const outputText = outputMatch[1];
-            console.log("Searching in output:", outputText);
+  
 
             const complexityInOutput =
               outputText.match(/"Complejidad":\s*(\d+)/) ||
@@ -460,13 +455,7 @@ export default function AIAnalysisPage() {
         performance: performance || 0,
       };
 
-      console.log("Final processed metrics:", metrics);
-      console.log("Final processed suggestions:", suggestions);
-      console.log("Final processed warnings:", warnings);
-      console.log("Raw response structure:", Object.keys(rawResponse));
-      if (rawResponse.output) {
-        console.log("Output structure:", Object.keys(rawResponse.output));
-      }
+      
 
       return {
         suggestions,
@@ -512,7 +501,7 @@ export default function AIAnalysisPage() {
       setN8nAnalysis(response.data);
       const processed = processAIResponse(response.data);
       setProcessedAnalysis(processed);
-      console.log("Análisis de n8n:", response.data);
+
     } catch (error) {
       console.error("Error analyzing with n8n:", error);
       // Aquí podrías mostrar una notificación de error
@@ -541,7 +530,7 @@ export default function AIAnalysisPage() {
       setMetricsAnalysis(response.data);
       const processed = processMetricsResponse(response.data);
       setProcessedMetrics(processed);
-      console.log("Análisis de métricas de n8n:", response.data);
+
     } catch (error) {
       console.error("Error analyzing metrics with n8n:", error);
       // Aquí podrías mostrar una notificación de error
@@ -647,8 +636,7 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(PORT, () => {
-  console.log(\`Servidor corriendo en puerto \${PORT}\`);
-  console.log(\`Ambiente: \${process.env.NODE_ENV}\`);
+  // Servidor iniciado
 });`;
     } else if (fileName === "App.tsx") {
       return `// Componente principal de React - ${project.name}
@@ -772,16 +760,12 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(PORT, () => {
-  console.log(\`Servidor corriendo en puerto \${PORT}\`);
-  console.log(\`Ambiente: \${process.env.NODE_ENV}\`);
+  // Servidor iniciado
 });`;
     } else {
       // Código por defecto para otros archivos
       return `// Archivo: ${fileName} - Proyecto: ${project.name}
 // Este es un archivo de ejemplo para ${fileName}
-
-console.log('Archivo cargado:', '${fileName}');
-console.log('Proyecto:', '${project.name}');
 
 // Función de ejemplo
 function procesarDatos(datos) {

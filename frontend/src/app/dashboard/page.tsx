@@ -272,48 +272,54 @@ export default function DashboardPage() {
       <DashboardHeader />
       <div className="flex flex-1">
         <Sidebar />
-        <main className="flex-1 p-8">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8">
           <div className="max-w-7xl mx-auto">
             {/* Breadcrumb */}
-            <div className="mb-6">
+            <div className="mb-4 sm:mb-6">
               <Link
                 href="/dashboard"
-                className="text-blue-600 hover:text-blue-800 font-medium"
+                className="text-blue-600 hover:text-blue-800 font-medium text-sm sm:text-base"
               >
                 ← Dashboard
               </Link>
             </div>
 
             {/* Título principal */}
-            <div className="mb-8">
-              <h1 className="text-lg font-semibold text-black mb-2">
-                Resumen de rendimiento de la plataforma
+            <div className="mb-6 sm:mb-8">
+              <h1 className="text-base sm:text-lg font-semibold text-black mb-2">
+                <span className="hidden sm:inline">Resumen de rendimiento de la plataforma</span>
+                <span className="sm:hidden">Dashboard</span>
               </h1>
             </div>
 
-            {/* Layout de dos columnas */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-              {/* Gráfico de Suscripciones (izquierda) */}
+            {/* Layout de dos columnas - Responsive */}
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-8">
+              {/* Gráfico de Suscripciones (izquierda) - Responsive */}
               <div>
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3 sm:gap-0">
                   <div>
-                    <h2 className="text-sm font-medium text-black mb-1">
-                      Estadísticas
+                    <h2 className="text-xs sm:text-sm font-medium text-black mb-1">
+                      <span className="hidden sm:inline">Estadísticas</span>
+                      <span className="sm:hidden">Stats</span>
                     </h2>
-                    <h3 className="text-lg font-bold text-gray-900">
-                      Suscripciones
+                    <h3 className="text-sm sm:text-lg font-bold text-gray-900">
+                      <span className="hidden sm:inline">Suscripciones</span>
+                      <span className="sm:hidden">Subs</span>
                     </h3>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-black">Filtrar:</span>
-                    <select className="text-black text-sm border border-gray-300 rounded px-2 py-1">
+                    <span className="text-xs sm:text-sm text-black">
+                      <span className="hidden sm:inline">Filtrar:</span>
+                      <span className="sm:hidden">Filtro:</span>
+                    </span>
+                    <select className="text-black text-xs sm:text-sm border border-gray-300 rounded px-2 py-1">
                       <option>Últimos 6 meses</option>
                       <option>Último año</option>
                       <option>Últimos 30 días</option>
                     </select>
                   </div>
                 </div>
-                <div className="h-80">
+                <div className="h-60 sm:h-80">
                   <Chart
                     options={subscriptionChartOptions}
                     series={subscriptionChartSeries}
@@ -323,12 +329,13 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Gráfico de Uso de Recursos (derecha) */}
+              {/* Gráfico de Uso de Recursos (derecha) - Responsive */}
               <div>
-                <h2 className="text-lg font-semibold text-black mb-4">
-                  Resumen
+                <h2 className="text-sm sm:text-lg font-semibold text-black mb-4">
+                  <span className="hidden sm:inline">Resumen</span>
+                  <span className="sm:hidden">Summary</span>
                 </h2>
-                <div className="h-64 flex justify-center">
+                <div className="h-48 sm:h-64 flex justify-center">
                   <Chart
                     options={summaryChartOptions}
                     series={summaryChartSeries}
@@ -339,20 +346,24 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Botón Generar Reporte */}
+            {/* Botón Generar Reporte - Responsive */}
             <div className="flex justify-start">
               <button
                 onClick={generateReport}
                 disabled={generatingReport}
-                className="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center gap-2"
+                className="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white font-semibold py-2 sm:py-3 px-4 sm:px-8 rounded-lg transition-colors duration-200 flex items-center gap-2 text-sm sm:text-base"
               >
                 {generatingReport ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Generando reporte...
+                    <span className="hidden sm:inline">Generando reporte...</span>
+                    <span className="sm:hidden">Generando...</span>
                   </>
                 ) : (
-                  "Generar reporte"
+                  <>
+                    <span className="hidden sm:inline">Generar reporte</span>
+                    <span className="sm:hidden">Reporte</span>
+                  </>
                 )}
               </button>
             </div>

@@ -33,6 +33,8 @@ import {
   XMarkIcon,
   ExclamationTriangleIcon,
   LightBulbIcon,
+  UserIcon,
+  CheckCircleIcon,
 } from "@heroicons/react/24/outline";
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
@@ -81,7 +83,10 @@ interface Project {
     fullName?: string;
   };
   createdAt: string;
+  updatedAt?: string;
   collaborators?: ProjectCollaborator[];
+  lastModifiedBy?: number; // ✅ QUIÉN HIZO EL ÚLTIMO CAMBIO
+  lastModifiedByUser?: string; // ✅ NOMBRE DEL USUARIO QUE HIZO EL CAMBIO
 }
 
 interface ExecutionResult {
@@ -158,7 +163,7 @@ const EditorLoading = () => (
 export default function ProjectDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const projectId = params.id as string;
 
   // Estados principales
@@ -179,7 +184,7 @@ export default function ProjectDetailPage() {
   const [optimizedCode, setOptimizedCode] = useState<string>("");
   const [autoSaved, setAutoSaved] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    "code" | "collaborators" | "settings"
+    "code" | "collaborators" | "settings" | "versions"
   >("code");
   const [currentBranch, setCurrentBranch] = useState("main");
   const [isEditingConfig, setIsEditingConfig] = useState(false);
@@ -196,6 +201,13 @@ export default function ProjectDetailPage() {
   });
   const [loadingCollaborators, setLoadingCollaborators] = useState(false);
   const [colabRoles, setColabRoles] = useState<{[key: number]: string}>({});
+  
+  // Estado para versiones
+  const [versions, setVersions] = useState<any[]>([]);
+  const [loadingVersions, setLoadingVersions] = useState(false);
+  
+  // 🔥 COLABORACIÓN SIMPLE: Polling para cambios
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
 
   // Estado para edición de configuración
   const [editConfig, setEditConfig] = useState({
@@ -265,12 +277,158 @@ export default function ProjectDetailPage() {
     }
   }, [projectId, token]);
 
+  const fetchVersions = useCallback(async () => {
+    if (!projectId || !token) return;
+    
+    try {
+      setLoadingVersions(true);
+      const response = await api.get(`/versions/project/${projectId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setVersions(response.data || []);
+    } catch (error) {
+      console.error("Error fetching versions:", error);
+      toast.error("Error al cargar el historial de versiones");
+    } finally {
+      setLoadingVersions(false);
+    }
+  }, [projectId, token]);
+
+  // 🔥 COLABORACIÓN SIMPLE: Detectar cambios de otros usuarios
+  const checkForUpdates = useCallback(async () => {
+    if (!projectId || !token || !project) return;
+    
+    try {
+      // Verificar cambios en el proyecto
+      const projectResponse = await api.get(`/projects/${projectId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      const updatedProject = projectResponse.data;
+      const projectLastUpdate = new Date(updatedProject.updatedAt || updatedProject.createdAt);
+      
+      // Verificar actualizaciones del proyecto
+      
+      // Si hay cambios más recientes que la última actualización conocida
+      if (projectLastUpdate > lastUpdate) {
+        setLastUpdate(projectLastUpdate);
+        
+        // ✅ SOLO NOTIFICAR A OTROS COLABORADORES, NO AL QUE HIZO EL CAMBIO
+        if (updatedProject.updatedAt !== project.updatedAt) {
+          // Verificar si el cambio fue hecho por otro usuario
+          const currentUserId = user?.id;
+          const lastModifiedBy = updatedProject.lastModifiedBy;
+          const isMyChange = currentUserId === lastModifiedBy;
+          
+
+          
+          // 🔥 MEJORAR LÓGICA: Solo notificar si NO es mi cambio Y hay un modificador Y ha pasado tiempo suficiente
+          const timeSinceLastUpdate = projectLastUpdate.getTime() - lastUpdate.getTime();
+          const hasEnoughTimePassed = timeSinceLastUpdate > 1000; // Al menos 1 segundo
+          
+          if (!isMyChange && lastModifiedBy && lastModifiedBy !== currentUserId && hasEnoughTimePassed) {
+            const authorName = updatedProject.lastModifiedByUser || 'Otro colaborador';
+
+            toast(`🔄 Proyecto actualizado por ${authorName}`, {
+              duration: 3000,
+              icon: '👥',
+              style: { background: '#F3E5F5', color: '#7B1FA2' }
+            });
+          }
+          
+          // Recargar el proyecto
+          setProject(updatedProject);
+          
+          // Si estamos en la pestaña de versiones, recargar versiones también
+          if (activeTab === "versions") {
+            fetchVersions();
+          }
+        }
+      }
+      
+      // 🔥 VERIFICAR CAMBIOS EN ARCHIVOS ESPECÍFICOS
+      if (selectedFile) {
+        try {
+          const fileResponse = await api.get(`/projects/${projectId}/files/${selectedFile.name}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          
+          const updatedFileContent = fileResponse.data?.content;
+          
+          // Si el contenido del archivo cambió y no es el contenido actual
+          if (updatedFileContent && updatedFileContent !== editorContent) {
+
+            
+            // Actualizar el contenido del editor
+            setEditorContent(updatedFileContent);
+            
+            // ✅ SOLO NOTIFICAR A OTROS COLABORADORES, NO AL QUE HIZO EL CAMBIO
+            const currentUserId = user?.id;
+            const lastModifiedBy = updatedProject.lastModifiedBy; // Usar el lastModifiedBy del proyecto para la notificación del archivo
+            const isMyChange = currentUserId === lastModifiedBy;
+            
+            // 🔥 MEJORAR LÓGICA: Solo notificar si NO es mi cambio Y hay un modificador Y ha pasado tiempo suficiente
+            const timeSinceLastUpdate = projectLastUpdate.getTime() - lastUpdate.getTime();
+            const hasEnoughTimePassed = timeSinceLastUpdate > 1000; // Al menos 1 segundo
+            
+            if (!isMyChange && lastModifiedBy && lastModifiedBy !== currentUserId && hasEnoughTimePassed) {
+              const authorName = updatedProject.lastModifiedByUser || 'Otro colaborador';
+              toast(`📝 ${selectedFile.name} fue editado por ${authorName}`, {
+                duration: 4000,
+                icon: '👤',
+                style: { background: '#E3F2FD', color: '#1565C0' }
+              });
+            }
+            
+            // Actualizar también el archivo en el árbol
+            setFileTree(prevTree => {
+              const updateFileInTree = (files: FileNode[]): FileNode[] => {
+                return files.map(file => {
+                  if (file.id === selectedFile.id) {
+                    return { ...file, content: updatedFileContent };
+                  }
+                  if (file.children) {
+                    return { ...file, children: updateFileInTree(file.children) };
+                  }
+                  return file;
+                });
+              };
+              return updateFileInTree(prevTree);
+            });
+          }
+        } catch (fileError) {
+          console.error("Error checking file updates:", fileError);
+        }
+      }
+    } catch (error) {
+      console.error("Error checking for updates:", error);
+    }
+  }, [projectId, token, project, lastUpdate, activeTab, fetchVersions, selectedFile, editorContent, user?.id]);
+
   // Cargar datos en paralelo para mejor rendimiento
   useEffect(() => {
     if (projectId && token) {
       Promise.all([fetchProject(), fetchFileTree()]).catch(console.error);
     }
   }, [fetchProject, fetchFileTree, projectId, token]);
+
+  // Cargar versiones cuando se selecciona la pestaña
+  useEffect(() => {
+    if (activeTab === "versions" && projectId && token) {
+      fetchVersions();
+    }
+  }, [activeTab, fetchVersions, projectId, token]);
+
+  // 🔥 POLLING para colaboración en tiempo real (cada 5 segundos)
+  useEffect(() => {
+    if (!projectId || !token) return;
+
+    const interval = setInterval(() => {
+      checkForUpdates();
+    }, 5000); // Check every 5 seconds
+
+    return () => clearInterval(interval);
+  }, [checkForUpdates, projectId, token]);
 
   // Función para guardar automáticamente en localStorage
   const saveToLocalStorage = useCallback(
@@ -711,25 +869,48 @@ export default function ProjectDetailPage() {
 
     setSaving(true);
     try {
-      await api.post(
-        `/ai/save-code`,
+      // ✅ CORREGIR ENDPOINT: Usar la ruta correcta sin filePath en URL
+      const response = await api.put(
+        `/projects/${projectId}/files`,
         {
-          projectId: parseInt(projectId),
-          fileName: selectedFile.name,
-          code: editorContent,
+          filePath: selectedFile.path,
+          content: editorContent,
         },
         {
           headers: { Authorization: `Bearer ${token}` },
         },
       );
 
-      toast.success("Archivo guardado correctamente");
+      if (response.data.success) {
+        // ✅ GUARDAR INFORMACIÓN SOBRE QUIÉN HIZO EL CAMBIO
+        const lastModifiedBy = response.data.lastModifiedBy;
+        const authorName = response.data.authorName;
+        
+        // 🔥 COLABORACIÓN: Actualizar timestamp después de guardar
+        setLastUpdate(new Date());
+        
+        // ✅ NO ACTUALIZAR EL PROYECTO LOCALMENTE - DEJAR QUE EL POLLING LO HAGA
+        // Esto evita que se muestre la notificación al usuario que guardó
+        
+        // ✅ NOTIFICACIÓN LOCAL: Solo mostrar al usuario que guardó
+        toast.success("✅ Archivo guardado - Otros colaboradores verán los cambios");
+        
+        // 🔥 DELAY PARA EVITAR DETECCIÓN INMEDIATA DEL CAMBIO PROPIO
+        setTimeout(() => {
+          setLastUpdate(new Date());
+        }, 2000); // Esperar 2 segundos antes de actualizar lastUpdate
+        
+        // 🔥 ACTUALIZAR VERSIONES SI ESTAMOS EN ESA PESTAÑA
+        if (activeTab === "versions") {
+          fetchVersions();
+        }
+      }
     } catch (error) {
       toast.error("Error al guardar el archivo");
     } finally {
       setSaving(false);
     }
-  }, [selectedFile, editorContent, projectId, token]);
+  }, [selectedFile, editorContent, projectId, token, project, activeTab, fetchVersions]);
 
   const executeCode = useCallback(async () => {
     if (!selectedFile) return;
@@ -813,16 +994,14 @@ export default function ProjectDetailPage() {
     switch (detectedLanguage) {
       case "javascript":
         template = `// Código JavaScript ejecutable
-console.log("¡Hola mundo!");
 const suma = 2 + 2;
-console.log("Resultado:", suma);
 
 // Función simple
 function saludar(nombre) {
   return \`¡Hola \${nombre}!\`;
 }
 
-console.log(saludar("Desarrollador"));`;
+saludar("Desarrollador");`;
         break;
       case "python":
         template = `# Código Python ejecutable
@@ -854,7 +1033,7 @@ print(f"Suma de números: {sum(numeros)}")`;
         break;
       default:
         template = `// Código ejecutable
-console.log("¡Hola mundo!");`;
+// Tu código aquí`;
     }
 
     // Crear un nuevo archivo ejecutable
@@ -1229,7 +1408,7 @@ console.log("¡Hola mundo!");`;
         }
       );
 
-      console.log(`📁 Sync folder created for ${userName}`);
+      
     } catch (error) {
       console.error('Error creating sync folder:', error);
       // No mostrar error al usuario, es interno
@@ -1385,79 +1564,129 @@ console.log("¡Hola mundo!");`;
                 <h1 className="text-2xl font-semibold text-gray-900 mb-2">
                   {project.name}
                 </h1>
-                <p className="text-gray-600">
+                <p className="text-gray-600 mb-3">
                   {project.description || "Sin descripción"}
                 </p>
+                
+                {/* Información de propietario y colaboradores */}
+                <div className="flex items-center space-x-6 text-sm text-gray-500">
+                  <div className="flex items-center">
+                    <UserIcon className="w-4 h-4 mr-1" />
+                    <span>Propietario: <strong className="text-gray-700">{project.owner?.fullName || project.owner?.email}</strong></span>
+                  </div>
+                  {project.collaborators && project.collaborators.length > 0 && (
+                    <div className="flex items-center">
+                      <UserGroupIcon className="w-4 h-4 mr-1" />
+                      <span>{project.collaborators.length} colaborador{project.collaborators.length !== 1 ? 'es' : ''}</span>
+                    </div>
+                  )}
+                  {/* Mostrar si el usuario actual es colaborador */}
+                  {user && project.collaborators?.some(collab => collab.user?.id === user.id) && (
+                    <div className="flex items-center text-green-600">
+                      <CheckCircleIcon className="w-4 h-4 mr-1" />
+                      <span>Eres colaborador ({project.collaborators.find(collab => collab.user?.id === user.id)?.role || 'Usuario'})</span>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* Pestañas */}
-              <div className="flex space-x-8 mb-4">
+              {/* Pestañas - Responsive */}
+              <div className="flex flex-wrap gap-2 mb-4">
                 <button
                   onClick={() => setActiveTab("code")}
-                  className={`px-4 py-3 rounded-lg font-medium transition-colors ${
+                  className={`px-3 py-2 rounded-lg font-medium transition-colors text-sm ${
                     activeTab === "code"
                       ? "bg-green-500 text-white"
                       : "text-gray-600 hover:bg-gray-100"
                   }`}
                 >
-                  <CodeBracketIcon className="w-4 h-4 inline mr-2" />
-                  Código
+                  <CodeBracketIcon className="w-4 h-4 inline mr-1" />
+                  <span className="hidden sm:inline">Código</span>
+                  <span className="sm:hidden">Code</span>
                 </button>
                 <button
                   onClick={() => setActiveTab("collaborators")}
-                  className={`px-4 py-3 rounded-lg font-medium transition-colors ${
+                  className={`px-3 py-2 rounded-lg font-medium transition-colors text-sm ${
                     activeTab === "collaborators"
                       ? "bg-green-500 text-white"
                       : "text-gray-600 hover:bg-gray-100"
                   }`}
                 >
-                  <UserGroupIcon className="w-4 h-4 inline mr-2" />
-                  Colaboradores
+                  <UserGroupIcon className="w-4 h-4 inline mr-1" />
+                  <span className="hidden sm:inline">Colaboradores</span>
+                  <span className="sm:hidden">Colab</span>
                 </button>
                 <button
                   onClick={() => setActiveTab("settings")}
-                  className={`px-4 py-3 rounded-lg font-medium transition-colors ${
+                  className={`px-3 py-2 rounded-lg font-medium transition-colors text-sm ${
                     activeTab === "settings"
                       ? "bg-green-500 text-white"
                       : "text-gray-600 hover:bg-gray-100"
                   }`}
                 >
-                  <Cog6ToothIcon className="w-4 h-4 inline mr-2" />
-                  Configuración
+                  <Cog6ToothIcon className="w-4 h-4 inline mr-1" />
+                  <span className="hidden sm:inline">Configuración</span>
+                  <span className="sm:hidden">Config</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab("versions")}
+                  className={`px-3 py-2 rounded-lg font-medium transition-colors text-sm ${
+                    activeTab === "versions"
+                      ? "bg-green-500 text-white"
+                      : "text-gray-600 hover:bg-gray-100"
+                  }`}
+                >
+                  <ClipboardDocumentIcon className="w-4 h-4 inline mr-1" />
+                  <span className="hidden sm:inline">Historial</span>
+                  <span className="sm:hidden">Hist</span>
                 </button>
               </div>
 
               {/* Raya gris debajo de las pestañas */}
               <div className="border-b border-gray-200 mb-4"></div>
 
-              {/* Connection Flow Indicator */}
-              <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-green-50 border border-blue-200 rounded-lg">
-                <h3 className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
-                  <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              {/* Connection Flow Indicator - Responsive */}
+              <div className="mb-4 p-3 sm:p-4 bg-gradient-to-r from-blue-50 to-green-50 border border-blue-200 rounded-lg">
+                <h3 className="text-xs sm:text-sm font-semibold text-blue-800 mb-2 flex items-center">
+                  <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
                   </svg>
-                  Flujo de Conexión del Proyecto
+                  <span className="hidden sm:inline">Flujo de Conexión del Proyecto</span>
+                  <span className="sm:hidden">Flujo del Proyecto</span>
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 text-xs">
                   <div className="flex items-center">
                     <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
-                    <span className="text-blue-700">Colaboradores: {project?.collaborators?.length || 0} activos</span>
+                    <span className="text-blue-700">
+                      <span className="hidden sm:inline">Colaboradores: {project?.collaborators?.length || 0} activos</span>
+                      <span className="sm:hidden">Colab: {project?.collaborators?.length || 0}</span>
+                    </span>
                   </div>
                   <div className="flex items-center">
                     <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                    <span className="text-green-700">Versiones: Conectado al historial</span>
+                    <span className="text-green-700">
+                      <span className="hidden sm:inline">Versiones: Conectado al historial</span>
+                      <span className="sm:hidden">Versiones: OK</span>
+                    </span>
                   </div>
                   <div className="flex items-center">
                     <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
-                    <span className="text-purple-700">Sincronización: Componentes BFF/Sidecar</span>
+                    <span className="text-purple-700">
+                      <span className="hidden sm:inline">Sincronización: Componentes BFF/Sidecar</span>
+                      <span className="sm:hidden">Sync: BFF/Sidecar</span>
+                    </span>
                   </div>
                   <div className="flex items-center">
                     <div className="w-2 h-2 bg-orange-500 rounded-full mr-2"></div>
-                    <span className="text-orange-700">Reportes: Métricas automáticas</span>
+                    <span className="text-orange-700">
+                      <span className="hidden sm:inline">Reportes: Métricas automáticas</span>
+                      <span className="sm:hidden">Reportes: OK</span>
+                    </span>
                   </div>
                 </div>
                 <div className="mt-2 text-xs text-blue-600">
-                  <p>💡 <strong>Flujo integrado:</strong> Los cambios en colaboradores se reflejan en versiones, sincronización y reportes automáticamente.</p>
+                  <p className="hidden sm:block">💡 <strong>Flujo integrado:</strong> Los cambios en colaboradores se reflejan en versiones, sincronización y reportes automáticamente.</p>
+                  <p className="sm:hidden">💡 <strong>Flujo integrado:</strong> Cambios se reflejan automáticamente.</p>
                 </div>
               </div>
 
@@ -1480,16 +1709,16 @@ console.log("¡Hola mundo!");`;
           {/* Contenido de las pestañas */}
           {activeTab === "code" && (
             <div className="flex-1 flex flex-col bg-white">
-              {/* Barra de controles Git - fondo blanco */}
-              <div className="bg-white border-b border-gray-200 px-6 py-4">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0 sm:space-x-6">
-                  <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-6">
+              {/* Barra de controles Git - fondo blanco - Responsive */}
+              <div className="bg-white border-b border-gray-200 px-3 sm:px-6 py-3 sm:py-4">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-3 lg:space-y-0 lg:space-x-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 lg:space-x-6">
                     {/* Selector de ramas */}
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-2 sm:space-x-3">
                       <select
                         value={currentBranch}
                         onChange={(e) => setCurrentBranch(e.target.value)}
-                        className="text-black px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-gray-50"
+                        className="text-black px-2 sm:px-3 py-1 sm:py-1.5 border border-gray-300 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-gray-50"
                       >
                         <option value="main">Principal</option>
                         <option value="develop">develop</option>
@@ -1497,37 +1726,39 @@ console.log("¡Hola mundo!");`;
                           feature/new-component
                         </option>
                       </select>
-                      <span className="text-sm text-gray-600 font-medium">
-                        6 Branches
+                      <span className="text-xs sm:text-sm text-gray-600 font-medium">
+                        <span className="hidden sm:inline">6 Branches</span>
+                        <span className="sm:hidden">6</span>
                       </span>
                     </div>
 
                     {/* Buscador */}
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-2 sm:space-x-3">
                       <div className="relative">
-                        <MagnifyingGlassIcon className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                        <MagnifyingGlassIcon className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2" />
                         <input
                           type="text"
                           placeholder="Ir al archivo..."
-                          className="text-black pl-10 pr-4 py-1.5 border border-gray-300 rounded-lg text-sm w-full sm:w-80 focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-gray-50"
+                          className="text-black pl-7 sm:pl-10 pr-3 sm:pr-4 py-1 sm:py-1.5 border border-gray-300 rounded-lg text-xs sm:text-sm w-full sm:w-80 focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-gray-50"
                         />
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-3">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                     <Button
                       size="sm"
                       variant="outline"
-                      className="px-3 py-1.5 text-sm"
+                      className="px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm"
                     >
-                      <PlusIcon className="w-4 h-4 mr-2" />
-                      Agregar archivo
+                      <PlusIcon className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                      <span className="hidden sm:inline">Agregar archivo</span>
+                      <span className="sm:hidden">+Archivo</span>
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
-                      className="px-3 py-1.5 text-sm bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100"
+                      className="px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100"
                       onClick={() => {
                         toast((t) => (
                           <div className="flex flex-col gap-3">
@@ -1562,26 +1793,28 @@ console.log("¡Hola mundo!");`;
                         ), { duration: 8000 });
                       }}
                     >
-                      <PlusIcon className="w-4 h-4 mr-2" />
-                      Crear {project?.pattern === 'microservices' ? 'Componente' : 'Servicio'}
+                      <PlusIcon className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                      <span className="hidden sm:inline">Crear {project?.pattern === 'microservices' ? 'Componente' : 'Servicio'}</span>
+                      <span className="sm:hidden">Crear</span>
                     </Button>
                     <Button
                       size="sm"
-                      className="bg-green-500 hover:bg-green-600 px-3 py-1.5 text-sm"
+                      className="bg-green-500 hover:bg-green-600 px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm"
                       onClick={syncWithGit}
                       disabled={gitRepo.status === 'pending'}
                     >
                       {gitRepo.status === 'pending' ? (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-white mr-1 sm:mr-2"></div>
                       ) : (
-                      <CodeBracketIcon className="w-4 h-4 mr-2" />
+                      <CodeBracketIcon className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                       )}
-                      {gitRepo.status === 'pending' ? 'Sincronizando...' : 'Sincronizar Proyecto'}
+                      <span className="hidden sm:inline">{gitRepo.status === 'pending' ? 'Sincronizando...' : 'Sincronizar Proyecto'}</span>
+                      <span className="sm:hidden">{gitRepo.status === 'pending' ? 'Sync...' : 'Sync'}</span>
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
-                      className="px-3 py-1.5 text-sm border-blue-300 text-blue-700 hover:bg-blue-50"
+                      className="px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm border-blue-300 text-blue-700 hover:bg-blue-50"
                       onClick={() => {
                         toast((t) => (
                           <div className="flex flex-col gap-2">
@@ -1706,14 +1939,15 @@ console.log("¡Hola mundo!");`;
                 </div>
               </div>
 
-              {/* Área principal del editor */}
-              <div className="flex-1 flex flex-col lg:flex-row mb-6">
+              {/* Área principal del editor - Responsive */}
+              <div className="flex-1 flex flex-col xl:flex-row mb-6">
                 {/* Sidebar - File Explorer en card */}
-                <div className="w-full lg:w-80 bg-white border-r border-gray-200 overflow-y-auto">
-                  <div className="p-4">
-                    <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                      <h3 className="text-sm font-medium text-gray-900 mb-3">
-                        Explorador de Archivos
+                <div className="w-full xl:w-80 bg-white border-r border-gray-200 overflow-y-auto">
+                  <div className="p-3 sm:p-4">
+                    <div className="bg-gray-50 rounded-lg p-3 sm:p-4 mb-4">
+                      <h3 className="text-xs sm:text-sm font-medium text-gray-900 mb-3">
+                        <span className="hidden sm:inline">Explorador de Archivos</span>
+                        <span className="sm:hidden">Archivos</span>
                       </h3>
                       <div className="space-y-1">
                         {renderFileTree(fileTree)}
@@ -1730,56 +1964,56 @@ console.log("¡Hola mundo!");`;
                 <div className="flex-1 flex flex-col">
                   {selectedFile ? (
                     <>
-                      {/* File Header */}
-                      <div className="bg-white border-b border-gray-200 px-4 py-3">
-                        <div className="flex items-center justify-between">
+                      {/* File Header - Responsive */}
+                      <div className="bg-white border-b border-gray-200 px-3 sm:px-4 py-2 sm:py-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
                           <div className="flex items-center">
-                            <DocumentIcon className="w-5 h-5 mr-2 text-gray-500" />
-                            <span className="text-sm font-medium text-gray-900">
+                            <DocumentIcon className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2 text-gray-500" />
+                            <span className="text-xs sm:text-sm font-medium text-gray-900 truncate">
                               {selectedFile.name}
                             </span>
-                            <span className="ml-2 text-xs text-gray-500">
+                            <span className="ml-1 sm:ml-2 text-xs text-gray-500 hidden sm:inline">
                               {selectedFile.path}
                             </span>
                             {autoSaved && (
-                              <span className="ml-2 text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">
-                                Guardado
+                              <span className="ml-1 sm:ml-2 text-xs text-green-600 bg-green-100 px-1 sm:px-2 py-0.5 sm:py-1 rounded-full">
+                                <span className="hidden sm:inline">Guardado</span>
+                                <span className="sm:hidden">✓</span>
                               </span>
                             )}
                           </div>
-                          <div className="flex flex-wrap items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-1 sm:gap-2">
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={copyCode}
                               disabled={!editorContent}
-                              className="text-xs"
+                              className="text-xs px-2 sm:px-3 py-1 sm:py-1.5"
                             >
-                              <ClipboardDocumentIcon className="w-4 h-4 mr-1" />
+                              <ClipboardDocumentIcon className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                               <span className="hidden sm:inline">Copiar</span>
+                              <span className="sm:hidden">Copy</span>
                             </Button>
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={createExecutableFile}
-                              className="bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs"
+                              className="bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs px-2 sm:px-3 py-1 sm:py-1.5"
                             >
-                              <CodeBracketIcon className="w-4 h-4 mr-1" />
-                              <span className="hidden sm:inline">
-                                Crear Ejecutable
-                              </span>
+                              <CodeBracketIcon className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                              <span className="hidden sm:inline">Crear Ejecutable</span>
+                              <span className="sm:hidden">Ejec</span>
                             </Button>
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={saveFile}
                               disabled={saving}
-                              className="text-xs"
+                              className="text-xs px-2 sm:px-3 py-1 sm:py-1.5"
                             >
-                              <BookmarkIcon className="w-4 h-4 mr-1" />
-                              <span className="hidden sm:inline">
-                                {saving ? "Guardando..." : "Guardar"}
-                              </span>
+                              <BookmarkIcon className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                              <span className="hidden sm:inline">{saving ? "Guardando..." : "Guardar"}</span>
+                              <span className="sm:hidden">{saving ? "..." : "Save"}</span>
                             </Button>
                             <Button
                               variant="outline"
@@ -1792,11 +2026,10 @@ console.log("¡Hola mundo!");`;
                                   toast.success("Datos locales limpiados");
                                 }
                               }}
-                              className="text-xs text-orange-600 border-orange-300 hover:bg-orange-50"
+                              className="text-xs text-orange-600 border-orange-300 hover:bg-orange-50 px-2 sm:px-3 py-1 sm:py-1.5"
                             >
-                              <span className="hidden sm:inline">
-                                Limpiar Local
-                              </span>
+                              <span className="hidden sm:inline">Limpiar Local</span>
+                              <span className="sm:hidden">Limpiar</span>
                             </Button>
                             {getLanguageFromFile(
                               selectedFile.name,
@@ -1807,12 +2040,11 @@ console.log("¡Hola mundo!");`;
                                 size="sm"
                                 onClick={togglePreview}
                                 disabled={!editorContent}
-                                className="text-xs"
+                                className="text-xs px-2 sm:px-3 py-1 sm:py-1.5"
                               >
-                                <EyeIcon className="w-4 h-4 mr-1" />
-                                <span className="hidden sm:inline">
-                                  {showPreview ? "Ocultar" : "Vista Previa"}
-                                </span>
+                                <EyeIcon className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                                <span className="hidden sm:inline">{showPreview ? "Ocultar" : "Vista Previa"}</span>
+                                <span className="sm:hidden">{showPreview ? "Ocultar" : "Vista"}</span>
                               </Button>
                             )}
                             <Button
@@ -1820,39 +2052,32 @@ console.log("¡Hola mundo!");`;
                               size="sm"
                               onClick={executeCode}
                               disabled={executing}
-                              className="text-xs"
+                              className="text-xs px-2 sm:px-3 py-1 sm:py-1.5"
                             >
-                              <PlayIcon className="w-4 h-4 mr-1" />
-                              <span className="hidden sm:inline">
-                                {executing ? "Ejecutando..." : "Ejecutar"}
-                              </span>
+                              <PlayIcon className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                              <span className="hidden sm:inline">{executing ? "Ejecutando..." : "Ejecutar"}</span>
+                              <span className="sm:hidden">{executing ? "..." : "Run"}</span>
                             </Button>
                             <Button
                               size="sm"
                               onClick={analyzeWithIA}
                               disabled={loadingIA}
-                              className="bg-green-500 hover:bg-green-600 text-white text-xs"
+                              className="bg-green-500 hover:bg-green-600 text-white text-xs px-2 sm:px-3 py-1 sm:py-1.5"
                             >
-                              <span className="hidden sm:inline">
-                                {loadingIA
-                                  ? "Optimizando..."
-                                  : "Optimizar con IA"}
-                              </span>
+                              <span className="hidden sm:inline">{loadingIA ? "Optimizando..." : "Optimizar con IA"}</span>
+                              <span className="sm:hidden">{loadingIA ? "..." : "IA"}</span>
                             </Button>
                             {selectedFile.name.startsWith("src/") && (
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() =>
-                                  analyzeSrcFileWithIA(selectedFile)
-                                }
+                                onClick={() => analyzeSrcFileWithIA(selectedFile)}
                                 disabled={loadingIA}
-                                className="bg-purple-500 hover:bg-purple-600 text-white text-xs"
+                                className="bg-purple-500 hover:bg-purple-600 text-white text-xs px-2 sm:px-3 py-1 sm:py-1.5"
                               >
-                                <Cog6ToothIcon className="w-4 h-4 mr-1" />
-                                <span className="hidden sm:inline">
-                                  Analizar con IA
-                                </span>
+                                <Cog6ToothIcon className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                                <span className="hidden sm:inline">Analizar con IA</span>
+                                <span className="sm:hidden">Analizar</span>
                               </Button>
                             )}
                           </div>
@@ -1862,6 +2087,42 @@ console.log("¡Hola mundo!");`;
                       <div className="flex-1 flex">
                         {/* Editor */}
                         <div className="flex-1 flex flex-col">
+                          {/* 🔥 INDICADOR SIMPLE DE COLABORACIÓN - Responsive */}
+                          {project?.collaborators && project.collaborators.length > 0 && (
+                            <div className="bg-blue-50 border-b border-blue-200 px-3 sm:px-4 py-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
+                              <div className="flex items-center space-x-2 sm:space-x-3">
+                                <div className="flex items-center">
+                                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse mr-1 sm:mr-2"></div>
+                                  <span className="text-xs sm:text-sm font-medium text-blue-800">
+                                    <span className="hidden sm:inline">Proyecto colaborativo</span>
+                                    <span className="sm:hidden">Colaborativo</span>
+                                  </span>
+                                </div>
+                                <div className="flex items-center space-x-1 sm:space-x-2">
+                                  <span className="text-xs sm:text-sm text-blue-600">
+                                    <span className="hidden sm:inline">Colaboradores:</span>
+                                    <span className="sm:hidden">Colab:</span>
+                                  </span>
+                                  {project.collaborators.slice(0, 2).map((collab, index) => (
+                                    <div key={collab.id} className="flex items-center">
+                                      <div className="w-5 h-5 sm:w-6 sm:h-6 bg-blue-500 rounded-full flex items-center justify-center text-xs text-white font-medium">
+                                        {(collab.user?.fullName || collab.user?.email || 'U').charAt(0).toUpperCase()}
+                                      </div>
+                                      <span className="ml-1 text-xs text-blue-700 hidden sm:inline">{collab.user?.fullName || collab.user?.email}</span>
+                                    </div>
+                                  ))}
+                                  {project.collaborators.length > 2 && (
+                                    <span className="text-xs text-blue-600">+{project.collaborators.length - 2}</span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="text-xs text-blue-600">
+                                <span className="hidden sm:inline">Los cambios se verifican cada 5 segundos</span>
+                                <span className="sm:hidden">Verificando cambios...</span>
+                              </div>
+                            </div>
+                          )}
+                          
                           <div className="flex-1 relative">
                             <Suspense fallback={<EditorLoading />}>
                               <Editor
@@ -2698,6 +2959,93 @@ console.log("¡Hola mundo!");`;
                     )}
                   </div>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Nueva pestaña: Historial de Versiones */}
+          {activeTab === "versions" && (
+            <div className="flex-1 bg-white p-6">
+              <div className="w-full relative">
+                <div className="mb-6">
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                    🕒 Historial de Versiones
+                  </h3>
+                  <p className="text-gray-600">
+                    Aquí puedes ver todos los cambios realizados en el proyecto por colaboradores y propietarios.
+                  </p>
+                </div>
+
+                {loadingVersions ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
+                    <span className="ml-3 text-gray-600">Cargando historial...</span>
+                  </div>
+                ) : versions.length === 0 ? (
+                  <div className="text-center py-12">
+                    <ClipboardDocumentIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      Sin historial de versiones
+                    </h3>
+                    <p className="text-gray-600">
+                      Los cambios aparecerán aquí cuando los colaboradores editen el código.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {versions.map((version, index) => (
+                      <div key={version.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-3 mb-2">
+                              <span className="text-sm font-mono bg-gray-100 px-2 py-1 rounded text-gray-700">
+                                {version.hash}
+                              </span>
+                              <span className={`text-xs px-2 py-1 rounded-full ${
+                                version.status === 'deployed' ? 'bg-green-100 text-green-700' :
+                                version.status === 'testing' ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-blue-100 text-blue-700'
+                              }`}>
+                                {version.status}
+                              </span>
+                            </div>
+                            <p className="text-gray-900 font-medium mb-1">
+                              {version.message}
+                            </p>
+                            <div className="flex items-center space-x-4 text-sm text-gray-500">
+                              <span className="flex items-center">
+                                <UserIcon className="w-4 h-4 mr-1" />
+                                {version.author}
+                              </span>
+                              <span>{new Date(version.date).toLocaleString()}</span>
+                              <span className="flex items-center">
+                                <DocumentIcon className="w-4 h-4 mr-1" />
+                                {version.filesChanged?.length || 0} archivo{(version.filesChanged?.length || 0) !== 1 ? 's' : ''}
+                              </span>
+                            </div>
+                            {version.filesChanged && version.filesChanged.length > 0 && (
+                              <div className="mt-2">
+                                <details>
+                                  <summary className="text-sm text-blue-600 hover:text-blue-800 cursor-pointer">
+                                    Ver archivos modificados
+                                  </summary>
+                                  <div className="mt-1 pl-4 text-sm text-gray-600">
+                                    {version.filesChanged.map((file: string, fileIndex: number) => (
+                                      <div key={fileIndex} className="flex items-center">
+                                        <DocumentIcon className="w-3 h-3 mr-1 text-gray-400" />
+                                        {file}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </details>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}

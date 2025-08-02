@@ -302,15 +302,12 @@ export default function AdminPage() {
   const loadProjectsForAnalysis = useCallback(async () => {
     if (activeTab === "ai-analysis" && user?.role === "admin") {
       try {
-        console.log("Cargando proyectos para análisis IA...");
+  
         const response = await api.get("/admin/ai-config/projects", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        console.log(
-          "Proyectos cargados desde /admin/ai-config/projects:",
-          response.data,
-        );
+
 
         const transformedProjects: Project[] = response.data.map(
           (project: {
@@ -330,7 +327,7 @@ export default function AdminPage() {
           }),
         );
 
-        console.log("Proyectos transformados:", transformedProjects);
+
         setProjects(transformedProjects);
       } catch (error) {
         console.error("Error cargando proyectos:", error);

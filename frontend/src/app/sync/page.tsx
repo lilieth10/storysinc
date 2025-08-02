@@ -484,7 +484,7 @@ export default function SyncPage() {
       );
 
       if (response.data.success) {
-        console.log(`✅ Sync completed for project ${project.id}: ${project.name}`);
+
 
         // Update sync status
         setGitSyncStatus(prev => ({ ...prev, [project.id]: 'success' }));
