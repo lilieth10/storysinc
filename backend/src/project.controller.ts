@@ -73,8 +73,8 @@ export class ProjectController {
   }
 
   @Get(':id')
-  async getProject(@Param('id') id: string) {
-    return this.projectService.getProjectById(parseInt(id));
+  async getProject(@Param('id') id: string, @Req() req: AuthRequest) {
+    return this.projectService.getProjectById(parseInt(id), req.user.userId);
   }
 
   @Put(':id')
@@ -216,5 +216,21 @@ export class ProjectController {
       parseInt(userId),
     );
     return { message: 'Colaborador eliminado' };
+  }
+
+  @Post(':id/sync-folder')
+  async createSyncFolder(
+    @Param('id') id: string,
+    @Body() body: { userId: number; userName: string; syncFiles: any[]; lastSync: string; changes: any[] },
+  ) {
+    const syncFolder = await this.projectService.createSyncFolder(
+      parseInt(id),
+      body.userId,
+      body.userName,
+      body.syncFiles,
+      body.lastSync,
+      body.changes,
+    );
+    return { message: 'Carpeta sync creada', syncFolder };
   }
 }

@@ -8,7 +8,7 @@ export const FeaturesGrid: React.FC = () => {
   return (
     <section className="py-20 bg-gray-50">
       <div className="container mx-auto px-4">
-        <h2 className="text-4xl font-bold text-center mb-16">
+        <h2 className="text-black text-4xl font-bold text-center mb-16">
           Eleva tus componentes frontend al siguiente nivel
         </h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">

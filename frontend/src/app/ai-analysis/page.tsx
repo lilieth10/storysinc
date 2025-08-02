@@ -64,9 +64,9 @@ export default function AIAnalysisPage() {
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [analyzingWithN8n, setAnalyzingWithN8n] = useState(false);
-  const [ setN8nAnalysis] = useState<any>(null); // Usado en el futuro
+  const [n8nAnalysis, setN8nAnalysis] = useState<any>(null); // Usado en el futuro
   const [analyzingMetrics, setAnalyzingMetrics] = useState(false);
-  const [ setMetricsAnalysis] = useState<any>(null); // Usado en el futuro
+  const [metricsAnalysis, setMetricsAnalysis] = useState<any>(null); // Usado en el futuro
   const [projectFiles, setProjectFiles] = useState<FileNode[]>([]);
   const [availableFiles, setAvailableFiles] = useState<string[]>([]);
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
@@ -1301,7 +1301,7 @@ module.exports = {
                         onChange={(e) => setUserQuery(e.target.value)}
                         onKeyPress={(e) => e.key === "Enter" && sendQuery()}
                         placeholder="Escribe tu pregunta..."
-                        className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        className="text-black flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
                       />
                       <Button
                         onClick={sendQuery}
@@ -1323,8 +1323,6 @@ module.exports = {
                 {processedAnalysis && (
                   <div className="rounded-2xl bg-white p-6 shadow-md border border-gray-100">
                     <h3 className="font-bold text-lg mb-4 flex items-center">
-                      <MagnifyingGlassIcon className="w-5 h-5 text-blue-500 mr-2" />
-                      Análisis de IA
                     </h3>
                     {processedAnalysis.suggestions.length === 0 &&
                     processedAnalysis.warnings.length === 0 ? (
@@ -1396,8 +1394,6 @@ module.exports = {
                 {processedMetrics && (
                   <div className="rounded-2xl bg-white p-6 shadow-md border border-gray-100">
                     <h3 className="font-bold text-lg mb-4 flex items-center">
-                      <LightBulbIcon className="w-5 h-5 text-purple-500 mr-2" />
-                      Análisis de Métricas
                     </h3>
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">

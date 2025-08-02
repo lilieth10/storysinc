@@ -22,7 +22,7 @@ export const TargetAudience: React.FC = () => {
           </div>
           {/* Cards de perfiles */}
           <div>
-            <h2 className="text-4xl font-bold mb-8">
+            <h2 className="text-black text-4xl font-bold mb-8">
               ¿Para quiénes está pensada Proogia?
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">

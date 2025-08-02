@@ -54,15 +54,34 @@ export class VersionController {
       const where: any = {};
 
       // Si es admin, puede ver todas las versiones
-      // Si es usuario normal, solo ve versiones de proyectos donde es colaborador
+      // Si es usuario normal, solo ve versiones de proyectos donde es colaborador o propietario
       if (userRole !== 'admin') {
+        // Proyectos donde es colaborador
         const userProjects = await this.prisma.projectCollaborator.findMany({
           where: { userId },
           select: { projectId: true },
         });
+        
+        // Proyectos que posee
+        const ownedProjects = await this.prisma.project.findMany({
+          where: { ownerId: userId },
+          select: { id: true },
+        });
+        
+        // SyncProjects que posee
+        const ownedSyncProjects = await this.prisma.syncProject.findMany({
+          where: { userId },
+          select: { id: true },
+        });
+
+        const allProjectIds = [
+          ...userProjects.map((p) => p.projectId),
+          ...ownedProjects.map((p) => p.id),
+          ...ownedSyncProjects.map((p) => p.id)
+        ];
 
         where.projectId = {
-          in: userProjects.map((p) => p.projectId),
+          in: allProjectIds,
         };
       }
 
@@ -101,20 +120,87 @@ export class VersionController {
         orderBy: { createdAt: 'desc' },
       });
 
-      return versions.map((version) => ({
-        id: version.id,
-        hash: version.hash,
-        message: version.message,
-        author: version.author,
-        date: version.createdAt.toISOString(),
-        branch: version.branch,
-        status: version.status,
-        filesChanged: JSON.parse(version.filesChanged),
-        projectId: version.project.id,
-        projectName: version.project.name,
-      }));
+
+
+      // Para cada versión, intentar obtener info del proyecto o syncProject
+      const versionsWithProjectInfo = await Promise.all(
+        versions.map(async (version) => {
+          let projectInfo = version.project;
+          
+          // Si no hay project, buscar en syncProjects
+          if (!projectInfo) {
+            const syncProject = await this.prisma.syncProject.findUnique({
+              where: { id: version.projectId },
+              select: { id: true, name: true },
+            });
+            if (syncProject) {
+              projectInfo = { id: syncProject.id, name: syncProject.name };
+            }
+          }
+
+          return {
+            id: version.id,
+            hash: version.hash,
+            message: version.message,
+            author: version.author,
+            date: version.createdAt.toISOString(),
+            branch: version.branch,
+            status: version.status,
+            filesChanged: JSON.parse(version.filesChanged || '[]'),
+            projectId: projectInfo?.id || version.projectId,
+            projectName: projectInfo?.name || `Proyecto ${version.projectId}`,
+          };
+        })
+      );
+
+      return versionsWithProjectInfo;
     } catch (error) {
       console.error('Error fetching versions:', error);
+      throw error;
+    }
+  }
+
+  @Delete('all')
+  async deleteAllVersions(@Req() req: AuthenticatedRequest) {
+    try {
+      const userId = req.user.userId;
+      const userRole = req.user.role;
+
+      // Solo admin puede eliminar todas las versiones
+      if (userRole === 'admin') {
+        await this.prisma.version.deleteMany({});
+        return { success: true, message: 'Todas las versiones eliminadas' };
+      } else {
+        // Usuario normal solo elimina sus versiones
+        const userProjects = await this.prisma.projectCollaborator.findMany({
+          where: { userId },
+          select: { projectId: true },
+        });
+        
+        const ownedProjects = await this.prisma.project.findMany({
+          where: { ownerId: userId },
+          select: { id: true },
+        });
+        
+        const ownedSyncProjects = await this.prisma.syncProject.findMany({
+          where: { userId },
+          select: { id: true },
+        });
+
+        const allProjectIds = [
+          ...userProjects.map((p) => p.projectId),
+          ...ownedProjects.map((p) => p.id),
+          ...ownedSyncProjects.map((p) => p.id)
+        ];
+
+        await this.prisma.version.deleteMany({
+          where: { projectId: { in: allProjectIds } }
+        });
+
+        return { success: true, message: 'Versiones del usuario eliminadas' };
+      }
+    } catch (error) {
+      console.error('Error deleting versions:', error);
       throw error;
     }
   }

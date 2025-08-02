@@ -72,6 +72,8 @@ interface Project {
   pattern: string;
   status: string;
   tags: string;
+  language?: string;
+  components?: string; // JSON string
   owner: {
     id: number;
     name: string;
@@ -120,6 +122,26 @@ interface IASuggestion {
   rejected?: boolean;
 }
 
+interface GitCommit {
+  hash: string;
+  message: string;
+  author: string;
+  date: string;
+  branch: string;
+  files: string[];
+  additions: number;
+  deletions: number;
+}
+
+interface GitRepository {
+  name: string;
+  url: string;
+  branch: string;
+  lastSync: string;
+  status: 'synced' | 'pending' | 'error';
+  commits: GitCommit[];
+}
+
 // Componente de loading optimizado
 const EditorLoading = () => (
   <div className="flex items-center justify-center h-full bg-gray-50">
@@ -161,8 +183,19 @@ export default function ProjectDetailPage() {
   >("code");
   const [currentBranch, setCurrentBranch] = useState("main");
   const [isEditingConfig, setIsEditingConfig] = useState(false);
+  const [isEditingCollaborators, setIsEditingCollaborators] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [previewContent, setPreviewContent] = useState<string>("");
+
+  // Estado para colaboradores
+  const [showAddColab, setShowAddColab] = useState(false);
+  const [newColab, setNewColab] = useState({
+    name: "",
+    email: "",
+    role: "Editor"
+  });
+  const [loadingCollaborators, setLoadingCollaborators] = useState(false);
+  const [colabRoles, setColabRoles] = useState<{[key: number]: string}>({});
 
   // Estado para edición de configuración
   const [editConfig, setEditConfig] = useState({
@@ -752,9 +785,9 @@ export default function ProjectDetailPage() {
       // Detectar Python primero (más específico)
       if (
         content.includes("def ") ||
-        content.includes("import ") ||
+          content.includes("import ") ||
         content.includes("print(") ||
-        content.includes("from ") ||
+          content.includes("from ") ||
         content.includes("if __name__") ||
         (content.includes("class ") && content.includes(":"))
       ) {
@@ -815,7 +848,7 @@ print(f"Suma de números: {sum(numeros)}")`;
 <body>
     <h1>¡Hola Mundo!</h1>
     <p>Esta es una página HTML simple.</p>
-    <button onclick="alert('¡Funciona!')">Click me</button>
+                        <button onClick={() => toast.success('¡Funciona!')}>Click me</button>
 </body>
 </html>`;
         break;
@@ -931,89 +964,373 @@ console.log("¡Hola mundo!");`;
     ));
   };
 
-  // Estado para agregar colaborador
-  const [showAddColab, setShowAddColab] = useState(false);
-  const [newColab, setNewColab] = useState({ email: "", name: "" });
-  const handleAddColab = async () => {
+
+
+  // Git mock state
+  const [gitRepo, setGitRepo] = useState<GitRepository>({
+    name: `${project?.name || 'project'}-repo`,
+    url: `https://github.com/user/${project?.name || 'project'}-repo`,
+    branch: 'main',
+    lastSync: new Date().toISOString(),
+    status: 'synced',
+    commits: [
+      {
+        hash: 'a1b2c3d4',
+        message: 'Initial commit - Project setup',
+        author: project?.owner?.fullName || 'Owner',
+        date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+        branch: 'main',
+        files: ['package.json', 'README.md'],
+        additions: 45,
+        deletions: 0
+      },
+      {
+        hash: 'e5f6g7h8',
+        message: 'Add BFF pattern implementation',
+        author: 'Carlos López',
+        date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+        branch: 'feature/bff',
+        files: ['src/bff/api.ts', 'src/bff/middleware.ts'],
+        additions: 156,
+        deletions: 12
+      },
+      {
+        hash: 'i9j0k1l2',
+        message: 'Add Sidecar service for logging',
+        author: 'Ana Martínez',
+        date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+        branch: 'feature/sidecar',
+        files: ['src/sidecars/logging.ts', 'docker-compose.yml'],
+        additions: 89,
+        deletions: 5
+      }
+    ]
+  });
+
+
+
+  // Project sync function using real backend API
+  const syncWithGit = async () => {
+    setGitRepo(prev => ({ ...prev, status: 'pending' }));
+    
     try {
-      await api.post(`/projects/${projectId}/collaborators`, newColab, {
+      // Call real project sync API
+      const syncResponse = await api.post(`/projects/${projectId}/sync`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      toast.success("Colaborador agregado");
-      setShowAddColab(false);
-      setNewColab({ email: "", name: "" });
-      fetchProject();
-    } catch {
-      toast.error("Error al agregar colaborador");
+
+      if (syncResponse.data) {
+        const newCommit: GitCommit = {
+          hash: Math.random().toString(36).substring(2, 9),
+          message: `Components sync: ${project?.components ? JSON.parse(project.components).map((c: any) => c.name).join(', ') : 'Project components'} updated`,
+          author: project?.owner?.fullName || 'Owner',
+          date: new Date().toISOString(),
+          branch: gitRepo.branch,
+          files: selectedFile ? [selectedFile.name] : ['project files'],
+          additions: Math.floor(Math.random() * 50) + 10,
+          deletions: Math.floor(Math.random() * 10)
+        };
+        
+        setGitRepo(prev => ({
+          ...prev,
+          status: 'synced',
+          lastSync: new Date().toISOString(),
+          commits: [newCommit, ...prev.commits]
+        }));
+        
+        toast.success('✅ Proyecto sincronizado correctamente');
+      }
+    } catch (error) {
+      console.error('Project sync error:', error);
+      setGitRepo(prev => ({ ...prev, status: 'error' }));
+      toast.error('Error en sincronización del proyecto');
     }
   };
 
-  // Estado para roles de colaboradores
-  const [colabRoles, setColabRoles] = useState<Record<number, string>>({});
-  useEffect(() => {
-    if (project && Array.isArray(project.collaborators)) {
-      const roles: Record<number, string> = {};
-      project.collaborators.forEach((colab) => {
-        roles[colab.id] = colab.role || "Usuario";
-      });
-      setColabRoles(roles);
-    }
-  }, [project]);
+  const createNewBranch = (branchName: string) => {
+    const newCommit: GitCommit = {
+      hash: Math.random().toString(36).substring(2, 9),
+      message: `Create branch: ${branchName}`,
+      author: project?.owner?.fullName || 'Owner',
+      date: new Date().toISOString(),
+      branch: branchName,
+      files: [],
+      additions: 0,
+      deletions: 0
+    };
+    
+    setGitRepo(prev => ({
+      ...prev,
+      commits: [newCommit, ...prev.commits]
+    }));
+    
+    toast.success(`Rama ${branchName} creada`);
+  };
 
-  const handleRoleChange = async (colabId: number, newRole: string) => {
-    setColabRoles((prev) => ({ ...prev, [colabId]: newRole }));
+  const switchBranch = (branch: string) => {
+    setGitRepo(prev => ({ ...prev, branch }));
+    toast.success(`Cambiado a rama: ${branch}`);
+  };
+
+  // ✅ COLABORADORES FUNCIONALES
+  const handleAddColab = async () => {
+    if (!newColab.name.trim() || !newColab.email.trim()) {
+      toast.error('Nombre y email son requeridos');
+      return;
+    }
+
+    setLoadingCollaborators(true);
+    try {
+      // Agregar colaborador al proyecto (el backend creará el usuario si no existe)
+      const collaboratorResponse = await api.post(
+        `/projects/${projectId}/collaborators`,
+        {
+          email: newColab.email,
+          name: newColab.name,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (collaboratorResponse.data) {
+        // Actualizar la lista de colaboradores
+        await fetchProject();
+        
+        // Crear carpeta sync para el nuevo colaborador
+        const newCollaborator = collaboratorResponse.data.collaborator;
+        if (newCollaborator?.user?.id) {
+          await createCollaboratorSyncFolder(newCollaborator.user.id, newColab.name);
+        }
+        
+        toast.success(`✅ ${newColab.name} agregado como colaborador`);
+        setNewColab({ name: "", email: "", role: "Editor" });
+        setShowAddColab(false);
+      }
+    } catch (error: any) {
+      console.error('Error adding collaborator:', error);
+      if (error.response?.status === 409) {
+        toast.error('Este usuario ya es colaborador del proyecto');
+      } else {
+        toast.error('Error al agregar colaborador');
+      }
+    } finally {
+      setLoadingCollaborators(false);
+    }
+  };
+
+  const handleRoleChange = async (collaboratorId: number, newRole: string) => {
+    // Encontrar el userId del colaborador
+    const collaborator = project?.collaborators?.find(c => c.id === collaboratorId);
+    if (!collaborator?.user?.id) {
+      toast.error('Error: No se pudo encontrar el usuario');
+      return;
+    }
+
     try {
       await api.patch(
-        `/projects/${projectId}/collaborators/${colabId}`,
+        `/projects/${projectId}/collaborators/${collaborator.user.id}`,
         { role: newRole },
         {
           headers: { Authorization: `Bearer ${token}` },
-        },
+        }
       );
-      toast.success("Rol actualizado");
-      fetchProject();
-    } catch {
-      toast.error("Error al actualizar el rol");
+
+      // Actualizar el estado local inmediatamente
+      setProject(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          collaborators: prev.collaborators?.map(colab =>
+            colab.id === collaboratorId ? { ...colab, role: newRole } : colab
+          ) || []
+        };
+      });
+
+      // Actualizar también colabRoles
+      setColabRoles(prev => ({
+        ...prev,
+        [collaboratorId]: newRole
+      }));
+
+      toast.success(`✅ Rol actualizado a ${newRole}`);
+    } catch (error) {
+      console.error('Error updating role:', error);
+      toast.error('Error al actualizar el rol');
     }
   };
 
-  const handleRemoveColab = (colabId: number) => {
-    toast(
-      (t) => (
-        <span>
-          ¿Seguro que quieres eliminar este colaborador?
-          <div className="mt-2 flex gap-2 justify-end">
+  const handleRemoveColab = (collaboratorId: number) => {
+    const collaborator = project?.collaborators?.find(c => c.id === collaboratorId);
+    if (collaborator) {
+      removeCollaborator(collaboratorId, collaborator.user?.fullName || collaborator.user?.name || 'Colaborador');
+    }
+  };
+
+  const removeCollaborator = async (collaboratorId: number, collaboratorName: string) => {
+    // Encontrar el userId del colaborador
+    const collaborator = project?.collaborators?.find(c => c.id === collaboratorId);
+    if (!collaborator?.user?.id) {
+      toast.error('Error: No se pudo encontrar el usuario');
+      return;
+    }
+
+    toast((t) => (
+      <div className="flex flex-col gap-2">
+        <span>¿Eliminar a {collaboratorName} del proyecto?</span>
+        <div className="flex gap-2">
+          <button
+            onClick={async () => {
+              toast.dismiss(t.id);
+              try {
+                await api.delete(`/projects/${projectId}/collaborators/${collaborator.user?.id}`, {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                await fetchProject();
+                toast.success(`${collaboratorName} eliminado del proyecto`);
+              } catch (error) {
+                console.error('Error removing collaborator:', error);
+                toast.error('Error al eliminar colaborador');
+              }
+            }}
+            className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+          >
+            Eliminar
+          </button>
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400"
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+    ), { duration: 10000 });
+  };
+
+  // Crear carpeta sync para colaborador
+  const createCollaboratorSyncFolder = async (userId: number, userName: string) => {
+    try {
+      const syncData = {
+        userId,
+        userName,
+        projectId: parseInt(projectId),
+        syncFiles: [],
+        lastSync: new Date().toISOString(),
+        changes: []
+      };
+
+      // Crear archivo JSON de sync para el colaborador
+      await api.post(
+        `/projects/${projectId}/sync-folder`,
+        syncData,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      console.log(`📁 Sync folder created for ${userName}`);
+    } catch (error) {
+      console.error('Error creating sync folder:', error);
+      // No mostrar error al usuario, es interno
+    }
+  };
+
+  // Function to create BFF/Sidecar components from project
+  const createSyncComponent = async (type: 'bff' | 'sidecar') => {
+    try {
+      // Show toast input instead of prompt
+      toast((t) => (
+        <div className="flex flex-col gap-2">
+          <span className="font-medium">Nombre del {type.toUpperCase()}:</span>
+          <input
+            id="component-name-input"
+            type="text"
+            placeholder="Ej: API Gateway"
+            className="px-3 py-2 border rounded text-black"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                const input = e.target as HTMLInputElement;
+                const componentName = input.value.trim();
+                if (componentName) {
+                  toast.dismiss(t.id);
+                  createComponentWithName(type, componentName);
+                }
+              }
+            }}
+          />
+          <div className="flex gap-2">
             <button
-              className="px-3 py-1 rounded bg-red-500 text-white text-xs"
-              onClick={async () => {
-                toast.dismiss(t.id);
-                try {
-                  await api.delete(
-                    `/projects/${projectId}/collaborators/${colabId}`,
-                    {
-                      headers: { Authorization: `Bearer ${token}` },
-                    },
-                  );
-                  fetchProject();
-                  toast.success("Colaborador eliminado");
-                } catch {
-                  toast.error("Error al eliminar colaborador");
+              onClick={() => {
+                const input = document.getElementById('component-name-input') as HTMLInputElement;
+                const componentName = input?.value.trim();
+                if (componentName) {
+                  toast.dismiss(t.id);
+                  createComponentWithName(type, componentName);
                 }
               }}
+              className="bg-blue-500 text-white px-3 py-1 rounded text-sm"
             >
-              Sí, eliminar
+              Crear
             </button>
             <button
-              className="px-3 py-1 rounded bg-gray-200 text-gray-700 text-xs"
               onClick={() => toast.dismiss(t.id)}
+              className="bg-gray-300 text-gray-700 px-3 py-1 rounded text-sm"
             >
               Cancelar
             </button>
           </div>
-        </span>
-      ),
-      { duration: 6000 },
-    );
+        </div>
+      ), { duration: 10000 });
+    } catch (error) {
+      console.error('Error creating sync component:', error);
+      toast.error(`Error creando ${type.toUpperCase()}`);
+    }
+  };
+
+  // Function to actually create the component with name
+  const createComponentWithName = async (type: 'bff' | 'sidecar', componentName: string) => {
+    try {
+      const response = await api.post('/sync/create', {
+        name: `${project?.name} - ${componentName}`,
+        description: `${type.toUpperCase()} component for ${project?.name}`,
+        pattern: type,
+        language: project?.language || 'javascript'
+      }, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.data.success) {
+        toast.success(`✅ ${type.toUpperCase()} "${componentName}" creado - Disponible en Sincronización`);
+        
+        // Show link to sync page
+        setTimeout(() => {
+          toast((t) => (
+            <div className="flex items-center">
+              <span className="mr-3">¿Ir a la página de Sincronización para configurarlo?</span>
+              <button
+                onClick={() => {
+                  toast.dismiss(t.id);
+                  router.push('/sync');
+                }}
+                className="bg-blue-500 text-white px-3 py-1 rounded text-sm mr-2"
+              >
+                Sí
+              </button>
+              <button
+                onClick={() => toast.dismiss(t.id)}
+                className="bg-gray-300 text-gray-700 px-3 py-1 rounded text-sm"
+              >
+                No
+              </button>
+            </div>
+          ), { duration: 6000 });
+        }, 1000);
+      }
+    } catch (error) {
+      console.error('Error creating sync component:', error);
+      toast.error(`Error creando ${type.toUpperCase()}`);
+    }
   };
 
   if (loading) {
@@ -1113,6 +1430,37 @@ console.log("¡Hola mundo!");`;
               {/* Raya gris debajo de las pestañas */}
               <div className="border-b border-gray-200 mb-4"></div>
 
+              {/* Connection Flow Indicator */}
+              <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-green-50 border border-blue-200 rounded-lg">
+                <h3 className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
+                  <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                  </svg>
+                  Flujo de Conexión del Proyecto
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
+                  <div className="flex items-center">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                    <span className="text-blue-700">Colaboradores: {project?.collaborators?.length || 0} activos</span>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                    <span className="text-green-700">Versiones: Conectado al historial</span>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
+                    <span className="text-purple-700">Sincronización: Componentes BFF/Sidecar</span>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="w-2 h-2 bg-orange-500 rounded-full mr-2"></div>
+                    <span className="text-orange-700">Reportes: Métricas automáticas</span>
+                  </div>
+                </div>
+                <div className="mt-2 text-xs text-blue-600">
+                  <p>💡 <strong>Flujo integrado:</strong> Los cambios en colaboradores se reflejan en versiones, sincronización y reportes automáticamente.</p>
+                </div>
+              </div>
+
               {/* Badges en fila separada - solo en vista de código */}
               {activeTab === "code" && (
                 <div className="flex items-center justify-between mb-4">
@@ -1141,7 +1489,7 @@ console.log("¡Hola mundo!");`;
                       <select
                         value={currentBranch}
                         onChange={(e) => setCurrentBranch(e.target.value)}
-                        className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-gray-50"
+                        className="text-black px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-gray-50"
                       >
                         <option value="main">Principal</option>
                         <option value="develop">develop</option>
@@ -1161,7 +1509,7 @@ console.log("¡Hola mundo!");`;
                         <input
                           type="text"
                           placeholder="Ir al archivo..."
-                          className="pl-10 pr-4 py-1.5 border border-gray-300 rounded-lg text-sm w-full sm:w-80 focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-gray-50"
+                          className="text-black pl-10 pr-4 py-1.5 border border-gray-300 rounded-lg text-sm w-full sm:w-80 focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-gray-50"
                         />
                       </div>
                     </div>
@@ -1178,10 +1526,161 @@ console.log("¡Hola mundo!");`;
                     </Button>
                     <Button
                       size="sm"
+                      variant="outline"
+                      className="px-3 py-1.5 text-sm bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100"
+                      onClick={() => {
+                        toast((t) => (
+                          <div className="flex flex-col gap-3">
+                            <span className="font-medium">Tipo de componente:</span>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => {
+                                  toast.dismiss(t.id);
+                                  createSyncComponent('bff');
+                                }}
+                                className="bg-blue-500 text-white px-4 py-2 rounded text-sm flex-1"
+                              >
+                                🔗 BFF (Backend for Frontend)
+                              </button>
+                              <button
+                                onClick={() => {
+                                  toast.dismiss(t.id);
+                                  createSyncComponent('sidecar');
+                                }}
+                                className="bg-green-500 text-white px-4 py-2 rounded text-sm flex-1"
+                              >
+                                🔧 Sidecar (Servicio auxiliar)
+                              </button>
+                            </div>
+                            <button
+                              onClick={() => toast.dismiss(t.id)}
+                              className="bg-gray-300 text-gray-700 px-3 py-1 rounded text-sm"
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        ), { duration: 8000 });
+                      }}
+                    >
+                      <PlusIcon className="w-4 h-4 mr-2" />
+                      Crear {project?.pattern === 'microservices' ? 'Componente' : 'Servicio'}
+                    </Button>
+                    <Button
+                      size="sm"
                       className="bg-green-500 hover:bg-green-600 px-3 py-1.5 text-sm"
+                      onClick={syncWithGit}
+                      disabled={gitRepo.status === 'pending'}
+                    >
+                      {gitRepo.status === 'pending' ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      ) : (
+                      <CodeBracketIcon className="w-4 h-4 mr-2" />
+                      )}
+                      {gitRepo.status === 'pending' ? 'Sincronizando...' : 'Sincronizar Proyecto'}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="px-3 py-1.5 text-sm border-blue-300 text-blue-700 hover:bg-blue-50"
+                      onClick={() => {
+                        toast((t) => (
+                          <div className="flex flex-col gap-2">
+                            <span className="font-medium">URL del repositorio Git:</span>
+                            <input
+                              id="git-url-input"
+                              type="text"
+                              placeholder="https://github.com/usuario/repo.git"
+                              className="px-3 py-2 border rounded text-black"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  const input = e.target as HTMLInputElement;
+                                  const repoUrl = input.value.trim();
+                                  if (repoUrl) {
+                                    toast.dismiss(t.id);
+                                    toast.success('🔗 Repositorio conectado: ' + repoUrl);
+                                  }
+                                }
+                              }}
+                            />
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => {
+                                  const input = document.getElementById('git-url-input') as HTMLInputElement;
+                                  const repoUrl = input?.value.trim();
+                                  if (repoUrl) {
+                                    toast.dismiss(t.id);
+                                    toast.success('🔗 Repositorio conectado: ' + repoUrl);
+                                  }
+                                }}
+                                className="bg-blue-500 text-white px-3 py-1 rounded text-sm"
+                              >
+                                Conectar
+                              </button>
+                              <button
+                                onClick={() => toast.dismiss(t.id)}
+                                className="bg-gray-300 text-gray-700 px-3 py-1 rounded text-sm"
+                              >
+                                Cancelar
+                              </button>
+                            </div>
+                          </div>
+                        ), { duration: 10000 });
+                      }}
                     >
                       <CodeBracketIcon className="w-4 h-4 mr-2" />
-                      Código
+                      Conectar Git
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="px-3 py-1.5 text-sm"
+                      onClick={() => {
+                        toast((t) => (
+                          <div className="flex flex-col gap-2">
+                            <span className="font-medium">Nombre de la nueva rama:</span>
+                            <input
+                              id="branch-name-input"
+                              type="text"
+                              placeholder="feature/nueva-funcionalidad"
+                              className="px-3 py-2 border rounded text-black"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  const input = e.target as HTMLInputElement;
+                                  const branchName = input.value.trim();
+                                  if (branchName) {
+                                    toast.dismiss(t.id);
+                                    createNewBranch(branchName);
+                                  }
+                                }
+                              }}
+                            />
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => {
+                                  const input = document.getElementById('branch-name-input') as HTMLInputElement;
+                                  const branchName = input?.value.trim();
+                                  if (branchName) {
+                                    toast.dismiss(t.id);
+                                    createNewBranch(branchName);
+                                  }
+                                }}
+                                className="bg-green-500 text-white px-3 py-1 rounded text-sm"
+                              >
+                                Crear Rama
+                              </button>
+                              <button
+                                onClick={() => toast.dismiss(t.id)}
+                                className="bg-gray-300 text-gray-700 px-3 py-1 rounded text-sm"
+                              >
+                                Cancelar
+                              </button>
+                            </div>
+                          </div>
+                        ), { duration: 10000 });
+                      }}
+                    >
+                      <PlusIcon className="w-4 h-4 mr-2" />
+                      Nueva Rama
                     </Button>
                   </div>
                 </div>
@@ -1189,9 +1688,22 @@ console.log("¡Hola mundo!");`;
 
               {/* Mensaje de actividad Git - fondo del footer */}
               <div className="bg-[#E9F9EC] border-b border-green-200 px-6 py-3">
+                <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-900 font-medium">
-                  Diego Cordero ha subido un nuevo archivo hace 2 horas
-                </p>
+                    {gitRepo.status === 'synced' ? (
+                      `✅ Proyecto sincronizado - Último cambio: ${gitRepo.commits[0]?.message || 'N/A'}`
+                    ) : gitRepo.status === 'pending' ? (
+                      '🔄 Sincronizando proyecto...'
+                    ) : (
+                      '❌ Error en sincronización'
+                    )}
+                  </p>
+                  <div className="flex items-center space-x-4 text-xs text-gray-600">
+                    <span>Rama: {gitRepo.branch}</span>
+                    <span>Commits: {gitRepo.commits.length}</span>
+                    <span>Último sync: {new Date(gitRepo.lastSync).toLocaleTimeString()}</span>
+                  </div>
+                </div>
               </div>
 
               {/* Área principal del editor */}
@@ -1207,6 +1719,10 @@ console.log("¡Hola mundo!");`;
                         {renderFileTree(fileTree)}
                       </div>
                     </div>
+
+
+
+
                   </div>
                 </div>
 
@@ -1632,8 +2148,8 @@ console.log("¡Hola mundo!");`;
                                   >
                                     <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                   </svg>
-                                  Análisis de IA
-                                </h3>
+                                Análisis de IA
+                              </h3>
                               </div>
                               {iaAnalysis ? (
                                 <div className="space-y-4">
@@ -1660,8 +2176,8 @@ console.log("¡Hola mundo!");`;
                                                 </svg>
                                               </div>
                                               <h4 className="text-sm font-semibold text-blue-900">
-                                                Sugerencias
-                                              </h4>
+                                              Sugerencias
+                                            </h4>
                                             </div>
                                             <div className="space-y-3">
                                               {iaAnalysis.output.Sugerencias.map(
@@ -1673,7 +2189,7 @@ console.log("¡Hola mundo!");`;
                                                     <div className="w-2 h-2 bg-blue-400 rounded-full mt-2 mr-3 flex-shrink-0"></div>
                                                     <p className="text-sm text-blue-800 leading-relaxed">
                                                       {sugerencia}
-                                                    </p>
+                                                  </p>
                                                   </div>
                                                 ),
                                               )}
@@ -1701,8 +2217,8 @@ console.log("¡Hola mundo!");`;
                                                 </svg>
                                               </div>
                                               <h4 className="text-sm font-semibold text-red-900">
-                                                Advertencias
-                                              </h4>
+                                              Advertencias
+                                            </h4>
                                             </div>
                                             <div className="space-y-3">
                                               {iaAnalysis.output.Advertencias.map(
@@ -1714,7 +2230,7 @@ console.log("¡Hola mundo!");`;
                                                     <div className="w-2 h-2 bg-red-400 rounded-full mt-2 mr-3 flex-shrink-0"></div>
                                                     <p className="text-sm text-red-800 leading-relaxed">
                                                       {advertencia}
-                                                    </p>
+                                                  </p>
                                                   </div>
                                                 ),
                                               )}
@@ -1853,7 +2369,36 @@ console.log("¡Hola mundo!");`;
           {activeTab === "collaborators" && (
             <div className="flex-1 bg-white p-6">
               <div className="w-full relative">
-                <div className="flex justify-end items-center mb-6">
+                {/* Explicación del Sistema de Colaboradores */}
+                <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <h3 className="text-lg font-semibold text-blue-800 mb-2">
+                    🤝 ¿Cómo funciona el Sistema de Colaboradores?
+                  </h3>
+                  <div className="text-sm text-blue-700 space-y-2">
+                    <p><strong>1. Agregar:</strong> Invita usuarios por email (se crean automáticamente si no existen)</p>
+                    <p><strong>2. Roles:</strong> Admin (todo), Editor (código), Viewer (solo lectura)</p>
+                    <p><strong>3. Sync:</strong> Cuando un colaborador edita → aparece en tu historial de versiones</p>
+                    <p><strong>4. Carpetas Sync:</strong> Cada colaborador tiene su JSON con cambios en /sync/</p>
+                  </div>
+                </div>
+                <div className="flex justify-end items-center mb-6 gap-3">
+                  {isEditingCollaborators ? (
+                    <Button
+                      variant="outline"
+                      className="text-gray-600 border-gray-300 hover:bg-gray-50"
+                      onClick={() => setIsEditingCollaborators(false)}
+                    >
+                      Cancelar edición
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      className="text-green-600 border-green-300 hover:bg-green-50"
+                      onClick={() => setIsEditingCollaborators(true)}
+                    >
+                      Editar roles
+                    </Button>
+                  )}
                   <Button
                     className="bg-green-500 hover:bg-green-600 text-white"
                     onClick={() => setShowAddColab(true)}
@@ -1875,7 +2420,7 @@ console.log("¡Hola mundo!");`;
                         onChange={(e) =>
                           setNewColab({ ...newColab, name: e.target.value })
                         }
-                        className="w-full mb-3 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500"
+                        className="text-black w-full mb-3 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500"
                       />
                       <input
                         type="email"
@@ -1884,8 +2429,19 @@ console.log("¡Hola mundo!");`;
                         onChange={(e) =>
                           setNewColab({ ...newColab, email: e.target.value })
                         }
-                        className="w-full mb-3 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500"
+                        className="text-black w-full mb-3 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500"
                       />
+                      <select
+                        value={newColab.role}
+                        onChange={(e) =>
+                          setNewColab({ ...newColab, role: e.target.value })
+                        }
+                        className="text-black w-full mb-3 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500"
+                      >
+                        <option value="Editor">Editor</option>
+                        <option value="Admin">Admin</option>
+                        <option value="Viewer">Viewer</option>
+                      </select>
                       <div className="flex justify-end gap-2 mt-4">
                         <Button
                           variant="outline"
@@ -1896,8 +2452,9 @@ console.log("¡Hola mundo!");`;
                         <Button
                           className="bg-green-500 hover:bg-green-600 text-white"
                           onClick={handleAddColab}
+                          disabled={loadingCollaborators}
                         >
-                          Agregar
+                          {loadingCollaborators ? "Agregando..." : "Agregar"}
                         </Button>
                       </div>
                     </div>
@@ -1934,38 +2491,55 @@ console.log("¡Hola mundo!");`;
                                   </span>
                                 </div>
                                 <div className="ml-4">
+                                  <div className="flex items-center">
                                   <div className="text-sm font-medium text-gray-900">
                                     {user?.fullName ||
                                       user?.name ||
                                       "Sin nombre"}
+                                    </div>
+                                    {colab.role === 'Admin' && (
+                                      <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                        Admin
+                                      </span>
+                                    )}
+                                    {colab.role === 'Editor' && (
+                                      <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                        Editor
+                                      </span>
+                                    )}
+                                    <div className="ml-2 w-2 h-2 bg-green-400 rounded-full" title="Activo"></div>
                                   </div>
                                   <div className="text-sm text-gray-500">
                                     {user?.email || "Sin email"}
+                                  </div>
+                                  <div className="text-xs text-gray-400">
+                                    Último acceso: hace 2 horas
                                   </div>
                                 </div>
                               </div>
                             </td>
                             <td className="px-8 py-6 whitespace-nowrap align-middle">
                               <select
-                                className="px-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                disabled={!isEditingConfig}
-                                value={colab.role || "Usuario"}
+                                className="px-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black"
+                                disabled={!isEditingCollaborators}
+                                value={colabRoles[colab.id] || colab.role || "Usuario"}
                                 onChange={(e) =>
                                   handleRoleChange(colab.id, e.target.value)
                                 }
                               >
-                                <option>Usuario</option>
-                                <option>Admin</option>
-                                <option>Editor</option>
+                                <option value="Usuario">Usuario</option>
+                                <option value="Admin">Admin</option>
+                                <option value="Editor">Editor</option>
                               </select>
                             </td>
                             <td className="px-8 py-6 whitespace-nowrap text-right align-middle">
-                              {isEditingConfig ? (
+                              <div className="flex gap-2">
+                                {isEditingCollaborators ? (
                                 <Button
                                   variant="outline"
                                   size="sm"
                                   className="text-gray-600 border-gray-300 hover:bg-gray-50"
-                                  onClick={() => setIsEditingConfig(false)}
+                                    onClick={() => setIsEditingCollaborators(false)}
                                 >
                                   Cancelar
                                 </Button>
@@ -1979,6 +2553,7 @@ console.log("¡Hola mundo!");`;
                                   Eliminar
                                 </Button>
                               )}
+                              </div>
                             </td>
                           </tr>
                         );
@@ -2005,7 +2580,7 @@ console.log("¡Hola mundo!");`;
                           project.owner?.fullName || project.owner?.name || ""
                         }
                         readOnly
-                        className="w-full px-4 py-3 border border-gray-300 rounded-md bg-gray-100 text-gray-700 cursor-not-allowed"
+                        className="text-black w-full px-4 py-3 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
                       />
                     </div>
                     <div>
@@ -2018,7 +2593,7 @@ console.log("¡Hola mundo!");`;
                         name="name"
                         value={editConfig.name}
                         onChange={handleConfigChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        className="text-black w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
                         readOnly={!isEditingConfig}
                       />
                     </div>
@@ -2032,7 +2607,7 @@ console.log("¡Hola mundo!");`;
                       value={editConfig.description}
                       onChange={handleConfigChange}
                       rows={4}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      className="text-black w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
                       readOnly={!isEditingConfig}
                     />
                   </div>
