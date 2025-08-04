@@ -62,15 +62,15 @@ export function Sidebar() {
 
   return (
     <>
-      {/* Mobile Menu Button */}
+      {/* Mobile Menu Button - Responsive */}
       <button
         onClick={toggleMobileMenu}
-        className="md:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-lg border border-gray-200"
+        className="md:hidden fixed top-3 sm:top-4 left-3 sm:left-4 z-50 p-1.5 sm:p-2 bg-white rounded-lg shadow-lg border border-gray-200"
       >
         {isMobileOpen ? (
-          <XMarkIcon className="w-6 h-6 text-gray-700" />
+          <XMarkIcon className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700" />
         ) : (
-          <Bars3Icon className="w-6 h-6 text-gray-700" />
+          <Bars3Icon className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700" />
         )}
       </button>
 
@@ -82,16 +82,16 @@ export function Sidebar() {
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar - Responsive */}
       <aside
         className={cn(
-          "fixed md:relative z-40 flex flex-col min-h-screen bg-white border-r border-gray-200 py-8 transition-all duration-300 ease-in-out",
-          isCollapsed ? "w-16 px-2" : "w-64 px-4",
+          "fixed md:relative z-40 flex flex-col min-h-screen bg-white border-r border-gray-200 py-6 sm:py-8 transition-all duration-300 ease-in-out",
+          isCollapsed ? "w-14 sm:w-16 px-1 sm:px-2" : "w-56 sm:w-64 px-3 sm:px-4",
           isMobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
         )}
       >
-        {/* Navigation */}
-        <nav className="flex flex-col gap-1 flex-1 mt-8 md:mt-0">
+        {/* Navigation - Responsive */}
+        <nav className="flex flex-col gap-1 flex-1 mt-6 sm:mt-8 md:mt-0">
           {navItems.map((item) => {
             const isActive =
               pathname === item.href ||
@@ -103,13 +103,13 @@ export function Sidebar() {
                 href={item.href}
                 onClick={() => setIsMobileOpen(false)}
                 className={cn(
-                  "flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-green-50 transition-all duration-200",
-                  isActive && "bg-green-500 text-white font-bold",
-                  isCollapsed && "justify-center px-2",
+                  "flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-lg font-medium text-gray-700 hover:bg-green-50 transition-all duration-200 text-sm sm:text-base",
+                  isActive && "bg-green-500 text-black font-bold",
+                  isCollapsed && "justify-center px-1 sm:px-2",
                 )}
                 title={isCollapsed ? item.label : undefined}
               >
-                <item.icon className="w-5 h-5 flex-shrink-0" />
+                <item.icon className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
                 {!isCollapsed && <span className="truncate">{item.label}</span>}
               </Link>
             );
@@ -121,12 +121,12 @@ export function Sidebar() {
           <button
             onClick={handleLogout}
             className={cn(
-              "flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-red-600 hover:bg-red-50 transition-all duration-200 w-full",
-              isCollapsed && "justify-center px-2",
+              "flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-lg font-medium text-red-600 hover:bg-red-50 transition-all duration-200 w-full text-sm sm:text-base",
+              isCollapsed && "justify-center px-1 sm:px-2",
             )}
             title={isCollapsed ? "Cerrar sesión" : undefined}
           >
-            <ArrowRightOnRectangleIcon className="w-5 h-5 flex-shrink-0" />
+            <ArrowRightOnRectangleIcon className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
             {!isCollapsed && <span className="truncate">Cerrar sesión</span>}
           </button>
         </div>

@@ -9,7 +9,7 @@ import { ReportModal } from "@/components/ui/report-modal";
 import toast from "react-hot-toast";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { Trash2 } from "lucide-react";
+import { Trash2, FileText, Users, GitBranch, Brain } from "lucide-react";
 
 // Importar ApexCharts dinámicamente para evitar errores de SSR
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
@@ -26,13 +26,20 @@ interface Report {
   fileUrl?: string;
 }
 
-interface DashboardMetrics {
-  subscriptions: {
-    categories: string[];
-    Gratis: number[];
-    Basico: number[];
-    Pro: number[];
-    Empresa: number[];
+interface ChartData {
+  categories: string[];
+  series: Array<{
+    name: string;
+    data: number[];
+  }>;
+  [key: string]: any;
+}
+
+interface SummaryMetrics {
+  chartData: ChartData;
+  dateRange: {
+    start: string;
+    end: string;
   };
 }
 
@@ -40,13 +47,19 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
   const [generatingReport, setGeneratingReport] = useState(false);
   const [reports, setReports] = useState<Report[]>([]);
-  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedReportType, setSelectedReportType] = useState<string>("project");
+  const [dateRange, setDateRange] = useState<string>("30");
+  const [summaryMetrics, setSummaryMetrics] = useState<SummaryMetrics | null>(null);
 
   useEffect(() => {
     loadReportsData();
   }, []);
+
+  useEffect(() => {
+    loadSummaryMetrics();
+  }, [selectedReportType, dateRange]);
 
   const loadReportsData = async () => {
     try {
@@ -55,15 +68,27 @@ export default function ReportsPage() {
       // Cargar reportes
       const reportsRes = await api.get("/reports");
       setReports(reportsRes.data);
-
-      // Cargar métricas para el gráfico
-      const metricsRes = await api.get("/dashboard/metrics");
-      setMetrics(metricsRes.data);
     } catch (error) {
       console.error("Error loading reports:", error);
       toast.error("Error al cargar los reportes");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadSummaryMetrics = async () => {
+    try {
+      const response = await api.get("/reports/summary-metrics", {
+        params: {
+          type: selectedReportType,
+          dateRange: dateRange,
+        },
+      });
+      
+      setSummaryMetrics(response.data);
+    } catch (error) {
+      console.error("Error loading summary metrics:", error);
+      // No mostrar toast para evitar spam, ya que se llama frecuentemente
     }
   };
 
@@ -75,14 +100,11 @@ export default function ReportsPage() {
       await new Promise((resolve) => setTimeout(resolve, 3000));
 
       const reportData = {
-        type: "dashboard",
-        title: "Reporte de rendimiento",
-        description: "Análisis completo del rendimiento de la plataforma",
-        metrics: {
-          subscriptions: metrics?.subscriptions || {},
-        },
+        type: selectedReportType,
+        title: getReportTitle(selectedReportType),
+        description: getReportDescription(selectedReportType),
         dateRange: {
-          start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+          start: new Date(Date.now() - parseInt(dateRange) * 24 * 60 * 60 * 1000).toISOString(),
           end: new Date().toISOString(),
         },
       };
@@ -96,6 +118,57 @@ export default function ReportsPage() {
       toast.error("Error al generar el reporte");
     } finally {
       setGeneratingReport(false);
+    }
+  };
+
+  const getReportTitle = (type: string): string => {
+    switch (type) {
+      case "project":
+        return "Reporte de Proyectos";
+      case "collaboration":
+        return "Reporte de Colaboración";
+      case "sync":
+        return "Reporte de Sincronización";
+      case "ai":
+        return "Reporte de IA";
+      case "history":
+        return "Reporte de Historial";
+      default:
+        return "Reporte General";
+    }
+  };
+
+  const getReportDescription = (type: string): string => {
+    switch (type) {
+      case "project":
+        return "Análisis completo de proyectos, patrones y colaboradores";
+      case "collaboration":
+        return "Métricas de trabajo en equipo y roles de colaboradores";
+      case "sync":
+        return "Estados de sincronización BFF y Sidecar";
+      case "ai":
+        return "Optimizaciones y recomendaciones de IA aplicadas";
+      case "history":
+        return "Trazabilidad de cambios y versiones";
+      default:
+        return "Reporte general de la plataforma";
+    }
+  };
+
+  const getChartTitle = (type: string): string => {
+    switch (type) {
+      case "project":
+        return "Proyectos por Patrón Arquitectónico";
+      case "collaboration":
+        return "Colaboradores por Rol";
+      case "sync":
+        return "Sincronizaciones por Tipo";
+      case "ai":
+        return "Análisis de IA por Tipo";
+      case "history":
+        return "Versiones por Estado";
+      default:
+        return "Distribución General";
     }
   };
 
@@ -185,111 +258,73 @@ export default function ReportsPage() {
     }
   };
 
-  // Configuración del gráfico de estadísticas (igual al de suscripciones)
-  const statisticsChartOptions = {
-    chart: {
-      type: "bar" as const,
-      stacked: true,
-      toolbar: {
-        show: false,
+  // Configuración dinámica del gráfico basada en el tipo de reporte seleccionado
+  const getChartOptions = () => {
+    const categories = summaryMetrics?.chartData?.categories || [];
+    const colors = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#06B6D4", "#84CC16", "#F97316"];
+    
+    return {
+      chart: {
+        type: "bar" as const,
+        stacked: false,
+        toolbar: {
+          show: false,
+        },
+        fontFamily: "Inter, sans-serif",
       },
-      fontFamily: "Inter, sans-serif",
-    },
-    plotOptions: {
-      bar: {
-        horizontal: false,
-        columnWidth: "70%",
-        borderRadius: 4,
-      },
-    },
-    dataLabels: {
-      enabled: false,
-    },
-    stroke: {
-      width: 0,
-    },
-    xaxis: {
-      categories: metrics?.subscriptions?.categories || [
-        "ENG",
-        "FEB",
-        "MAR",
-        "APR",
-        "MAY",
-        "JUN",
-      ],
-      labels: {
-        style: {
-          colors: "#6B7280",
-          fontSize: "12px",
+      plotOptions: {
+        bar: {
+          horizontal: false,
+          columnWidth: "60%",
+          borderRadius: 4,
         },
       },
-    },
-    yaxis: {
-      labels: {
-        formatter: function (val: number) {
-          if (val >= 1000000) {
-            return (val / 1000000).toFixed(0) + "M";
-          } else if (val >= 1000) {
-            return (val / 1000).toFixed(0) + "K";
-          }
-          return val.toString();
-        },
-        style: {
-          colors: "#6B7280",
-          fontSize: "12px",
-        },
+      dataLabels: {
+        enabled: false,
       },
-    },
-    colors: ["#8B5CF6", "#A855F7", "#C084FC", "#DDD6FE"],
-    legend: {
-      position: "top" as const,
-      horizontalAlign: "center" as const,
-      fontSize: "14px",
-      fontFamily: "Inter, sans-serif",
-      labels: {
-        colors: "#374151",
+      stroke: {
+        width: 2,
       },
-    },
-    tooltip: {
-      y: {
-        formatter: function (val: number) {
-          if (val >= 1000000) {
-            return (val / 1000000).toFixed(1) + "M";
-          } else if (val >= 1000) {
-            return (val / 1000).toFixed(1) + "K";
-          }
-          return val.toString();
+      xaxis: {
+        categories: categories,
+        labels: {
+          style: {
+            colors: "#6B7280",
+            fontSize: "12px",
+          },
         },
       },
-    },
+      yaxis: {
+        labels: {
+          style: {
+            colors: "#6B7280",
+            fontSize: "12px",
+          },
+        },
+      },
+      colors: colors.slice(0, categories.length),
+      legend: {
+        position: "top" as const,
+        horizontalAlign: "center" as const,
+        fontSize: "14px",
+        fontFamily: "Inter, sans-serif",
+        labels: {
+          colors: "#374151",
+        },
+      },
+      tooltip: {
+        y: {
+          formatter: function (val: number) {
+            return val.toString();
+          },
+        },
+      },
+    };
   };
 
-  const statisticsChartSeries = [
-    {
-      name: "Gratis",
-      data: metrics?.subscriptions?.Gratis || [
-        5000, 8000, 12000, 15000, 18000, 22000,
-      ],
-    },
-    {
-      name: "Básico",
-      data: metrics?.subscriptions?.Basico || [
-        3000, 5000, 8000, 10000, 12000, 15000,
-      ],
-    },
-    {
-      name: "Pro",
-      data: metrics?.subscriptions?.Pro || [
-        2000, 3000, 5000, 7000, 9000, 12000,
-      ],
-    },
-    {
-      name: "Empresa",
-      data: metrics?.subscriptions?.Empresa || [
-        1000, 1500, 2500, 3500, 4500, 6000,
-      ],
-    },
-  ];
+  const getChartSeries = () => {
+    return summaryMetrics?.chartData?.series || [{ name: "Datos", data: [] }];
+  };
 
   if (loading) {
     return (
@@ -307,49 +342,186 @@ export default function ReportsPage() {
       <DashboardHeader />
       <div className="flex flex-1">
         <Sidebar />
-        <main className="flex-1 p-8">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8">
           <div className="max-w-7xl mx-auto">
             {/* Breadcrumb */}
-            <div className="mb-6">
+            <div className="mb-4 sm:mb-6">
               <Link
                 href="/reports"
-                className="text-blue-600 hover:text-blue-800 font-medium"
+                className="text-blue-600 hover:text-blue-800 font-medium text-sm sm:text-base"
               >
                 ← Reportes
               </Link>
             </div>
 
             {/* Título principal */}
-            <div className="mb-8">
-              <h1 className="text-lg font-semibold text-black mb-2">
-                Resumen de rendimiento
+            <div className="mb-6 sm:mb-8">
+              <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold text-black mb-2">
+                Reportes de STORYSINC
               </h1>
+              <p className="text-sm sm:text-base text-black">
+                Análisis de proyectos, sincronización, IA e historial
+              </p>
             </div>
 
-            {/* Gráfico de Estadísticas */}
-            <div className="mb-8">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h2 className="text-sm font-medium text-black mb-1">
-                    Estadísticas
-                  </h2>
-                  <h3 className="text-lg font-bold text-black">
-                    Suscripciones
-                  </h3>
+            {/* Selector de tipo de reporte */}
+            <div className="mb-6 sm:mb-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className={`flex items-center p-4 border rounded-lg cursor-pointer transition-colors ${
+                  selectedReportType === "project" 
+                    ? "border-blue-300 bg-blue-50" 
+                    : "border-gray-200 hover:border-blue-300"
+                }`}
+                     onClick={() => setSelectedReportType("project")}>
+                  <div className={`p-2 rounded-lg mr-3 ${
+                    selectedReportType === "project" 
+                      ? "bg-blue-100 text-blue-600" 
+                      : "bg-gray-100 text-black"
+                  }`}>
+                    <FileText size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-sm sm:text-base text-black">Proyectos</h3>
+                    <p className="text-xs sm:text-sm text-black">Código, colaboradores, entornos</p>
+                  </div>
+                </div>
+
+                <div className={`flex items-center p-4 border rounded-lg cursor-pointer transition-colors ${
+                  selectedReportType === "collaboration" 
+                    ? "border-green-300 bg-green-50" 
+                    : "border-gray-200 hover:border-green-300"
+                }`}
+                     onClick={() => setSelectedReportType("collaboration")}>
+                  <div className={`p-2 rounded-lg mr-3 ${
+                    selectedReportType === "collaboration" 
+                      ? "bg-green-100 text-green-600" 
+                      : "bg-gray-100 text-black"
+                  }`}>
+                    <Users size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-sm sm:text-base text-black">Colaboración</h3>
+                    <p className="text-xs sm:text-sm text-black">Equipos, roles, actividad</p>
+                  </div>
+                </div>
+
+                <div className={`flex items-center p-4 border rounded-lg cursor-pointer transition-colors ${
+                  selectedReportType === "sync" 
+                    ? "border-purple-300 bg-purple-50" 
+                    : "border-gray-200 hover:border-purple-300"
+                }`}
+                     onClick={() => setSelectedReportType("sync")}>
+                  <div className={`p-2 rounded-lg mr-3 ${
+                    selectedReportType === "sync" 
+                      ? "bg-purple-100 text-purple-600" 
+                      : "bg-gray-100 text-black"
+                  }`}>
+                    <GitBranch size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-sm sm:text-base text-black">Sincronización</h3>
+                    <p className="text-xs sm:text-sm text-black">BFF, Sidecar, estados</p>
+                  </div>
+                </div>
+
+                <div className={`flex items-center p-4 border rounded-lg cursor-pointer transition-colors ${
+                  selectedReportType === "ai" 
+                    ? "border-orange-300 bg-orange-50" 
+                    : "border-gray-200 hover:border-orange-300"
+                }`}
+                     onClick={() => setSelectedReportType("ai")}>
+                  <div className={`p-2 rounded-lg mr-3 ${
+                    selectedReportType === "ai" 
+                      ? "bg-orange-100 text-orange-600" 
+                      : "bg-gray-100 text-black"
+                  }`}>
+                    <Brain size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-sm sm:text-base text-black">IA</h3>
+                    <p className="text-xs sm:text-sm text-black">Optimizaciones, recomendaciones</p>
+                  </div>
+                </div>
+
+                <div className={`flex items-center p-4 border rounded-lg cursor-pointer transition-colors ${
+                  selectedReportType === "history" 
+                    ? "border-red-300 bg-red-50" 
+                    : "border-gray-200 hover:border-red-300"
+                }`}
+                     onClick={() => setSelectedReportType("history")}>
+                  <div className={`p-2 rounded-lg mr-3 ${
+                    selectedReportType === "history" 
+                      ? "bg-red-100 text-red-600" 
+                      : "bg-gray-100 text-black"
+                  }`}>
+                    <FileText size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-sm sm:text-base text-black">Historial</h3>
+                    <p className="text-xs sm:text-sm text-black">Cambios, versiones, trazabilidad</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Filtros */}
+            <div className="mb-6 sm:mb-8">
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-black font-medium">Rango de fechas:</span>
+                  <select 
+                    value={dateRange}
+                    onChange={(e) => setDateRange(e.target.value)}
+                    className="text-sm border border-gray-300 rounded px-3 py-1 text-black"
+                  >
+                    <option value="7">Últimos 7 días</option>
+                    <option value="30">Últimos 30 días</option>
+                    <option value="90">Últimos 3 meses</option>
+                    <option value="365">Último año</option>
+                  </select>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-black">Filtrar:</span>
-                  <select className="text-sm border border-gray-300 rounded px-2 py-1 text-black">
-                    <option>Últimos 6 meses</option>
-                    <option>Último año</option>
-                    <option>Últimos 30 días</option>
+                  <span className="text-sm text-black font-medium">Filtrar reportes:</span>
+                  <select 
+                    className="text-sm border border-gray-300 rounded px-3 py-1 text-black"
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        setSelectedReportType(e.target.value);
+                      }
+                    }}
+                  >
+                    <option value="">Todos los tipos</option>
+                    <option value="project">Solo Proyectos</option>
+                    <option value="collaboration">Solo Colaboración</option>
+                    <option value="sync">Solo Sincronización</option>
+                    <option value="ai">Solo IA</option>
+                    <option value="history">Solo Historial</option>
                   </select>
                 </div>
               </div>
-              <div className="h-80">
+            </div>
+
+            {/* Gráfico Dinámico */}
+            <div className="mb-6 sm:mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="text-sm font-medium text-black mb-1">
+                    Distribución de Datos
+                  </h2>
+                  <h3 className="text-lg font-bold text-black">
+                    {getChartTitle(selectedReportType)}
+                  </h3>
+                  {summaryMetrics && (
+                    <p className="text-xs text-black mt-1">
+                      Período: {new Date(summaryMetrics.dateRange.start).toLocaleDateString()} - {new Date(summaryMetrics.dateRange.end).toLocaleDateString()}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="h-64 sm:h-80">
                 <Chart
-                  options={statisticsChartOptions}
-                  series={statisticsChartSeries}
+                  options={getChartOptions()}
+                  series={getChartSeries()}
                   type="bar"
                   height="100%"
                 />
@@ -357,26 +529,26 @@ export default function ReportsPage() {
             </div>
 
             {/* Lista de Reportes */}
-            <div className="mb-8">
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">
+            <div className="mb-6 sm:mb-8">
+              <h2 className="text-lg sm:text-xl font-semibold text-black mb-4 sm:mb-6">
                 Reportes Generados
               </h2>
-              <div className="space-y-4 max-h-80 overflow-y-auto">
+              <div className="space-y-3 sm:space-y-4 max-h-80 overflow-y-auto">
                 {reports.length === 0 ? (
-                  <p className="text-gray-500 text-center py-8">
+                  <p className="text-black text-center py-8">
                     No hay reportes generados aún
                   </p>
                 ) : (
                   reports.map((report) => (
                     <div
                       key={report.id}
-                      className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                      className="border border-gray-200 rounded-lg p-3 sm:p-4 hover:bg-gray-50 transition-colors"
                     >
                       <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-semibold text-gray-900">
+                        <h3 className="font-semibold text-black text-sm sm:text-base">
                           {report.title}
                         </h3>
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-black">
                           {new Date(report.createdAt).toLocaleDateString(
                             "es-ES",
                             {
@@ -387,10 +559,10 @@ export default function ReportsPage() {
                           )}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-600 mb-2">
+                      <p className="text-xs sm:text-sm text-black mb-2">
                         Tipo: {report.type}
                       </p>
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         <button
                           onClick={() => handleViewReport(report)}
                           className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200"
@@ -401,7 +573,13 @@ export default function ReportsPage() {
                           onClick={() => handleDownloadReport(report.id, "pdf")}
                           className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200"
                         >
-                          Descargar
+                          PDF
+                        </button>
+                        <button
+                          onClick={() => handleDownloadReport(report.id, "csv")}
+                          className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded hover:bg-yellow-200"
+                        >
+                          CSV
                         </button>
                         <button
                           onClick={() => handleDeleteReport(report.id)}
@@ -423,7 +601,7 @@ export default function ReportsPage() {
               <button
                 onClick={generateReport}
                 disabled={generatingReport}
-                className="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center gap-2"
+                className="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white font-semibold py-2 sm:py-3 px-6 sm:px-8 rounded-lg transition-colors duration-200 flex items-center gap-2 text-sm sm:text-base"
               >
                 {generatingReport ? (
                   <>
@@ -431,7 +609,7 @@ export default function ReportsPage() {
                     Generando reporte...
                   </>
                 ) : (
-                  "Generar reporte"
+                  `Generar reporte de ${selectedReportType}`
                 )}
               </button>
             </div>

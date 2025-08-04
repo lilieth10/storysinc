@@ -9,7 +9,9 @@ import {
   Patch,
   HttpException,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { PrismaService } from './prisma.service';
 import { NotificationService } from './notification.service';
 
@@ -27,6 +29,7 @@ interface CreateSyncProjectDto {
   language: string;
 }
 
+@UseGuards(AuthGuard('jwt'))
 @Controller('sync')
 export class SyncController {
   constructor(
@@ -43,23 +46,21 @@ export class SyncController {
     try {
       const userId = req.user.userId ?? req.user.id ?? 0;
 
-      const project = await this.prisma.project.create({
+      const syncProject = await this.prisma.syncProject.create({
         data: {
           name: body.name,
           description: body.description,
+          type: body.pattern, // 'bff' or 'sidecar'
           pattern: body.pattern,
-          language: body.language,
-          ownerId: userId,
-          components: JSON.stringify([]),
-          iaInsights: JSON.stringify([]),
-          tags: '',
+          userId: userId,
+          status: 'active',
         },
       });
 
       return {
         success: true,
-        project,
-        message: 'Proyecto creado exitosamente',
+        project: syncProject,
+        message: 'Componente de sincronización creado exitosamente',
       };
     } catch (error) {
       console.error('Error creating project:', error);
@@ -192,7 +193,7 @@ export class SyncController {
         throw new HttpException('Proyecto no encontrado', HttpStatus.NOT_FOUND);
       }
 
-      await this.prisma.project.delete({
+      await this.prisma.syncProject.delete({
         where: { id: parseInt(id) },
       });
 
@@ -251,6 +252,31 @@ export class SyncController {
           message: 'Sincronización manual realizada',
         },
       });
+
+      // Crear entrada en historial de versiones
+      try {
+        // Obtener el nombre real del usuario
+        const user = await this.prisma.user.findUnique({
+          where: { id: userId },
+          select: { fullName: true, username: true }
+        });
+        
+        const authorName = user?.fullName || user?.username || 'Usuario';
+        
+        const newVersion = await this.prisma.version.create({
+          data: {
+            hash: Math.random().toString(36).substring(2, 9),
+            message: `Sync: ${project.type.toUpperCase()} pattern updated for ${project.name}`,
+            author: authorName,
+            branch: 'main',
+            filesChanged: JSON.stringify([project.name, `${project.type}_pattern.js`, 'config.json']),
+            projectId: parseInt(id), // Este es el SyncProject ID
+          },
+        });
+        // Version created for sync project
+      } catch (versionError) {
+        console.error('❌ Error creating version entry for sync:', versionError);
+      }
 
       // Crear notificación de sincronización exitosa
       await this.notificationService.createNotification({

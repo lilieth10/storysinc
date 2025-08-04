@@ -58,7 +58,7 @@ export const Header: React.FC = () => {
               <Button
                 variant="outline"
                 className="font-medium"
-                onClick={() => console.log("Ir a registro")}
+                onClick={() => {}}
               >
                 Registrarse
               </Button>
@@ -66,7 +66,7 @@ export const Header: React.FC = () => {
             <Link href="/login">
               <Button
                 className="bg-green-600 hover:bg-green-700 font-medium"
-                onClick={() => console.log("Ir a login")}
+                onClick={() => {}}
               >
                 Iniciar sesión
               </Button>

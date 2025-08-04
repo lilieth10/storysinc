@@ -208,6 +208,76 @@ export class AdminController {
     }
   }
 
+  @Post('users')
+  @Roles('admin')
+  async createUser(@Body() createUserDto: {
+    fullName: string;
+    email: string;
+    password: string;
+    role: string;
+  }) {
+    try {
+      // Validar datos requeridos
+      if (!createUserDto.fullName || !createUserDto.email || !createUserDto.password) {
+        throw new Error('Todos los campos son requeridos');
+      }
+
+      // Validar que el email sea único
+      const existingUser = await this.prisma.user.findUnique({
+        where: { email: createUserDto.email },
+      });
+
+      if (existingUser) {
+        throw new Error('El email ya está registrado');
+      }
+
+      // Validar que el rol sea válido
+      if (!['admin', 'user', 'manager'].includes(createUserDto.role)) {
+        throw new Error('Rol inválido');
+      }
+
+      // Generar username único basado en el email
+      const username = createUserDto.email.split('@')[0];
+      let uniqueUsername = username;
+      let counter = 1;
+
+      while (await this.prisma.user.findUnique({ where: { username: uniqueUsername } })) {
+        uniqueUsername = `${username}${counter}`;
+        counter++;
+      }
+
+      // Crear el usuario
+      const newUser = await this.prisma.user.create({
+        data: {
+          username: uniqueUsername,
+          fullName: createUserDto.fullName,
+          email: createUserDto.email,
+          password: createUserDto.password, // En producción debería estar hasheada
+          role: createUserDto.role,
+        },
+        select: {
+          id: true,
+          username: true,
+          fullName: true,
+          email: true,
+          role: true,
+          createdAt: true,
+        },
+      });
+
+      return {
+        success: true,
+        message: 'Usuario creado exitosamente',
+        user: newUser,
+      };
+    } catch (error: any) {
+      console.error('Error en createUser:', error);
+      throw new Error(
+        `Error al crear usuario: ${error.message || 'Error desconocido'}`,
+      );
+    }
+  }
+
   @Delete('users/:id')
   @Roles('admin')
   async deleteUser(@Param('id') id: string) {

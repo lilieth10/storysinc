@@ -14,6 +14,8 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { ProjectService } from './project.service';
 import { Request } from 'express';
+import { ProjectRolesGuard } from './guards/project-roles.guard';
+import { ProjectPermissions } from './decorators/project-permissions.decorator';
 
 interface AuthRequest extends Request {
   user: { userId: number; email: string };
@@ -73,8 +75,8 @@ export class ProjectController {
   }
 
   @Get(':id')
-  async getProject(@Param('id') id: string) {
-    return this.projectService.getProjectById(parseInt(id));
+  async getProject(@Param('id') id: string, @Req() req: AuthRequest) {
+    return this.projectService.getProjectById(parseInt(id), req.user.userId);
   }
 
   @Put(':id')
@@ -86,7 +88,9 @@ export class ProjectController {
   }
 
   @Delete(':id')
-  async deleteProject(@Param('id') id: string) {
+  @UseGuards(ProjectRolesGuard)
+  @ProjectPermissions('delete')
+  async deleteProject(@Param('id') id: string, @Req() req: AuthRequest) {
     return this.projectService.deleteProject(parseInt(id));
   }
 
@@ -107,7 +111,30 @@ export class ProjectController {
     }
   }
 
+  @Get(':id/files/:fileName')
+  async getFileContent(
+    @Param('id') id: string,
+    @Param('fileName') fileName: string,
+    @Req() req: AuthRequest,
+  ) {
+    try {
+      return await this.projectService.getFileContent(
+        parseInt(id),
+        fileName,
+        req.user.userId,
+      );
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Error obteniendo contenido del archivo';
+      throw new HttpException(message, 404);
+    }
+  }
+
   @Put(':id/files')
+  @UseGuards(ProjectRolesGuard)
+  @ProjectPermissions('write')
   async saveFile(
     @Param('id') id: string,
     @Body() saveFileDto: SaveFileDto,
@@ -175,14 +202,17 @@ export class ProjectController {
   }
 
   @Post(':id/sync')
-  async sync(@Param('id') id: string) {
-    return this.projectService.syncProject(parseInt(id));
+  async sync(@Param('id') id: string, @Req() req: AuthRequest) {
+    return this.projectService.syncProject(parseInt(id), req.user.userId);
   }
 
   @Post(':id/collaborators')
+  @UseGuards(ProjectRolesGuard)
+  @ProjectPermissions('manage_collaborators')
   async addCollaborator(
     @Param('id') id: string,
     @Body() body: { email: string; name: string },
+    @Req() req: AuthRequest,
   ) {
     const collaborator = await this.projectService.addCollaborator(
       parseInt(id),
@@ -216,5 +246,21 @@ export class ProjectController {
       parseInt(userId),
     );
     return { message: 'Colaborador eliminado' };
+  }
+
+  @Post(':id/sync-folder')
+  async createSyncFolder(
+    @Param('id') id: string,
+    @Body() body: { userId: number; userName: string; syncFiles: any[]; lastSync: string; changes: any[] },
+  ) {
+    const syncFolder = await this.projectService.createSyncFolder(
+      parseInt(id),
+      body.userId,
+      body.userName,
+      body.syncFiles,
+      body.lastSync,
+      body.changes,
+    );
+    return { message: 'Carpeta sync creada', syncFolder };
   }
 }

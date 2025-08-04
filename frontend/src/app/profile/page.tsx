@@ -9,14 +9,8 @@ import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 
 export default function ProfilePage() {
-  const {
-    user,
-    fetchProfile,
-    updateProfile,
-    loading,
-    error,
-    initialized,
-  } = useAuth();
+  const { user, fetchProfile, updateProfile, loading, error, initialized } =
+    useAuth();
   const [form, setForm] = useState({
     username: user?.username || "",
     fullName: user?.fullName || "",
@@ -169,7 +163,7 @@ export default function ProfilePage() {
                   {!edit && (
                     <button
                       onClick={() => setEdit(true)}
-                      className="bg-white text-black hover:bg-gray-50 border-2 border-green-600 px-6 py-3 rounded-full font-semibold text-black"
+                      className="bg-white text-black hover:bg-gray-50 border-2 border-green-600 px-6 py-3 rounded-full font-semibold"
                     >
                       Editar Perfil
                     </button>

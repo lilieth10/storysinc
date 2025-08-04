@@ -40,6 +40,162 @@ export function ReportModal({
     setShowDownloadModal(false);
   };
 
+  const renderMetricsByType = () => {
+    switch (report.type) {
+      case 'project':
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="text-center bg-blue-50 rounded-lg p-4">
+              <div className="text-2xl font-bold text-blue-600">
+                {parsedMetrics.totalProjects || 0}
+              </div>
+              <div className="text-sm text-gray-600">Proyectos Totales</div>
+            </div>
+            <div className="text-center bg-green-50 rounded-lg p-4">
+              <div className="text-2xl font-bold text-green-600">
+                {parsedMetrics.totalCollaborators || 0}
+              </div>
+              <div className="text-sm text-gray-600">Colaboradores</div>
+            </div>
+            <div className="text-center bg-purple-50 rounded-lg p-4">
+              <div className="text-2xl font-bold text-purple-600">
+                {parsedMetrics.activeProjects || 0}
+              </div>
+              <div className="text-sm text-gray-600">Proyectos Activos</div>
+            </div>
+            {parsedMetrics.projectsByPattern && (
+              <div className="text-center bg-orange-50 rounded-lg p-4">
+                <div className="text-lg font-bold text-orange-600">
+                  {Object.keys(parsedMetrics.projectsByPattern).length}
+                </div>
+                <div className="text-sm text-gray-600">Patrones Usados</div>
+              </div>
+            )}
+          </div>
+        );
+      
+      case 'collaboration':
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="text-center bg-blue-50 rounded-lg p-4">
+              <div className="text-2xl font-bold text-blue-600">
+                {parsedMetrics.totalCollaborators || 0}
+              </div>
+              <div className="text-sm text-gray-600">Colaboradores Únicos</div>
+            </div>
+            <div className="text-center bg-green-50 rounded-lg p-4">
+              <div className="text-2xl font-bold text-green-600">
+                {parsedMetrics.totalCollaborations || 0}
+              </div>
+              <div className="text-sm text-gray-600">Colaboraciones</div>
+            </div>
+            <div className="text-center bg-purple-50 rounded-lg p-4">
+              <div className="text-2xl font-bold text-purple-600">
+                {parsedMetrics.averageProjectsPerCollaborator || 0}
+              </div>
+              <div className="text-sm text-gray-600">Promedio por Colaborador</div>
+            </div>
+          </div>
+        );
+      
+      case 'sync':
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="text-center bg-blue-50 rounded-lg p-4">
+              <div className="text-2xl font-bold text-blue-600">
+                {parsedMetrics.totalSyncs || 0}
+              </div>
+              <div className="text-sm text-gray-600">Sincronizaciones Totales</div>
+            </div>
+            <div className="text-center bg-green-50 rounded-lg p-4">
+              <div className="text-2xl font-bold text-green-600">
+                {parsedMetrics.successfulSyncs || 0}
+              </div>
+              <div className="text-sm text-gray-600">Sincronizaciones Exitosas</div>
+            </div>
+            <div className="text-center bg-purple-50 rounded-lg p-4">
+              <div className="text-2xl font-bold text-purple-600">
+                {parsedMetrics.successRate || 0}%
+              </div>
+              <div className="text-sm text-gray-600">Tasa de Éxito</div>
+            </div>
+          </div>
+        );
+      
+      case 'ai':
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="text-center bg-blue-50 rounded-lg p-4">
+              <div className="text-2xl font-bold text-blue-600">
+                {parsedMetrics.totalAnalyses || 0}
+              </div>
+              <div className="text-sm text-gray-600">Análisis Totales</div>
+            </div>
+            <div className="text-center bg-green-50 rounded-lg p-4">
+              <div className="text-2xl font-bold text-green-600">
+                {parsedMetrics.optimizationsApplied || 0}
+              </div>
+              <div className="text-sm text-gray-600">Optimizaciones Aplicadas</div>
+            </div>
+            <div className="text-center bg-purple-50 rounded-lg p-4">
+              <div className="text-2xl font-bold text-purple-600">
+                {parsedMetrics.averageScore || 0}%
+              </div>
+              <div className="text-sm text-gray-600">Puntuación Promedio</div>
+            </div>
+          </div>
+        );
+      
+      case 'history':
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="text-center bg-blue-50 rounded-lg p-4">
+              <div className="text-2xl font-bold text-blue-600">
+                {parsedMetrics.totalVersions || 0}
+              </div>
+              <div className="text-sm text-gray-600">Versiones Totales</div>
+            </div>
+            <div className="text-center bg-green-50 rounded-lg p-4">
+              <div className="text-2xl font-bold text-green-600">
+                {parsedMetrics.recentVersions || 0}
+              </div>
+              <div className="text-sm text-gray-600">Versiones Recientes</div>
+            </div>
+            <div className="text-center bg-purple-50 rounded-lg p-4">
+              <div className="text-2xl font-bold text-purple-600">
+                {parsedMetrics.averageVersionsPerProject || 0}
+              </div>
+              <div className="text-sm text-gray-600">Promedio por Proyecto</div>
+            </div>
+          </div>
+        );
+      
+      default:
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="text-center bg-blue-50 rounded-lg p-4">
+              <div className="text-2xl font-bold text-blue-600">
+                {parsedMetrics.totalProjects || 0}
+              </div>
+              <div className="text-sm text-gray-600">Proyectos</div>
+            </div>
+            <div className="text-center bg-green-50 rounded-lg p-4">
+              <div className="text-2xl font-bold text-green-600">
+                {parsedMetrics.totalCollaborators || 0}
+              </div>
+              <div className="text-sm text-gray-600">Colaboradores</div>
+            </div>
+            <div className="text-center bg-purple-50 rounded-lg p-4">
+              <div className="text-2xl font-bold text-purple-600">
+                {parsedMetrics.totalSyncs || 0}
+              </div>
+              <div className="text-sm text-gray-600">Sincronizaciones</div>
+            </div>
+          </div>
+        );
+    }
+  };
+
   return (
     <>
       {/* Modal principal del reporte */}
@@ -87,33 +243,19 @@ export function ReportModal({
                   Métricas del Sistema
                 </h3>
                 <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-blue-600">
-                        CPU
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        50% de utilización
-                      </div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-green-600">
-                        RAM
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        25% de utilización
-                      </div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-purple-600">
-                        GPU
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        30% de utilización
-                      </div>
-                    </div>
-                  </div>
+                  {renderMetricsByType()}
                 </div>
+                
+                {/* Rango de fechas utilizado */}
+                {parsedMetrics.dateRange && (
+                  <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                    <h4 className="font-medium text-blue-900 mb-2">Período analizado:</h4>
+                    <p className="text-sm text-blue-800">
+                      Desde: {new Date(parsedMetrics.dateRange.start).toLocaleDateString('es-ES')} 
+                      hasta: {new Date(parsedMetrics.dateRange.end).toLocaleDateString('es-ES')}
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Resultados de IA */}
@@ -164,30 +306,36 @@ export function ReportModal({
                         Insights:
                       </h4>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="text-center">
-                          <div className="text-lg font-bold text-blue-600">
-                            {parsedIaResults.insights.performanceScore}%
+                        {parsedIaResults.insights.performanceScore && (
+                          <div className="text-center">
+                            <div className="text-lg font-bold text-blue-600">
+                              {parsedIaResults.insights.performanceScore}%
+                            </div>
+                            <div className="text-xs text-gray-600">
+                              Performance Score
+                            </div>
                           </div>
-                          <div className="text-xs text-gray-600">
-                            Performance Score
+                        )}
+                        {parsedIaResults.insights.collaborationScore && (
+                          <div className="text-center">
+                            <div className="text-lg font-bold text-green-600">
+                              {parsedIaResults.insights.collaborationScore}%
+                            </div>
+                            <div className="text-xs text-gray-600">
+                              Collaboration Score
+                            </div>
                           </div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-lg font-bold text-green-600">
-                            {parsedIaResults.insights.securityScore}%
+                        )}
+                        {parsedIaResults.insights.recommendations && (
+                          <div className="text-center">
+                            <div className="text-lg font-bold text-purple-600">
+                              {parsedIaResults.insights.recommendations}
+                            </div>
+                            <div className="text-xs text-gray-600">
+                              Recomendaciones
+                            </div>
                           </div>
-                          <div className="text-xs text-gray-600">
-                            Security Score
-                          </div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-lg font-bold text-purple-600">
-                            {parsedIaResults.insights.recommendations}
-                          </div>
-                          <div className="text-xs text-gray-600">
-                            Recomendaciones
-                          </div>
-                        </div>
+                        )}
                       </div>
                     </div>
                   )}

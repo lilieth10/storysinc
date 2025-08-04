@@ -55,9 +55,9 @@ export default function RegisterPage() {
 
     // Preparar datos para enviar al backend (excluir campos que no están en la BD)
     const { confirmPassword, gender, identityNumber, ...dataToSend } = form;
-    console.log("Enviando datos:", dataToSend);
+    
     const ok = await register(dataToSend);
-    console.log("Resultado:", ok, "Error:", error);
+    
     if (ok) {
       toast.success("¡Registro exitoso! Ahora puedes iniciar sesión.");
       router.push("/login");

@@ -3,15 +3,12 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Sembrando datos de versiones...');
+  
 
   // Obtener proyectos existentes
   const projects = await prisma.project.findMany();
 
   if (projects.length === 0) {
-    console.log(
-      '❌ No hay proyectos disponibles. Primero ejecuta el seed de proyectos.',
-    );
     return;
   }
 
@@ -93,7 +90,7 @@ async function main() {
             projectId: version.projectId,
           },
         });
-        console.log(`✅ Versión actualizada: ${version.hash}`);
+
       } else {
         await prisma.version.create({
           data: {
@@ -106,14 +103,14 @@ async function main() {
             projectId: version.projectId,
           },
         });
-        console.log(`✅ Versión creada: ${version.hash}`);
+
       }
     } catch (error) {
       console.error(`❌ Error con versión ${version.hash}:`, error);
     }
   }
 
-  console.log('🎉 Datos de versiones sembrados exitosamente');
+
 }
 
 main()

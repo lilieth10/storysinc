@@ -33,6 +33,7 @@ interface TrainingResource {
     startedAt: string;
     completedAt?: string;
   } | null;
+  duration?: number; // Added for new_code
 }
 
 interface TrainingData {
@@ -48,6 +49,8 @@ export default function TrainingPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedResource, setSelectedResource] =
     useState<TrainingResource | null>(null);
+  const [showVideoModal, setShowVideoModal] = useState(false);
+  const [currentVideoUrl, setCurrentVideoUrl] = useState<string>("");
 
   useEffect(() => {
     loadTrainingData();
@@ -63,13 +66,9 @@ export default function TrainingPage() {
 
       // El backend devuelve un array directamente, no un objeto con resources
       const resources = response.data;
-      const categories = [
-        "react",
-        "css",
-        "testing",
-        "javascript",
-        "typescript",
-      ];
+      
+      // Obtener categorías únicas de los recursos reales
+      const categories = [...new Set(resources.map((r: TrainingResource) => r.category))] as string[];
 
       setTrainingData({
         resources,
@@ -81,14 +80,6 @@ export default function TrainingPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleVerMas = () => {
-    toast.success("Accediendo a más recursos de capacitación");
-  };
-
-  const handleDocumentacion = () => {
-    toast.success("Accediendo a documentación completa");
   };
 
   const handleGoBack = () => {
@@ -127,8 +118,23 @@ export default function TrainingPage() {
         return;
       }
 
-      // Abrir video en nueva ventana
-      window.open(resource.videoUrl, "_blank");
+      // Convertir URL de YouTube a formato embed si es necesario
+      let videoUrl = resource.videoUrl;
+      if (videoUrl.includes('youtube.com/watch')) {
+        const videoId = videoUrl.split('v=')[1]?.split('&')[0];
+        if (videoId) {
+          videoUrl = `https://www.youtube.com/embed/${videoId}`;
+        }
+      } else if (videoUrl.includes('youtu.be/')) {
+        const videoId = videoUrl.split('youtu.be/')[1];
+        if (videoId) {
+          videoUrl = `https://www.youtube.com/embed/${videoId}`;
+        }
+      }
+
+      // Reproducir video in-page
+      setCurrentVideoUrl(videoUrl);
+      setShowVideoModal(true);
       toast.success(`Reproduciendo video de ${resource.title}`);
     } catch {
       toast.error("Error al reproducir el video");
@@ -149,6 +155,7 @@ export default function TrainingPage() {
         },
       );
 
+      // Mostrar el contenido del curso directamente
       setSelectedResource(resource);
       toast.success(`Iniciando ${resource.title}`);
     } catch {
@@ -230,20 +237,35 @@ export default function TrainingPage() {
                   {selectedResource.description}
                 </p>
 
+                {/* Información del curso */}
+                <div className="flex items-center gap-4 mb-6">
+                  <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                    {selectedResource.category}
+                  </span>
+                  <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+                    {selectedResource.type}
+                  </span>
+                  {selectedResource.duration && (
+                    <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium">
+                      {selectedResource.duration} min
+                    </span>
+                  )}
+                </div>
+
                 {/* Progreso del usuario */}
                 {selectedResource.userProgress && (
-                  <div className="mb-6">
+                  <div className="mb-8">
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-sm font-medium text-black">
-                        Progreso
+                        Progreso del curso
                       </span>
                       <span className="text-sm text-black">
                         {selectedResource.userProgress.progress}%
                       </span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="w-full bg-gray-200 rounded-full h-3">
                       <div
-                        className="bg-green-600 h-2 rounded-full transition-all duration-300"
+                        className="bg-green-600 h-3 rounded-full transition-all duration-300"
                         style={{
                           width: `${selectedResource.userProgress.progress}%`,
                         }}
@@ -251,6 +273,19 @@ export default function TrainingPage() {
                     </div>
                   </div>
                 )}
+
+                {/* Contenido del curso */}
+                <div className="mb-8">
+                  <h3 className="text-xl font-semibold text-black mb-4">
+                    Contenido del curso
+                  </h3>
+                  <div className="bg-gray-50 rounded-lg p-6">
+                    <p className="text-black leading-relaxed">
+                      Este curso te enseñará los fundamentos de {selectedResource.title.toLowerCase()}. 
+                      Incluye teoría, ejemplos prácticos y ejercicios para consolidar tu aprendizaje.
+                    </p>
+                  </div>
+                </div>
 
                 {/* Botones de acción */}
                 <div className="flex flex-wrap gap-4">
@@ -313,6 +348,70 @@ export default function TrainingPage() {
             {/* Título principal */}
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-black">CAPACITACIÓN</h1>
+              <p className="text-black mt-2">
+                Aprende las mejores prácticas de desarrollo con nuestros recursos especializados
+              </p>
+            </div>
+
+            {/* Estadísticas del usuario */}
+            <div className="mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <span className="text-blue-600 text-lg">📚</span>
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm font-medium text-black">Cursos Iniciados</p>
+                      <p className="text-xl font-semibold text-black">
+                        {trainingData?.resources.filter(r => r.userProgress?.startedAt).length || 0}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                      <span className="text-green-600 text-lg">✅</span>
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm font-medium text-black">Completados</p>
+                      <p className="text-xl font-semibold text-black">
+                        {trainingData?.resources.filter(r => r.userProgress?.completed).length || 0}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+                      <span className="text-yellow-600 text-lg">⏱️</span>
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm font-medium text-black">Tiempo Total</p>
+                      <p className="text-xl font-semibold text-black">
+                        {trainingData?.resources.reduce((total, r) => total + (r.userProgress?.timeSpent || 0), 0) || 0} min
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                      <span className="text-purple-600 text-lg">🏆</span>
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm font-medium text-black">Certificados</p>
+                      <p className="text-xl font-semibold text-black">
+                        {trainingData?.resources.filter(r => r.userProgress?.completed).length || 0}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Barra de búsqueda */}
@@ -321,10 +420,10 @@ export default function TrainingPage() {
                 <input
                   type="text"
                   placeholder="Buscar recursos de capacitación..."
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black placeholder-gray-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black placeholder-black"
                   onChange={(e) => handleSearch(e.target.value)}
                 />
-                <button className="absolute right-2 top-2 text-gray-400">
+                <button className="absolute right-2 top-2 text-black">
                   🔍
                 </button>
               </div>
@@ -332,35 +431,38 @@ export default function TrainingPage() {
 
             {/* Filtros por categoría */}
             <div className="mb-8">
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => setSelectedCategory("all")}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                    selectedCategory === "all"
-                      ? "bg-green-600 text-white"
-                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                  }`}
-                >
-                  Todos
-                </button>
-                {trainingData?.categories.map((category) => (
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-black">Recursos de Capacitación</h2>
+                <div className="flex flex-wrap gap-2">
                   <button
-                    key={category}
-                    onClick={() => setSelectedCategory(category)}
+                    onClick={() => setSelectedCategory("all")}
                     className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                      selectedCategory === category
+                      selectedCategory === "all"
                         ? "bg-green-600 text-white"
-                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                        : "bg-gray-200 text-black hover:bg-gray-300"
                     }`}
                   >
-                    {category.charAt(0).toUpperCase() + category.slice(1)}
+                    Todos
                   </button>
-                ))}
+                  {trainingData?.categories.map((category) => (
+                    <button
+                      key={category}
+                      onClick={() => setSelectedCategory(category)}
+                      className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                        selectedCategory === category
+                          ? "bg-green-600 text-white"
+                          : "bg-gray-200 text-black hover:bg-gray-300"
+                      }`}
+                    >
+                      {category.charAt(0).toUpperCase() + category.slice(1)}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
             {/* Contenido de capacitación */}
-            <div className="space-y-12">
+            <div className="space-y-6">
               {trainingData?.resources
                 .filter(
                   (resource) =>
@@ -368,145 +470,141 @@ export default function TrainingPage() {
                     resource.category === selectedCategory,
                 )
                 .map((resource) => (
-                  <div key={resource.id} className="mb-12">
-                    {/* Material de capacitación - Overview */}
-                    {resource.type === "overview" && (
-                      <div className="mb-8">
-                        <h2 className="text-xl font-semibold text-black mb-4">
+                  <div key={resource.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex-1">
+                        <h3 className="text-xl font-semibold text-black mb-2">
                           {resource.title}
-                        </h2>
-                        <p className="text-black mb-6 leading-relaxed max-w-4xl">
+                        </h3>
+                        <p className="text-black leading-relaxed mb-4">
                           {resource.description}
                         </p>
-                        {resource.hasButton && (
-                          <button
-                            onClick={handleVerMas}
-                            className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors duration-200"
-                          >
-                            {resource.buttonText}
-                          </button>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Módulos de capacitación */}
-                    {resource.type === "module" && (
-                      <div
-                        className={`flex ${resource.position === "left" ? "flex-row-reverse" : "flex-row"} gap-8 items-start mb-8`}
-                      >
-                        <div className="flex-1 max-w-2xl">
-                          <h2 className="text-xl font-semibold text-black mb-4">
-                            {resource.title}
-                          </h2>
-                          <p className="text-gray-600 leading-relaxed mb-4">
-                            {resource.description}
-                          </p>
-
-                          {/* Progreso del usuario */}
-                          {resource.userProgress && (
-                            <div className="mb-4">
-                              <div className="flex justify-between items-center mb-2">
-                                <span className="text-sm font-medium text-gray-700">
-                                  Progreso
-                                </span>
-                                <span className="text-sm text-gray-500">
-                                  {resource.userProgress.progress}%
-                                </span>
-                              </div>
-                              <div className="w-full bg-gray-200 rounded-full h-2">
-                                <div
-                                  className="bg-green-600 h-2 rounded-full transition-all duration-300"
-                                  style={{
-                                    width: `${resource.userProgress.progress}%`,
-                                  }}
-                                ></div>
-                              </div>
-                            </div>
+                        
+                        {/* Información del curso */}
+                        <div className="flex items-center gap-4 text-sm text-black mb-4">
+                          <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                            {resource.category}
+                          </span>
+                          <span className="bg-green-100 text-green-800 px-2 py-1 rounded">
+                            {resource.type}
+                          </span>
+                          {resource.duration && (
+                            <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                              {resource.duration} min
+                            </span>
                           )}
-
-                          {/* Botones de acción */}
-                          <div className="flex gap-3">
-                            <button
-                              onClick={() => handleStartCourse(resource)}
-                              className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
-                            >
-                              🎓{" "}
-                              {resource.userProgress?.completed
-                                ? "Ver Curso"
-                                : "Iniciar Curso"}
-                            </button>
-
-                            {resource.fileUrl && (
-                              <button
-                                onClick={() => handleDownload(resource)}
-                                className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
-                              >
-                                📥 Descargar
-                              </button>
-                            )}
-
-                            {resource.videoUrl && (
-                              <button
-                                onClick={() => handlePlayVideo(resource)}
-                                className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
-                              >
-                                ▶️ Reproducir
-                              </button>
-                            )}
-                          </div>
                         </div>
 
-                        {/* Code Snippet */}
-                        {resource.codeSnippet && (
-                          <div className="flex-shrink-0 w-80">
-                            <div className="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm">
-                              <div className="flex justify-between items-center mb-2">
-                                <span className="text-gray-400 text-xs">
-                                  {resource.codeSnippet.language.toUpperCase()}
-                                </span>
-                                <span className="text-gray-500 text-xs">
-                                  {resource.codeSnippet.lines[0]}-
-                                  {resource.codeSnippet.lines[1]}
-                                </span>
-                              </div>
-                              <pre className="text-xs leading-relaxed overflow-x-auto">
-                                <code>{resource.codeSnippet.code}</code>
-                              </pre>
+                        {/* Progreso del usuario */}
+                        {resource.userProgress && (
+                          <div className="mb-4">
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="text-sm font-medium text-black">
+                                Progreso
+                              </span>
+                              <span className="text-sm text-black">
+                                {resource.userProgress.progress}%
+                              </span>
                             </div>
-                          </div>
-                        )}
-
-                        {/* Image */}
-                        {resource.hasImage && (
-                          <div className="flex-shrink-0 w-80">
-                            <div className="bg-gray-200 rounded-lg p-4 h-48 flex items-center justify-center">
-                              <div className="text-center text-gray-500">
-                                <div className="text-4xl mb-2">👥</div>
-                                <p className="text-sm text-center">
-                                  {resource.imageDescription}
-                                </p>
-                              </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div
+                                className="bg-green-600 h-2 rounded-full transition-all duration-300"
+                                style={{
+                                  width: `${resource.userProgress.progress}%`,
+                                }}
+                              ></div>
                             </div>
                           </div>
                         )}
                       </div>
-                    )}
+                    </div>
+
+                    {/* Botones de acción */}
+                    <div className="flex flex-wrap gap-3">
+                      <button
+                        onClick={() => handleStartCourse(resource)}
+                        className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center gap-2"
+                      >
+                        🎓 {resource.userProgress?.completed ? "Ver Curso" : "Iniciar Curso"}
+                      </button>
+
+                      {resource.fileUrl && (
+                        <button
+                          onClick={() => handleDownload(resource)}
+                          className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center gap-2"
+                        >
+                          📥 Descargar
+                        </button>
+                      )}
+
+                      {resource.videoUrl && (
+                        <button
+                          onClick={() => handlePlayVideo(resource)}
+                          className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center gap-2"
+                        >
+                          ▶️ Reproducir Video
+                        </button>
+                      )}
+
+                      {resource.userProgress?.completed && (
+                        <button
+                          onClick={() => handleGenerateCertificate(resource)}
+                          className="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center gap-2"
+                        >
+                          🏆 Generar Certificado
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
 
-              {/* Botón de Documentación */}
-              <div className="mt-12">
-                <button
-                  onClick={handleDocumentacion}
-                  className="w-full max-w-4xl bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
-                >
-                  Documentación
-                </button>
-              </div>
+              {/* Mensaje si no hay recursos */}
+              {trainingData?.resources.length === 0 && (
+                <div className="text-center py-12">
+                  <div className="text-gray-400 text-6xl mb-4">📚</div>
+                  <h3 className="text-xl font-semibold text-black mb-2">
+                    No hay cursos disponibles
+                  </h3>
+                  <p className="text-black">
+                    El administrador aún no ha subido ningún curso de capacitación.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </main>
       </div>
+
+      {/* Modal de Video */}
+      {showVideoModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <div className="flex justify-between items-center p-4 border-b">
+              <h3 className="text-lg font-semibold text-black">Reproduciendo Video</h3>
+              <button
+                onClick={() => setShowVideoModal(false)}
+                className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
+              >
+                ×
+              </button>
+            </div>
+            <div className="p-4">
+              {currentVideoUrl && (
+                <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                  <iframe
+                    src={currentVideoUrl}
+                    className="absolute top-0 left-0 w-full h-full rounded"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  ></iframe>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <Footer />
     </div>
   );

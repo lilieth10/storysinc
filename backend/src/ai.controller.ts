@@ -10,9 +10,11 @@ import {
   HttpException,
   HttpStatus,
   UseGuards,
+  Param,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { PrismaService } from './prisma.service';
+import { ProjectService } from './project.service';
 
 interface AuthenticatedRequest extends Request {
   user: {
@@ -53,7 +55,10 @@ interface N8nChatDto {
 @Controller('ai')
 @UseGuards(AuthGuard('jwt'))
 export class AIController {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private projectService: ProjectService,
+  ) {}
 
   // Función para llamar a OpenAI (opcional - requiere API key)
   private async callOpenAI(prompt: string, project: any): Promise<string> {
@@ -564,6 +569,36 @@ export class AIController {
     }
   }
 
+  // Obtener archivos reales de un proyecto para análisis de IA
+  @Get('projects/:projectId/files')
+  async getProjectFilesForAI(
+    @Param('projectId') projectId: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    try {
+      const userId = req.user.userId ?? req.user.id;
+      if (!userId) {
+        throw new HttpException(
+          'Usuario no autenticado',
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+
+      const files = await this.projectService.getProjectFiles(
+        parseInt(projectId),
+        userId,
+      );
+
+      return files;
+    } catch (error) {
+      console.error('Error fetching project files for AI:', error);
+      throw new HttpException(
+        'Error al obtener archivos del proyecto',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   // Analizar código con IA
   @Post('analyze')
   async analyzeCode(
@@ -621,7 +656,7 @@ export class AIController {
       // Verificar que el proyecto pertenece al usuario
       const project = await this.prisma.project.findFirst({
         where: {
-          id: body.projectId,
+          id: parseInt(body.projectId.toString()),
           OR: [
             { ownerId: req.user.userId ?? req.user.id },
             {
@@ -640,7 +675,7 @@ export class AIController {
       // Buscar si ya existe un registro para este archivo
       const existingCode = await this.prisma.aICodeFile.findFirst({
         where: {
-          projectId: body.projectId,
+          projectId: parseInt(body.projectId.toString()),
           fileName: body.fileName,
         },
       });
@@ -658,7 +693,7 @@ export class AIController {
         // Crear nuevo registro
         await this.prisma.aICodeFile.create({
           data: {
-            projectId: body.projectId,
+            projectId: parseInt(body.projectId.toString()),
             fileName: body.fileName,
             code: body.code,
           },

@@ -15,14 +15,12 @@ export function DashboardHeader() {
   };
 
   const toggleMenu = () => {
-    console.log("🔍 DEBUG - Toggle menu clicked");
-    console.log("🔍 DEBUG - Current menu state:", menuOpen);
-    console.log("🔍 DEBUG - User role:", user?.role);
+
     setMenuOpen(!menuOpen);
   };
 
   return (
-    <header className="w-full flex items-center justify-between px-8 py-4 bg-white shadow-sm">
+    <header className="w-full flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3 sm:py-4 bg-white shadow-sm">
       <div className="flex items-center">
         <Image
           src="/proogia.png"
@@ -30,13 +28,16 @@ export function DashboardHeader() {
           width={110}
           height={36}
           priority
+          className="w-20 sm:w-24 lg:w-28"
         />
       </div>
 
-      <div className="flex items-center gap-4">
-        <NotificationsDropdown />
+      <div className="flex items-center gap-2 sm:gap-4">
+        <div className="hidden sm:block">
+          <NotificationsDropdown />
+        </div>
 
-        {/* User Menu */}
+        {/* User Menu - Responsive */}
         <div className="relative">
           <button
             type="button"
@@ -48,38 +49,38 @@ export function DashboardHeader() {
               alt="Avatar"
               width={36}
               height={36}
-              className="rounded-full border-2 border-green-500"
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full border-2 border-green-500"
             />
           </button>
 
           {menuOpen && (
-            <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-50">
+            <div className="absolute right-0 mt-2 w-48 sm:w-56 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-50">
               <div className="py-1">
                 <a
                   href="/dashboard"
-                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  className="block px-3 sm:px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-100"
                 >
-                  📊 Dashboard
+                  📊 <span className="hidden sm:inline">Dashboard</span><span className="sm:hidden">Dashboard</span>
                 </a>
                 <a
                   href="/profile"
-                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 border-t border-gray-100"
+                  className="block px-3 sm:px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-100 border-t border-gray-100"
                 >
-                  👤 Mi Perfil
+                  👤 <span className="hidden sm:inline">Mi Perfil</span><span className="sm:hidden">Perfil</span>
                 </a>
                 {user?.role === "admin" && (
                   <a
                     href="/admin"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 border-t border-gray-100"
+                    className="block px-3 sm:px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-100 border-t border-gray-100"
                   >
-                    🛠️ Panel de Admin
+                    🛠️ <span className="hidden sm:inline">Panel de Admin</span><span className="sm:hidden">Admin</span>
                   </a>
                 )}
                 <button
                   onClick={handleLogout}
-                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 border-t border-gray-100"
+                  className="block w-full text-left px-3 sm:px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 border-t border-gray-100"
                 >
-                  🚪 Cerrar sesión
+                  🚪 <span className="hidden sm:inline">Cerrar sesión</span><span className="sm:hidden">Salir</span>
                 </button>
               </div>
             </div>

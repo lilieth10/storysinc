@@ -11,7 +11,7 @@ async function createAdmin() {
     });
 
     if (existingAdmin) {
-      console.log('✅ Ya existe un usuario admin:', existingAdmin.email);
+  
       return;
     }
 
@@ -29,11 +29,7 @@ async function createAdmin() {
       },
     });
 
-    console.log('✅ Usuario admin creado exitosamente:');
-    console.log('📧 Email:', admin.email);
-    console.log('🔑 Contraseña: admin123');
-    console.log('👤 Nombre:', admin.fullName);
-    console.log('🔐 Rol:', admin.role);
+
   } catch (error) {
     console.error('❌ Error creando admin:', error);
   } finally {

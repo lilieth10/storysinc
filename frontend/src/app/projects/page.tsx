@@ -23,9 +23,20 @@ interface Project {
   components?: string;
   owner: {
     id: number;
-    name: string;
+    fullName?: string;
+    name?: string;
     email: string;
   };
+  collaborators?: {
+    id: number;
+    role: string;
+    user: {
+      id: number;
+      fullName?: string;
+      name?: string;
+      email: string;
+    };
+  }[];
   createdAt: string;
 }
 
@@ -101,7 +112,7 @@ export default function ProjectsPage() {
         chooseLicense: formData.chooseLicense || false,
       };
 
-      console.log("Enviando datos al backend:", projectData);
+
 
       const response = await api.post("/projects", projectData);
 
@@ -368,8 +379,14 @@ export default function ProjectsPage() {
                           {new Date(project.lastSync).toLocaleDateString()}
                         </div>
                         <div className="text-xs text-black">
-                          Propietario: {project.owner?.name || "John Doe"}
+                          Propietario: {project.owner?.fullName || project.owner?.name || "John Doe"}
                         </div>
+                        {/* ✅ INDICADOR DE COLABORACIÓN REAL */}
+                        {project.collaborators && project.collaborators.length > 0 && (
+                          <div className="text-xs text-blue-600 font-medium">
+                            🤝 {project.collaborators.length} colaborador{project.collaborators.length > 1 ? 'es' : ''}
+                          </div>
+                        )}
                       </div>
 
                       {/* Tags */}
@@ -414,6 +431,25 @@ export default function ProjectsPage() {
                             />
                           </svg>
                           Abrir Editor
+                        </button>
+                        <button
+                          onClick={() => router.push(`/sync`)}
+                          className="w-full inline-flex items-center justify-center px-3 py-2 border border-green-300 text-sm font-medium rounded-md text-green-700 bg-green-50 hover:bg-green-100 mt-2"
+                        >
+                          <svg
+                            className="w-4 h-4 mr-2"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                            />
+                          </svg>
+                          Ver Servicios
                         </button>
                       </div>
                     </div>

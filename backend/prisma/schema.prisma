@@ -74,6 +74,8 @@ model Project {
   chooseLicense Boolean @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  lastModifiedBy    Int? // ID of the last user who modified the project
+  lastModifiedByUser String? // Name of the last user who modified the project
 
   // Relations
   owner         User                @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Cascade)

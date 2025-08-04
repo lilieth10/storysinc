@@ -55,7 +55,7 @@ export default function LoginPage() {
             value={form.email}
             onChange={handleChange}
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            className="text-black w-full px-3 py-2 border border-gray-300 rounded-md"
           />
           <PasswordInput
             name="password"

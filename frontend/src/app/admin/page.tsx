@@ -152,12 +152,32 @@ export default function AdminPage() {
 
   // Estados para capacitaciones
   const [showCreateCourseModal, setShowCreateCourseModal] = useState(false);
+  const [showUploadMaterialModal, setShowUploadMaterialModal] = useState(false);
   const [newCourseData, setNewCourseData] = useState({
     title: "",
     description: "",
     category: "react",
     difficulty: "beginner",
     duration: 60,
+  });
+  const [newMaterialData, setNewMaterialData] = useState({
+    title: "",
+    description: "",
+    type: "documentation",
+    category: "react",
+    file: null as File | null,
+    videoUrl: "",
+  });
+  const [trainingResources, setTrainingResources] = useState<any[]>([]);
+  const [loadingTrainingResources, setLoadingTrainingResources] = useState(false);
+
+  // Estados para gestión de usuarios
+  const [showCreateUserModal, setShowCreateUserModal] = useState(false);
+  const [newUserData, setNewUserData] = useState({
+    fullName: "",
+    email: "",
+    role: "user",
+    password: "",
   });
 
   // Estados para reportes
@@ -273,6 +293,22 @@ export default function AdminPage() {
     }
   }, [token]);
 
+  // Cargar recursos de capacitación
+  const loadTrainingResources = useCallback(async () => {
+    try {
+      setLoadingTrainingResources(true);
+      const response = await api.get("/training/admin/resources", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setTrainingResources(response.data);
+    } catch (error) {
+      console.error("Error cargando recursos de capacitación:", error);
+      toast.error("Error al cargar recursos de capacitación");
+    } finally {
+      setLoadingTrainingResources(false);
+    }
+  }, [token]);
+
   // Cargar configuración de IA
   const loadAIConfig = useCallback(async () => {
     try {
@@ -302,15 +338,12 @@ export default function AdminPage() {
   const loadProjectsForAnalysis = useCallback(async () => {
     if (activeTab === "ai-analysis" && user?.role === "admin") {
       try {
-        console.log("Cargando proyectos para análisis IA...");
+  
         const response = await api.get("/admin/ai-config/projects", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        console.log(
-          "Proyectos cargados desde /admin/ai-config/projects:",
-          response.data,
-        );
+
 
         const transformedProjects: Project[] = response.data.map(
           (project: {
@@ -330,7 +363,7 @@ export default function AdminPage() {
           }),
         );
 
-        console.log("Proyectos transformados:", transformedProjects);
+
         setProjects(transformedProjects);
       } catch (error) {
         console.error("Error cargando proyectos:", error);
@@ -493,6 +526,80 @@ export default function AdminPage() {
     }
   };
 
+  // Crear nuevo usuario
+  const handleCreateUser = async () => {
+    try {
+      const response = await api.post(
+        "/admin/users",
+        newUserData,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+
+      if (response.data.success) {
+        toast.success("✅ Usuario creado exitosamente");
+        setShowCreateUserModal(false);
+        setNewUserData({
+          fullName: "",
+          email: "",
+          role: "user",
+          password: "",
+        });
+        await loadAdminData();
+      }
+    } catch (error) {
+      console.error("Error creating user:", error);
+      toast.error("❌ Error al crear el usuario");
+    }
+  };
+
+  // Subir material de capacitación
+  const handleUploadMaterial = async () => {
+    try {
+      const formData = new FormData();
+      formData.append('title', newMaterialData.title);
+      formData.append('description', newMaterialData.description);
+      formData.append('type', newMaterialData.type);
+      formData.append('category', newMaterialData.category);
+      if (newMaterialData.file) {
+        formData.append('file', newMaterialData.file);
+      }
+      if (newMaterialData.videoUrl) {
+        formData.append('videoUrl', newMaterialData.videoUrl);
+      }
+
+      const response = await api.post(
+        "/training/admin/upload-material",
+        formData,
+        {
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        },
+      );
+
+      if (response.data.success) {
+        toast.success("✅ Material subido exitosamente");
+        setShowUploadMaterialModal(false);
+        setNewMaterialData({
+          title: "",
+          description: "",
+          type: "documentation",
+          category: "react",
+          file: null,
+          videoUrl: "",
+        });
+        await loadAdminData();
+        await loadTrainingResources(); // Recargar la lista de recursos
+      }
+    } catch (error) {
+      console.error("Error uploading material:", error);
+      toast.error("❌ Error al subir el material");
+    }
+  };
+
   // Generar reporte
   const handleGenerateReport = async () => {
     setGeneratingReport(true);
@@ -519,6 +626,18 @@ export default function AdminPage() {
       toast.error("❌ Error al generar el reporte");
     } finally {
       setGeneratingReport(false);
+    }
+  };
+
+  // Ver reporte
+  const handleViewReport = async (reportId: number) => {
+    try {
+      // Redirigir a la página de reportes con el ID específico
+      window.open(`/reports/${reportId}`, '_blank');
+      toast.success("✅ Abriendo reporte en nueva pestaña");
+    } catch (error) {
+      console.error("Error viewing report:", error);
+      toast.error("❌ Error al abrir el reporte");
     }
   };
 
@@ -554,11 +673,18 @@ export default function AdminPage() {
   };
 
   useEffect(() => {
-    if (token && user?.role === "admin") {
+    if (token) {
       loadAdminData();
       loadAIConfig();
     }
-  }, [token, user?.role, loadAdminData, loadAIConfig]);
+  }, [token, loadAdminData, loadAIConfig]);
+
+  // Cargar recursos de capacitación cuando se activa la pestaña
+  useEffect(() => {
+    if (token && activeTab === "training") {
+      loadTrainingResources();
+    }
+  }, [token, activeTab, loadTrainingResources]);
 
   useEffect(() => {
     loadProjectsForAnalysis();
@@ -918,14 +1044,12 @@ export default function AdminPage() {
                         </p>
                       </div>
                       <div className="flex space-x-2">
+                 
                         <button
                           onClick={() => handleDownloadReport(report.id)}
-                          className="text-blue-600 hover:text-blue-800 text-sm"
+                          className="text-green-600 hover:text-green-800 text-sm"
                         >
                           Descargar
-                        </button>
-                        <button className="text-green-600 hover:text-green-800 text-sm">
-                          Ver
                         </button>
                       </div>
                     </div>
@@ -944,15 +1068,140 @@ export default function AdminPage() {
                 Gestión de Usuarios
               </h2>
               <p className="text-gray-600">
-                Administra usuarios del sistema y sus roles
+                Administra usuarios del sistema, roles y permisos
               </p>
             </div>
 
+            {/* Estadísticas de Usuarios */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <span className="text-blue-600 text-lg">👥</span>
+                    </div>
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-500">
+                      Total Usuarios
+                    </p>
+                    <p className="text-2xl font-semibold text-gray-900">
+                      {adminData.metrics.totalUsers}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                      <span className="text-green-600 text-lg">🟢</span>
+                    </div>
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-500">
+                      Usuarios Activos
+                    </p>
+                    <p className="text-2xl font-semibold text-gray-900">
+                      {adminData.metrics.activeUsers}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+                      <span className="text-red-600 text-lg">👑</span>
+                    </div>
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-500">
+                      Administradores
+                    </p>
+                    <p className="text-2xl font-semibold text-gray-900">
+                      {adminData.users.filter(u => u.role === 'admin').length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                      <span className="text-purple-600 text-lg">📊</span>
+                    </div>
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-500">
+                      Nuevos (30 días)
+                    </p>
+                    <p className="text-2xl font-semibold text-gray-900">
+                      {adminData.users.filter(u => {
+                        const createdAt = new Date(u.createdAt);
+                        const thirtyDaysAgo = new Date();
+                        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                        return createdAt >= thirtyDaysAgo;
+                      }).length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Crear Nuevo Usuario */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Crear Nuevo Usuario
+                </h3>
+                <button
+                  onClick={() => setShowCreateUserModal(true)}
+                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm"
+                >
+                  + Nuevo Usuario
+                </button>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
+                <div className="flex items-center">
+                  <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                  <span>Email único requerido</span>
+                </div>
+                <div className="flex items-center">
+                  <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                  <span>Roles: Developer/Admin/Manager</span>
+                </div>
+                <div className="flex items-center">
+                  <span className="w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
+                  <span>Notificaciones automáticas</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Lista de Usuarios Mejorada */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
               <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Lista de Usuarios ({adminData.users.length})
-                </h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Lista de Usuarios ({adminData.users.length})
+                  </h3>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="text"
+                      placeholder="Buscar usuarios..."
+                      className="px-3 py-1 border border-gray-300 rounded-md text-sm text-black"
+                    />
+                    <select className="px-3 py-1 border border-gray-300 rounded-md text-sm text-black">
+                      <option value="all">Todos los roles</option>
+                      <option value="admin">Administradores</option>
+                      <option value="user">Usuarios</option>
+                    </select>
+                  </div>
+                </div>
               </div>
               <div className="divide-y divide-gray-200">
                 {adminData.users.map((user) => (
@@ -973,12 +1222,16 @@ export default function AdminPage() {
                               className={`px-2 py-1 rounded-full text-xs font-medium ${
                                 user.role === "admin"
                                   ? "bg-red-100 text-red-800"
+                                  : user.role === "manager"
+                                  ? "bg-purple-100 text-purple-800"
                                   : "bg-green-100 text-green-800"
                               }`}
                             >
                               {user.role === "admin"
                                 ? "Administrador"
-                                : "Usuario"}
+                                : user.role === "manager"
+                                ? "Gerente"
+                                : "Desarrollador"}
                             </span>
                           </div>
                           <p className="text-sm text-gray-500">{user.email}</p>
@@ -988,14 +1241,15 @@ export default function AdminPage() {
                               "es-ES",
                             )}
                           </p>
-                          <div className="flex items-center mt-1">
-                            <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded mr-2">
+                          <div className="flex items-center mt-1 space-x-2">
+                            <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">
                               ID: {user.id}
                             </span>
+                            <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
+                              {user._count?.projectsOwned || 0} proyectos
+                            </span>
                             <span className="text-xs text-purple-600 bg-purple-100 px-2 py-1 rounded">
-                              {user.role === "admin"
-                                ? "Acceso Total"
-                                : "Acceso Limitado"}
+                              {user._count?.userProgress || 0} cursos
                             </span>
                           </div>
                         </div>
@@ -1006,14 +1260,15 @@ export default function AdminPage() {
                           onChange={(e) =>
                             handleUpdateUserRole(user.id, e.target.value)
                           }
-                          className="text-sm border border-gray-300 rounded-md px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="text-sm border border-gray-300 rounded-md px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
                         >
-                          <option value="user">Usuario</option>
+                          <option value="user">Desarrollador</option>
                           <option value="admin">Administrador</option>
                         </select>
                         <button
                           onClick={() => handleDeleteUser(user.id)}
-                          className="text-red-600 hover:text-red-800 text-sm px-3 py-1 rounded border border-red-200 hover:bg-red-50 transition-colors"
+                          disabled={user.id === (user as any).currentUserId}
+                          className="text-red-600 hover:text-red-800 text-sm px-3 py-1 rounded border border-red-200 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           Eliminar
                         </button>
@@ -1030,10 +1285,10 @@ export default function AdminPage() {
         {activeTab === "training" && (
           <div className="space-y-6">
             <div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              <h2 className="text-xl font-semibold text-black mb-2">
                 Gestión de Capacitaciones
               </h2>
-              <p className="text-gray-600">
+              <p className="text-black">
                 Administra recursos de capacitación y progreso de usuarios
               </p>
             </div>
@@ -1048,10 +1303,10 @@ export default function AdminPage() {
                     </div>
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">
+                    <p className="text-sm font-medium text-black">
                       Cursos Disponibles
                     </p>
-                    <p className="text-2xl font-semibold text-gray-900">
+                    <p className="text-2xl font-semibold text-black">
                       {adminData.metrics.totalTrainingResources || 0}
                     </p>
                   </div>
@@ -1066,10 +1321,10 @@ export default function AdminPage() {
                     </div>
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">
+                    <p className="text-sm font-medium text-black">
                       Usuarios Activos
                     </p>
-                    <p className="text-2xl font-semibold text-gray-900">
+                    <p className="text-2xl font-semibold text-black">
                       {adminData.metrics.activeUsers || 0}
                     </p>
                   </div>
@@ -1084,10 +1339,10 @@ export default function AdminPage() {
                     </div>
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">
+                    <p className="text-sm font-medium text-black">
                       Certificados
                     </p>
-                    <p className="text-2xl font-semibold text-gray-900">
+                    <p className="text-2xl font-semibold text-black">
                       {adminData.metrics.totalCertificates || 0}
                     </p>
                   </div>
@@ -1102,10 +1357,10 @@ export default function AdminPage() {
                     </div>
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">
+                    <p className="text-sm font-medium text-black">
                       Cursos Completados
                     </p>
-                    <p className="text-2xl font-semibold text-gray-900">
+                    <p className="text-2xl font-semibold text-black">
                       {adminData.metrics.completedCourses || 0}
                     </p>
                   </div>
@@ -1116,18 +1371,21 @@ export default function AdminPage() {
             {/* Acciones de Capacitación */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">
+                <h3 className="text-lg font-semibold text-black">
                   Gestión de Recursos
                 </h3>
-                <button
-                  onClick={() => setShowCreateCourseModal(true)}
-                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm"
-                >
-                  + Crear Nuevo Curso
-                </button>
+                <div className="flex space-x-2">
+           
+                  <button
+                    onClick={() => setShowUploadMaterialModal(true)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm"
+                  >
+                    + Subir Material
+                  </button>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="bg-blue-50 rounded-lg p-4">
                   <h4 className="font-medium text-blue-900 mb-2">
                     Cursos Activos
@@ -1163,6 +1421,106 @@ export default function AdminPage() {
                     Cursos finalizados
                   </p>
                 </div>
+
+                <div className="bg-purple-50 rounded-lg p-4">
+                  <h4 className="font-medium text-purple-900 mb-2">
+                    Certificados
+                  </h4>
+                  <p className="text-2xl font-bold text-purple-600">
+                    {adminData.metrics.totalCertificates || 0}
+                  </p>
+                  <p className="text-xs text-purple-600 mt-1">
+                    Emitidos
+                  </p>
+                </div>
+              </div>
+
+              {/* Rutas de Aprendizaje */}
+              <div className="mt-6">
+                <h4 className="font-medium text-black mb-3">Rutas de Aprendizaje</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="border border-gray-200 rounded-lg p-3">
+                    <h5 className="font-medium text-black">Frontend Developer</h5>
+                    <p className="text-xs text-black mt-1">React, TypeScript, Testing</p>
+                    <div className="flex items-center mt-2">
+                      <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
+                        5 cursos
+                      </span>
+                    </div>
+                  </div>
+                  <div className="border border-gray-200 rounded-lg p-3">
+                    <h5 className="font-medium text-black">Backend Developer</h5>
+                    <p className="text-xs text-black mt-1">Node.js, APIs, Databases</p>
+                    <div className="flex items-center mt-2">
+                      <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                        4 cursos
+                      </span>
+                    </div>
+                  </div>
+                  <div className="border border-gray-200 rounded-lg p-3">
+                    <h5 className="font-medium text-black">Full Stack</h5>
+                    <p className="text-xs text-black mt-1">Completo frontend + backend</p>
+                    <div className="flex items-center mt-2">
+                      <span className="text-xs text-purple-600 bg-purple-100 px-2 py-1 rounded">
+                        8 cursos
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Lista de Recursos de Capacitación */}
+              <div className="mt-6">
+                <h4 className="font-medium text-black mb-3">Recursos de Capacitación</h4>
+                {loadingTrainingResources ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
+                    <p className="text-black mt-2">Cargando recursos...</p>
+                  </div>
+                ) : trainingResources.length > 0 ? (
+                  <div className="space-y-3">
+                    {trainingResources.map((resource) => (
+                      <div key={resource.id} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <h5 className="font-medium text-black">{resource.title}</h5>
+                            <p className="text-sm text-black mt-1">{resource.description}</p>
+                            <div className="flex items-center gap-2 mt-2">
+                              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                {resource.category}
+                              </span>
+                              <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                                {resource.type}
+                              </span>
+                              {resource.duration && (
+                                <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                                  {resource.duration} min
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {resource.videoUrl && (
+                              <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">
+                                Video
+                              </span>
+                            )}
+                            {resource.fileUrl && (
+                              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                PDF
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-black">No hay recursos de capacitación disponibles</p>
+                    <p className="text-sm text-black mt-1">Sube material para que aparezca aquí</p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1248,7 +1606,7 @@ export default function AdminPage() {
                   <select
                     value={reportType}
                     onChange={(e) => setReportType(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-black"
                   >
                     <option value="general">General</option>
                     <option value="users">Usuarios</option>
@@ -1272,7 +1630,7 @@ export default function AdminPage() {
                           start: e.target.value,
                         })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-black"
                     />
                   </div>
 
@@ -1289,7 +1647,7 @@ export default function AdminPage() {
                           end: e.target.value,
                         })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-black"
                     />
                   </div>
                 </div>
@@ -1493,10 +1851,11 @@ export default function AdminPage() {
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <button className="text-blue-600 hover:text-blue-800 text-sm">
-                            Ver
-                          </button>
-                          <button className="text-green-600 hover:text-green-800 text-sm">
+                    
+                          <button
+                            onClick={() => handleDownloadReport(report.id)}
+                            className="text-green-600 hover:text-green-800 text-sm"
+                          >
                             Descargar
                           </button>
                         </div>
@@ -1543,7 +1902,7 @@ export default function AdminPage() {
                           analysisInterval: parseInt(e.target.value),
                         })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-black"
                     />
                   </div>
                   <div>
@@ -1558,7 +1917,7 @@ export default function AdminPage() {
                           confidenceThreshold: parseInt(e.target.value),
                         })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-black"
                     />
                   </div>
                   <div>
@@ -1573,7 +1932,7 @@ export default function AdminPage() {
                           maxRecommendations: parseInt(e.target.value),
                         })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-black"
                     />
                   </div>
                   <div>
@@ -1588,7 +1947,7 @@ export default function AdminPage() {
                           maxTokens: parseInt(e.target.value),
                         })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-black"
                     />
                   </div>
                   <div>
@@ -1606,7 +1965,7 @@ export default function AdminPage() {
                           temperature: parseFloat(e.target.value),
                         })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-black"
                     />
                   </div>
                   <div>
@@ -1620,7 +1979,7 @@ export default function AdminPage() {
                           aiModel: e.target.value,
                         })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-black"
                     >
                       <option value="gpt-4">GPT-4</option>
                       <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
@@ -1836,7 +2195,7 @@ export default function AdminPage() {
                   <select
                     value={selectedProject || ""}
                     onChange={(e) => setSelectedProject(Number(e.target.value))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black"
                   >
                     <option value="">
                       Selecciona un proyecto ({projects.length} disponibles)
@@ -2145,7 +2504,7 @@ export default function AdminPage() {
                         title: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-black"
                     placeholder="Ej: Introducción a React"
                   />
                 </div>
@@ -2162,7 +2521,7 @@ export default function AdminPage() {
                         description: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-black"
                     rows={3}
                     placeholder="Describe el contenido del curso..."
                   />
@@ -2181,7 +2540,7 @@ export default function AdminPage() {
                           category: e.target.value,
                         })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-black"
                     >
                       <option value="react">React</option>
                       <option value="typescript">TypeScript</option>
@@ -2202,7 +2561,7 @@ export default function AdminPage() {
                           difficulty: e.target.value,
                         })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-black"
                     >
                       <option value="beginner">Principiante</option>
                       <option value="intermediate">Intermedio</option>
@@ -2224,7 +2583,7 @@ export default function AdminPage() {
                         duration: parseInt(e.target.value),
                       })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-black"
                     min="15"
                     step="15"
                   />
@@ -2244,6 +2603,248 @@ export default function AdminPage() {
                   className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400"
                 >
                   Crear Curso
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal para crear nuevo usuario */}
+        {showCreateUserModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <h3 className="text-lg font-semibold mb-4">Crear Nuevo Usuario</h3>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Nombre Completo
+                  </label>
+                  <input
+                    type="text"
+                    value={newUserData.fullName}
+                    onChange={(e) =>
+                      setNewUserData({
+                        ...newUserData,
+                        fullName: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-black"
+                    placeholder="Ej: Juan Pérez"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={newUserData.email}
+                    onChange={(e) =>
+                      setNewUserData({
+                        ...newUserData,
+                        email: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-black"
+                    placeholder="juan@ejemplo.com"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Contraseña
+                  </label>
+                  <input
+                    type="password"
+                    value={newUserData.password}
+                    onChange={(e) =>
+                      setNewUserData({
+                        ...newUserData,
+                        password: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-black"
+                    placeholder="Mínimo 6 caracteres"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Rol
+                  </label>
+                  <select
+                    value={newUserData.role}
+                    onChange={(e) =>
+                      setNewUserData({
+                        ...newUserData,
+                        role: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-black"
+                  >
+                    <option value="user">Desarrollador</option>
+                    <option value="admin">Administrador</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => setShowCreateUserModal(false)}
+                  className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleCreateUser}
+                  disabled={!newUserData.fullName || !newUserData.email || !newUserData.password}
+                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400"
+                >
+                  Crear Usuario
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal para subir material */}
+        {showUploadMaterialModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <h3 className="text-lg font-semibold text-black mb-4">Subir Material de Capacitación</h3>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Título del Material
+                  </label>
+                  <input
+                    type="text"
+                    value={newMaterialData.title}
+                    onChange={(e) =>
+                      setNewMaterialData({
+                        ...newMaterialData,
+                        title: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-black"
+                    placeholder="Ej: Guía de React Hooks"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Descripción
+                  </label>
+                  <textarea
+                    value={newMaterialData.description}
+                    onChange={(e) =>
+                      setNewMaterialData({
+                        ...newMaterialData,
+                        description: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-black"
+                    rows={3}
+                    placeholder="Describe el contenido del material..."
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Tipo
+                    </label>
+                    <select
+                      value={newMaterialData.type}
+                      onChange={(e) =>
+                        setNewMaterialData({
+                          ...newMaterialData,
+                          type: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-black"
+                    >
+                      <option value="documentation">Documentación</option>
+                      <option value="video">Video</option>
+                      <option value="tutorial">Tutorial</option>
+                      <option value="exercise">Ejercicio</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Categoría
+                    </label>
+                    <select
+                      value={newMaterialData.category}
+                      onChange={(e) =>
+                        setNewMaterialData({
+                          ...newMaterialData,
+                          category: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-black"
+                    >
+                      <option value="react">React</option>
+                      <option value="typescript">TypeScript</option>
+                      <option value="testing">Testing</option>
+                      <option value="architecture">Arquitectura</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Archivo (PDF, MP4, etc.)
+                  </label>
+                  <input
+                    type="file"
+                    onChange={(e) =>
+                      setNewMaterialData({
+                        ...newMaterialData,
+                        file: e.target.files?.[0] || null,
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-black"
+                    accept=".pdf,.mp4,.doc,.docx"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    URL de Video (opcional)
+                  </label>
+                  <input
+                    type="url"
+                    value={newMaterialData.videoUrl}
+                    onChange={(e) =>
+                      setNewMaterialData({
+                        ...newMaterialData,
+                        videoUrl: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-black"
+                    placeholder="https://youtube.com/watch?v=..."
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => setShowUploadMaterialModal(false)}
+                  className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleUploadMaterial}
+                  disabled={!newMaterialData.title || !newMaterialData.description}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400"
+                >
+                  Subir Material
                 </button>
               </div>
             </div>
