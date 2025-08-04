@@ -400,31 +400,157 @@ export class AdminController {
     }
   }
 
-  @Get('training/stats')
+  @Get('training-stats')
   @Roles('admin')
   async getTrainingStats() {
     try {
       const totalResources = await this.prisma.trainingResource.count();
       const totalProgress = await this.prisma.userTrainingProgress.count();
-      const completedCourses = await this.prisma.userTrainingProgress.count({
-        where: { completed: true },
-      });
       const totalCertificates = await this.prisma.trainingCertificate.count();
 
-      const averageProgress = await this.prisma.userTrainingProgress.aggregate({
-        _avg: { progress: true },
+      const completedProgress = await this.prisma.userTrainingProgress.count({
+        where: { completed: true },
+      });
+
+      const inProgressProgress = await this.prisma.userTrainingProgress.count({
+        where: { completed: false },
       });
 
       return {
         totalResources,
         totalProgress,
-        completedCourses,
         totalCertificates,
-        averageProgress: Math.round(averageProgress._avg.progress || 0),
+        completedProgress,
+        inProgressProgress,
+        completionRate: totalProgress > 0 ? (completedProgress / totalProgress) * 100 : 0,
       };
     } catch (error) {
-      console.error('Error en getTrainingStats:', error);
-      throw new Error('Error al obtener estadísticas de capacitación');
+      console.error('Error getting training stats:', error);
+      throw error;
+    }
+  }
+
+  // ✅ NUEVOS ENDPOINTS PARA ADMIN - TODOS LOS PROYECTOS
+  @Get('all-projects')
+  @Roles('admin')
+  async getAllProjects() {
+    try {
+      const projects = await this.prisma.project.findMany({
+        include: {
+          owner: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+            },
+          },
+          collaborators: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  fullName: true,
+                  email: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      return projects.map(project => ({
+        id: project.id,
+        name: project.name,
+        description: project.description,
+        pattern: project.pattern,
+        language: project.language,
+        status: project.status,
+        tags: project.tags,
+        createdAt: project.createdAt,
+        updatedAt: project.updatedAt,
+        owner: project.owner,
+        collaborators: project.collaborators,
+        collaboratorsCount: project.collaborators.length,
+      }));
+    } catch (error) {
+      console.error('Error getting all projects:', error);
+      throw error;
+    }
+  }
+
+  // ✅ NUEVOS ENDPOINTS PARA ADMIN - TODAS LAS SINCRONIZACIONES
+  @Get('all-sync-projects')
+  @Roles('admin')
+  async getAllSyncProjects() {
+    try {
+      const syncProjects = await this.prisma.syncProject.findMany({
+        include: {
+          user: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      return syncProjects.map(sync => ({
+        id: sync.id,
+        name: sync.name,
+        description: sync.description,
+        type: sync.type,
+        pattern: sync.pattern,
+        tags: sync.tags,
+        frontendAssociation: sync.frontendAssociation,
+        contact: sync.contact,
+        functions: sync.functions,
+        status: sync.status,
+        lastSync: sync.lastSync,
+        createdAt: sync.createdAt,
+        updatedAt: sync.updatedAt,
+        user: sync.user,
+      }));
+    } catch (error) {
+      console.error('Error getting all sync projects:', error);
+      throw error;
+    }
+  }
+
+  // ✅ NUEVOS ENDPOINTS PARA ADMIN - TODO EL HISTORIAL DE VERSIONES
+  @Get('all-versions')
+  @Roles('admin')
+  async getAllVersions() {
+    try {
+      const versions = await this.prisma.version.findMany({
+        include: {
+          project: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      return versions.map(version => ({
+        id: version.id,
+        hash: version.hash,
+        message: version.message,
+        author: version.author,
+        branch: version.branch,
+        status: version.status,
+        filesChanged: version.filesChanged,
+        createdAt: version.createdAt,
+        project: version.project,
+        projectId: version.projectId,
+      }));
+    } catch (error) {
+      console.error('Error getting all versions:', error);
+      throw error;
     }
   }
 }

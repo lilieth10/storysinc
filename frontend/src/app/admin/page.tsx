@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, JSXElementConstructor, Key, ReactElement, ReactNode, ReactPortal } from "react";
 import { useAuth } from "@/store/auth";
 import { api } from "@/lib/api";
 import { toast } from "react-hot-toast";
@@ -95,7 +95,7 @@ interface AIModel {
 export default function AdminPage() {
   const { token, user } = useAuth();
   const [activeTab, setActiveTab] = useState<
-    "dashboard" | "users" | "training" | "reports" | "ai-config" | "ai-analysis"
+    "dashboard" | "users" | "training" | "reports" | "ai-config" | "ai-analysis" | "projects" | "sync" | "history"
   >("dashboard");
   const [adminData, setAdminData] = useState<AdminData>({
     metrics: {
@@ -189,6 +189,21 @@ export default function AdminPage() {
       .split("T")[0],
     end: new Date().toISOString().split("T")[0],
   });
+
+  // Estados para gestión de proyectos (ADMIN)
+  const [allProjects, setAllProjects] = useState<any[]>([]);
+  const [loadingProjects, setLoadingProjects] = useState(false);
+  const [showProjectDetails, setShowProjectDetails] = useState<number | null>(null);
+
+  // Estados para gestión de sincronizaciones (ADMIN)
+  const [allSyncProjects, setAllSyncProjects] = useState<any[]>([]);
+  const [loadingSyncProjects, setLoadingSyncProjects] = useState(false);
+  const [showSyncDetails, setShowSyncDetails] = useState<number | null>(null);
+
+  // Estados para gestión de historial de versiones (ADMIN)
+  const [allVersions, setAllVersions] = useState<any[]>([]);
+  const [loadingVersions, setLoadingVersions] = useState(false);
+  const [showVersionDetails, setShowVersionDetails] = useState<string | null>(null);
 
   const loadAdminData = useCallback(async () => {
     try {
@@ -690,6 +705,74 @@ export default function AdminPage() {
     loadProjectsForAnalysis();
   }, [loadProjectsForAnalysis]);
 
+  // Cargar todos los proyectos del sistema (ADMIN)
+  const loadAllProjects = useCallback(async () => {
+    try {
+      setLoadingProjects(true);
+      console.log("🔍 Cargando proyectos del sistema...");
+      const response = await api.get("/admin/all-projects", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      console.log("📊 Proyectos cargados:", response.data);
+      setAllProjects(response.data || []);
+    } catch (error: any) {
+      console.error("❌ Error loading projects:", error);
+      console.error("❌ Error details:", error.response?.data);
+      toast.error("Error al cargar proyectos");
+    } finally {
+      setLoadingProjects(false);
+    }
+  }, [token]);
+
+  // Cargar todas las sincronizaciones del sistema (ADMIN)
+  const loadAllSyncProjects = useCallback(async () => {
+    try {
+      setLoadingSyncProjects(true);
+      console.log("🔍 Cargando sincronizaciones del sistema...");
+      const response = await api.get("/admin/all-sync-projects", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      console.log("📊 Sincronizaciones cargadas:", response.data);
+      setAllSyncProjects(response.data || []);
+    } catch (error: any) {
+      console.error("❌ Error loading sync projects:", error);
+      console.error("❌ Error details:", error.response?.data);
+      toast.error("Error al cargar sincronizaciones");
+    } finally {
+      setLoadingSyncProjects(false);
+    }
+  }, [token]);
+
+  // Cargar todo el historial de versiones del sistema (ADMIN)
+  const loadAllVersions = useCallback(async () => {
+    try {
+      setLoadingVersions(true);
+      console.log("🔍 Cargando historial de versiones del sistema...");
+      const response = await api.get("/admin/all-versions", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      console.log("📊 Versiones cargadas:", response.data);
+      setAllVersions(response.data || []);
+    } catch (error: any) {
+      console.error("❌ Error loading versions:", error);
+      console.error("❌ Error details:", error.response?.data);
+      toast.error("Error al cargar historial de versiones");
+    } finally {
+      setLoadingVersions(false);
+    }
+  }, [token]);
+
+  // Cargar datos cuando cambia la pestaña
+  useEffect(() => {
+    if (activeTab === "projects") {
+      loadAllProjects();
+    } else if (activeTab === "sync") {
+      loadAllSyncProjects();
+    } else if (activeTab === "history") {
+      loadAllVersions();
+    }
+  }, [activeTab, loadAllProjects, loadAllSyncProjects, loadAllVersions]);
+
   if (!user || user.role !== "admin") {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -797,6 +880,36 @@ export default function AdminPage() {
               }`}
             >
               🤖 Análisis IA
+            </button>
+            <button
+              onClick={() => setActiveTab("projects")}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === "projects"
+                  ? "border-green-500 text-green-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+            >
+              📁 Proyectos
+            </button>
+            <button
+              onClick={() => setActiveTab("sync")}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === "sync"
+                  ? "border-green-500 text-green-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+            >
+              📅 Sincronización
+            </button>
+            <button
+              onClick={() => setActiveTab("history")}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === "history"
+                  ? "border-green-500 text-green-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+            >
+              📜 Historial
             </button>
           </nav>
         </div>
@@ -2847,6 +2960,584 @@ export default function AdminPage() {
                   Subir Material
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Projects Tab */}
+        {activeTab === "projects" && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                Gestión de Proyectos del Sistema
+              </h2>
+              <p className="text-gray-600">
+                Administra todos los proyectos de la plataforma
+              </p>
+            </div>
+
+            {loadingProjects ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Cargando proyectos...</p>
+              </div>
+            ) : (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div className="p-6">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">
+                    Todos los Proyectos ({allProjects.length})
+                  </h3>
+                  
+                  {allProjects.length === 0 ? (
+                    <p className="text-gray-500 text-center py-8">
+                      No hay proyectos en el sistema
+                    </p>
+                  ) : (
+                    <div className="space-y-4">
+                      {allProjects.map((project) => (
+                        <div
+                          key={project.id}
+                          className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <h4 className="text-lg font-medium text-gray-900">
+                                {project.name}
+                              </h4>
+                              <p className="text-sm text-gray-600 mt-1">
+                                {project.description || "Sin descripción"}
+                              </p>
+                              <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+                                <span>👤 {project.owner?.fullName || "Usuario"}</span>
+                                <span>📅 {new Date(project.createdAt).toLocaleDateString()}</span>
+                                <span>🏗️ {project.pattern}</span>
+                                <span>💻 {project.language}</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => setShowProjectDetails(project.id)}
+                                className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+                              >
+                                Ver Detalles
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Sync Tab */}
+        {activeTab === "sync" && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                Gestión de Sincronizaciones
+              </h2>
+              <p className="text-gray-600">
+                Administra todas las sincronizaciones BFF y Sidecar
+              </p>
+            </div>
+
+            {loadingSyncProjects ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Cargando sincronizaciones...</p>
+              </div>
+            ) : (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div className="p-6">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">
+                    Todas las Sincronizaciones ({allSyncProjects.length})
+                  </h3>
+                  
+                  {allSyncProjects.length === 0 ? (
+                    <p className="text-gray-500 text-center py-8">
+                      No hay sincronizaciones en el sistema
+                    </p>
+                  ) : (
+                    <div className="space-y-4">
+                      {allSyncProjects.map((sync) => (
+                        <div
+                          key={sync.id}
+                          className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <h4 className="text-lg font-medium text-gray-900">
+                                {sync.name}
+                              </h4>
+                              <p className="text-sm text-gray-600 mt-1">
+                                {sync.description || "Sin descripción"}
+                              </p>
+                              <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+                                <span>🔗 {sync.type === 'bff' ? 'BFF' : 'Sidecar'}</span>
+                                <span>👤 {sync.user?.fullName || "Usuario"}</span>
+                                <span>📅 {new Date(sync.createdAt).toLocaleDateString()}</span>
+                                <span>🔄 {sync.status}</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => setShowSyncDetails(sync.id)}
+                                className="text-sm bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+                              >
+                                Ver Detalles
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* History Tab */}
+        {activeTab === "history" && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                Historial de Versiones del Sistema
+              </h2>
+              <p className="text-gray-600">
+                Revisa todos los cambios y versiones de la plataforma
+              </p>
+            </div>
+
+            {loadingVersions ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Cargando historial...</p>
+              </div>
+            ) : (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div className="p-6">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">
+                    Todas las Versiones ({allVersions.length})
+                  </h3>
+                  
+                  {allVersions.length === 0 ? (
+                    <p className="text-gray-500 text-center py-8">
+                      No hay versiones en el sistema
+                    </p>
+                  ) : (
+                    <div className="space-y-4">
+                      {allVersions.map((version) => (
+                        <div
+                          key={version.id}
+                          className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <h4 className="text-lg font-medium text-gray-900">
+                                {version.message}
+                              </h4>
+                              <p className="text-sm text-gray-600 mt-1">
+                                Hash: {version.hash}
+                              </p>
+                              <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+                                <span>👤 {version.author}</span>
+                                <span>📅 {new Date(version.createdAt).toLocaleDateString()}</span>
+                                <span>🌿 {version.branch}</span>
+                                <span>📁 {version.project?.name || "Proyecto"}</span>
+                                <span>📊 {version.status}</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => setShowVersionDetails(version.id)}
+                                className="text-sm bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700"
+                              >
+                                Ver Detalles
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Modal de Detalles de Proyecto */}
+        {showProjectDetails && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold">Detalles del Proyecto</h3>
+                <button
+                  onClick={() => setShowProjectDetails(null)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              {allProjects.find(p => p.id === showProjectDetails) && (
+                <div className="space-y-4">
+                  {(() => {
+                    const project = allProjects.find(p => p.id === showProjectDetails)!;
+                    return (
+                      <>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Nombre del Proyecto
+                            </label>
+                            <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                              {project.name}
+                            </p>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Propietario
+                            </label>
+                            <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                              {project.owner?.fullName || "N/A"}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Descripción
+                          </label>
+                          <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                            {project.description || "Sin descripción"}
+                          </p>
+                        </div>
+                        
+                        <div className="grid grid-cols-3 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Patrón
+                            </label>
+                            <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                              {project.pattern || "N/A"}
+                            </p>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Lenguaje
+                            </label>
+                            <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                              {project.language || "N/A"}
+                            </p>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Estado
+                            </label>
+                            <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                              {project.status}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Etiquetas
+                          </label>
+                          <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                            {project.tags || "Sin etiquetas"}
+                          </p>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Colaboradores ({project.collaboratorsCount || 0})
+                          </label>
+                          <div className="bg-gray-50 p-2 rounded">
+                            {project.collaborators && project.collaborators.length > 0 ? (
+                              <div className="space-y-1">
+                                {project.collaborators.map((collab: { user: { fullName: string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<string | number | bigint | boolean | ReactPortal | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined> | null | undefined; email: string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<string | number | bigint | boolean | ReactPortal | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined> | null | undefined; }; }, index: Key | null | undefined) => (
+                                  <div key={index} className="text-sm text-gray-900">
+                                    • {collab.user.fullName} ({collab.user.email})
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-sm text-gray-500">Sin colaboradores</p>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Fecha de Creación
+                            </label>
+                            <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                              {new Date(project.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Última Actualización
+                            </label>
+                            <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                              {new Date(project.updatedAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Modal de Detalles de Sincronización */}
+        {showSyncDetails && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold">Detalles de Sincronización</h3>
+                <button
+                  onClick={() => setShowSyncDetails(null)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              {allSyncProjects.find(s => s.id === showSyncDetails) && (
+                <div className="space-y-4">
+                  {(() => {
+                    const sync = allSyncProjects.find(s => s.id === showSyncDetails)!;
+                    return (
+                      <>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Nombre
+                            </label>
+                            <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                              {sync.name}
+                            </p>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Tipo
+                            </label>
+                            <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                              {sync.type === 'bff' ? 'Backend for Frontend (BFF)' : 'Sidecar'}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Descripción
+                          </label>
+                          <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                            {sync.description || "Sin descripción"}
+                          </p>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Patrón
+                            </label>
+                            <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                              {sync.pattern || "N/A"}
+                            </p>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Estado
+                            </label>
+                            <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                              {sync.status}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Asociación Frontend
+                          </label>
+                          <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                            {sync.frontendAssociation || "N/A"}
+                          </p>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Funciones
+                          </label>
+                          <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                            {sync.functions || "N/A"}
+                          </p>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Contacto
+                          </label>
+                          <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                            {sync.contact || "N/A"}
+                          </p>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Etiquetas
+                          </label>
+                          <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                            {sync.tags || "Sin etiquetas"}
+                          </p>
+                        </div>
+                        
+                        <div className="grid grid-cols-3 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Usuario
+                            </label>
+                            <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                              {sync.user?.fullName || "N/A"}
+                            </p>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Última Sincronización
+                            </label>
+                            <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                              {sync.lastSync ? new Date(sync.lastSync).toLocaleDateString() : "N/A"}
+                            </p>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Fecha de Creación
+                            </label>
+                            <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                              {new Date(sync.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Modal de Detalles de Versión */}
+        {showVersionDetails && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold">Detalles de Versión</h3>
+                <button
+                  onClick={() => setShowVersionDetails(null)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              {allVersions.find(v => v.id === showVersionDetails) && (
+                <div className="space-y-4">
+                  {(() => {
+                    const version = allVersions.find(v => v.id === showVersionDetails)!;
+                    return (
+                      <>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Mensaje de Commit
+                          </label>
+                          <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                            {version.message}
+                          </p>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Hash
+                            </label>
+                            <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded font-mono">
+                              {version.hash}
+                            </p>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Rama
+                            </label>
+                            <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                              {version.branch}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Autor
+                            </label>
+                            <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                              {version.author}
+                            </p>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Estado
+                            </label>
+                            <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                              {version.status}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Proyecto
+                          </label>
+                          <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                            {version.project?.name || "N/A"}
+                          </p>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Archivos Cambiados
+                          </label>
+                          <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                            {version.filesChanged || "N/A"}
+                          </p>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Fecha de Creación
+                          </label>
+                          <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                            {new Date(version.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
             </div>
           </div>
         )}
