@@ -141,6 +141,64 @@ export default function TrainingPage() {
     }
   };
 
+  // Nueva función para manejar el progreso granular
+  const handleUpdateProgress = async (resource: TrainingResource, newProgress: number, additionalTime: number = 0) => {
+    try {
+      const currentProgress = resource.userProgress?.progress || 0;
+      const currentTimeSpent = resource.userProgress?.timeSpent || 0;
+      
+      // Solo actualizar si el nuevo progreso es mayor
+      if (newProgress > currentProgress) {
+        await api.post(
+          `/training/${resource.id}/progress`,
+          {
+            progress: newProgress,
+            timeSpent: currentTimeSpent + additionalTime,
+          },
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
+
+        // Recargar datos para mostrar el progreso actualizado
+        await loadTrainingData();
+        
+        // Feedback visual
+        if (newProgress >= 100) {
+          toast.success("¡Felicidades! Has completado el curso.");
+        } else {
+          toast.success(`¡Progreso actualizado! ${newProgress}% completado.`);
+        }
+      }
+    } catch (error) {
+      console.error("Error updating progress:", error);
+      toast.error("Error al actualizar el progreso");
+    }
+  };
+
+  // Función para manejar cuando el video termina
+  const handleVideoEnded = async (resource: TrainingResource) => {
+    const currentProgress = resource.userProgress?.progress || 0;
+    
+    // Si es la primera vez que ve el video, dar 30% de progreso
+    // Si ya había progreso, dar 20% adicional
+    const progressIncrement = currentProgress === 0 ? 30 : 20;
+    const newProgress = Math.min(currentProgress + progressIncrement, 100);
+    
+    await handleUpdateProgress(resource, newProgress, 5); // 5 minutos adicionales
+  };
+
+  // Función para marcar sección como leída
+  const handleMarkSectionAsRead = async (resource: TrainingResource) => {
+    const currentProgress = resource.userProgress?.progress || 0;
+    
+    // Dar 25% de progreso por sección leída
+    const progressIncrement = 25;
+    const newProgress = Math.min(currentProgress + progressIncrement, 100);
+    
+    await handleUpdateProgress(resource, newProgress, 2); // 2 minutos adicionales
+  };
+
   const handleStartCourse = async (resource: TrainingResource) => {
     try {
       // Actualizar progreso al iniciar
@@ -187,18 +245,17 @@ export default function TrainingPage() {
     // Función de búsqueda sin notificaciones
   };
 
+  // Reemplazo del loading por un loader animado y elegante
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col bg-gray-50">
         <DashboardHeader />
         <div className="flex flex-1">
           <Sidebar />
-          <main className="flex-1 p-8">
-            <div className="max-w-7xl mx-auto">
-              <div className="animate-pulse">
-                <div className="mb-8 h-16 bg-gray-200 rounded"></div>
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 h-32"></div>
-              </div>
+          <main className="flex-1 flex items-center justify-center p-8">
+            <div className="flex flex-col items-center gap-6">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-green-500"></div>
+              <p className="text-lg text-green-700 font-semibold animate-pulse">Cargando capacitaciones...</p>
             </div>
           </main>
         </div>
@@ -220,7 +277,7 @@ export default function TrainingPage() {
               <div className="mb-6">
                 <button
                   onClick={handleGoBack}
-                  className="text-black hover:text-gray-800 font-medium flex items-center gap-2"
+                  className="text-black hover:text-black font-medium flex items-center gap-2"
                 >
                   <span>←</span>
                   <span>Volver a Capacitaciones</span>
@@ -280,10 +337,17 @@ export default function TrainingPage() {
                     Contenido del curso
                   </h3>
                   <div className="bg-gray-50 rounded-lg p-6">
-                    <p className="text-black leading-relaxed">
+                    <p className="text-black leading-relaxed mb-4">
                       Este curso te enseñará los fundamentos de {selectedResource.title.toLowerCase()}. 
                       Incluye teoría, ejemplos prácticos y ejercicios para consolidar tu aprendizaje.
                     </p>
+                    {/* Botón para marcar sección como leída */}
+                    <button
+                      onClick={() => handleMarkSectionAsRead(selectedResource)}
+                      className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center gap-2"
+                    >
+                      <span className="text-black">✅</span> <span className="text-black">Marcar como leído</span>
+                    </button>
                   </div>
                 </div>
 
@@ -338,7 +402,7 @@ export default function TrainingPage() {
             <div className="mb-6">
               <button
                 onClick={handleGoBack}
-                className="text-black hover:text-gray-800 font-medium flex items-center gap-2"
+                className="text-black hover:text-black font-medium flex items-center gap-2"
               >
                 <span>←</span>
                 <span>Capacitación</span>
@@ -420,27 +484,21 @@ export default function TrainingPage() {
                 <input
                   type="text"
                   placeholder="Buscar recursos de capacitación..."
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black placeholder-black"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-black placeholder-black shadow-sm transition-all"
                   onChange={(e) => handleSearch(e.target.value)}
                 />
-                <button className="absolute right-2 top-2 text-black">
-                  🔍
-                </button>
+                <span className="absolute right-3 top-2.5 text-primary-600 text-xl pointer-events-none">🔍</span>
               </div>
             </div>
 
             {/* Filtros por categoría */}
             <div className="mb-8">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <h2 className="text-xl font-semibold text-black">Recursos de Capacitación</h2>
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => setSelectedCategory("all")}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                      selectedCategory === "all"
-                        ? "bg-green-600 text-white"
-                        : "bg-gray-200 text-black hover:bg-gray-300"
-                    }`}
+                    className={`px-4 py-2 rounded-full font-medium transition-colors shadow-sm border ${selectedCategory === "all" ? "bg-primary-600 text-black border-primary-600" : "bg-white text-black border-gray-300 hover:bg-gray-50"}`}
                   >
                     Todos
                   </button>
@@ -448,11 +506,7 @@ export default function TrainingPage() {
                     <button
                       key={category}
                       onClick={() => setSelectedCategory(category)}
-                      className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                        selectedCategory === category
-                          ? "bg-green-600 text-white"
-                          : "bg-gray-200 text-black hover:bg-gray-300"
-                      }`}
+                      className={`px-4 py-2 rounded-full font-medium transition-colors shadow-sm border ${selectedCategory === category ? "bg-primary-600 text-black border-primary-600" : "bg-white text-black border-gray-300 hover:bg-gray-50"}`}
                     >
                       {category.charAt(0).toUpperCase() + category.slice(1)}
                     </button>
@@ -470,86 +524,61 @@ export default function TrainingPage() {
                     resource.category === selectedCategory,
                 )
                 .map((resource) => (
-                  <div key={resource.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="flex-1">
-                        <h3 className="text-xl font-semibold text-black mb-2">
-                          {resource.title}
-                        </h3>
-                        <p className="text-black leading-relaxed mb-4">
-                          {resource.description}
-                        </p>
-                        
-                        {/* Información del curso */}
-                        <div className="flex items-center gap-4 text-sm text-black mb-4">
-                          <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                            {resource.category}
-                          </span>
-                          <span className="bg-green-100 text-green-800 px-2 py-1 rounded">
-                            {resource.type}
-                          </span>
-                          {resource.duration && (
-                            <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
-                              {resource.duration} min
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Progreso del usuario */}
-                        {resource.userProgress && (
-                          <div className="mb-4">
-                            <div className="flex justify-between items-center mb-2">
-                              <span className="text-sm font-medium text-black">
-                                Progreso
-                              </span>
-                              <span className="text-sm text-black">
-                                {resource.userProgress.progress}%
-                              </span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
-                              <div
-                                className="bg-green-600 h-2 rounded-full transition-all duration-300"
-                                style={{
-                                  width: `${resource.userProgress.progress}%`,
-                                }}
-                              ></div>
-                            </div>
-                          </div>
+                  <div key={resource.id} className="bg-white rounded-2xl shadow-soft border border-neutral-200 p-6 flex flex-col md:flex-row md:items-center gap-6 transition-all hover:shadow-medium">
+                    <div className="flex-1">
+                      <h3 className="text-2xl font-bold text-black mb-2">{resource.title}</h3>
+                      <p className="text-black leading-relaxed mb-4">{resource.description}</p>
+                      <div className="flex flex-wrap items-center gap-3 text-sm mb-4">
+                        <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full">{resource.category}</span>
+                        <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full">{resource.type}</span>
+                        {resource.duration && (
+                          <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full">{resource.duration} min</span>
                         )}
                       </div>
+                      {/* Progreso visual */}
+                      {resource.userProgress && (
+                        <div className="mb-4">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-sm font-medium text-black">Progreso</span>
+                            <span className="text-sm text-black">{resource.userProgress.progress}%</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-3">
+                            <div
+                              className="bg-green-500 h-3 rounded-full transition-all duration-500"
+                              style={{ width: `${resource.userProgress.progress}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      )}
                     </div>
-
                     {/* Botones de acción */}
-                    <div className="flex flex-wrap gap-3">
+                    <div className="flex flex-col gap-3 min-w-[180px]">
                       <button
                         onClick={() => handleStartCourse(resource)}
-                        className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center gap-2"
+                        className="bg-primary-600 hover:bg-primary-700 text-black font-semibold py-2 px-4 rounded-lg transition-colors duration-200 flex items-center gap-2 shadow-soft"
                       >
-                        🎓 {resource.userProgress?.completed ? "Ver Curso" : "Iniciar Curso"}
+                        <span>🎓</span> <span>{resource.userProgress?.completed ? "Ver Curso" : "Iniciar Curso"}</span>
                       </button>
-
                       {resource.fileUrl && (
                         <button
                           onClick={() => handleDownload(resource)}
-                          className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center gap-2"
+                          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 flex items-center gap-2 shadow-soft"
                         >
                           📥 Descargar
                         </button>
                       )}
-
                       {resource.videoUrl && (
                         <button
                           onClick={() => handlePlayVideo(resource)}
-                          className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center gap-2"
+                          className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 flex items-center gap-2 shadow-soft"
                         >
                           ▶️ Reproducir Video
                         </button>
                       )}
-
                       {resource.userProgress?.completed && (
                         <button
                           onClick={() => handleGenerateCertificate(resource)}
-                          className="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center gap-2"
+                          className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 flex items-center gap-2 shadow-soft"
                         >
                           🏆 Generar Certificado
                         </button>
@@ -561,7 +590,7 @@ export default function TrainingPage() {
               {/* Mensaje si no hay recursos */}
               {trainingData?.resources.length === 0 && (
                 <div className="text-center py-12">
-                  <div className="text-gray-400 text-6xl mb-4">📚</div>
+                  <div className="text-black text-6xl mb-4">📚</div>
                   <h3 className="text-xl font-semibold text-black mb-2">
                     No hay cursos disponibles
                   </h3>
@@ -583,7 +612,7 @@ export default function TrainingPage() {
               <h3 className="text-lg font-semibold text-black">Reproduciendo Video</h3>
               <button
                 onClick={() => setShowVideoModal(false)}
-                className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
+                className="text-black hover:text-black text-2xl font-bold"
               >
                 ×
               </button>
@@ -597,9 +626,31 @@ export default function TrainingPage() {
                     frameBorder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
+                    onLoad={() => {
+                      // Detectar cuando el video termina (aproximadamente)
+                      setTimeout(() => {
+                        if (selectedResource) {
+                          handleVideoEnded(selectedResource);
+                        }
+                      }, 30000); // Simular que termina después de 30 segundos
+                    }}
                   ></iframe>
                 </div>
               )}
+              {/* Botón para marcar video como visto */}
+              <div className="mt-4 text-center">
+                <button
+                  onClick={() => {
+                    if (selectedResource) {
+                      handleVideoEnded(selectedResource);
+                    }
+                    setShowVideoModal(false);
+                  }}
+                  className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
+                >
+                  <span className="text-white">✅</span> <span className="text-white">Marcar video como visto</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
