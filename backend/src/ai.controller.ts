@@ -92,24 +92,36 @@ export class AIController {
   }
 
   // Función para enviar datos a n8n
-  private async sendToN8n(codigo: string, lenguaje: string): Promise<any> {
+  private async sendToN8n(codigo: string, lenguaje: string, action: string = 'analizar'): Promise<any> {
     try {
+      let url = 'https://n8n.useteam.io/webhook/071-maqueta';
+      let body: any;
+      
+      if (action === 'corregir') {
+        url = 'https://n8n.useteam.io/webhook/071-maqueta_v3'; // Usar la misma URL que proyectos
+        // Usar los mismos campos que proyectos
+        body = { codigo, lenguaje };
+      } else {
+        // Para análisis, usar los campos originales
+        body = {
+          code: codigo,
+          language: lenguaje,
+          action: action,
+        };
+      }
+      
       const response = await fetch(
-        'https://n8n.useteam.io/webhook/071-maqueta',
+        url,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ codigo, lenguaje }),
+          body: JSON.stringify(body),
         },
       );
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
-      return data;
+      return await response.json();
     } catch (error) {
-      console.error('Error sending to n8n:', error);
-      throw error;
+      console.error('Error enviando a n8n:', error);
+      throw new Error('Error enviando a n8n');
     }
   }
 
@@ -228,7 +240,7 @@ export class AIController {
   // Analizar código con n8n
   @Post('analyze-with-n8n')
   async analyzeWithN8n(
-    @Body() body: N8nAnalysisDto,
+    @Body() body: N8nAnalysisDto & { action?: string },
     @Request() req: AuthenticatedRequest,
   ) {
     try {
@@ -256,8 +268,13 @@ export class AIController {
       // Determinar el lenguaje basado en la extensión del archivo
       const language = this.determineLanguage(body.fileName);
 
-      // Enviar a n8n
-      const n8nResponse = await this.sendToN8n(body.code, language);
+      // Enviar a n8n con acción
+      let n8nResponse;
+      if (body.action === 'corregir') {
+        n8nResponse = await this.sendToN8n(body.code, language, 'corregir');
+      } else {
+        n8nResponse = await this.sendToN8n(body.code, language, 'analizar');
+      }
 
       return {
         analysis: n8nResponse.analysis || n8nResponse,

@@ -18,6 +18,8 @@ import { Button } from "@/components/ui/button";
 import dynamic from "next/dynamic";
 import { api } from "@/lib/api";
 import { useAuth } from "@/store/auth";
+import { Dialog } from "@/components/ui/dialog";
+import { useRef } from "react";
 
 // Importar ApexCharts dinámicamente (usado en el futuro)
 // const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
@@ -75,6 +77,9 @@ export default function AIAnalysisPage() {
   );
   const [processedAnalysis, setProcessedAnalysis] = useState<any>(null);
   const [processedMetrics, setProcessedMetrics] = useState<any>(null);
+  const [showOptimizedModal, setShowOptimizedModal] = useState(false);
+  const [optimizedCode, setOptimizedCode] = useState<string | null>(null);
+  const editorRef = useRef<any>(null);
 
   // Función para guardar código en la base de datos
   const saveCodeToDatabase = async (
@@ -536,6 +541,53 @@ export default function AIAnalysisPage() {
       // Aquí podrías mostrar una notificación de error
     } finally {
       setAnalyzingMetrics(false);
+      setShowAnalysisModal(false);
+      setAnalysisType(null);
+    }
+  };
+
+  // Modifica optimizeWithN8n para mostrar el modal si hay código corregido
+  const optimizeWithN8n = async () => {
+    if (!selectedProject || !selectedFile || !codeContent || !token) return;
+    try {
+      setAnalyzingWithN8n(true);
+      setShowAnalysisModal(true);
+      setAnalysisType("ai");
+      const response = await api.post("/ai/analyze-with-n8n", {
+        projectId: selectedProject.id,
+        fileName: selectedFile,
+        code: codeContent,
+        action: "corregir",
+      });
+      // Para corrección, no mostrar análisis ni tarjetas de sugerencias
+      // setN8nAnalysis(response.data);
+      // const processed = processAIResponse(response.data);
+      // setProcessedAnalysis(processed);
+      // Buscar código corregido en la respuesta (buscar en la estructura exacta que llega)
+      let optimized = null;
+      console.log("Respuesta completa de n8n:", response.data);
+      
+      // La estructura que llega es: { analysis: { output: { optimizedCode: "..." } } }
+      if (response.data?.analysis?.output?.optimizedCode) {
+        optimized = response.data.analysis.output.optimizedCode;
+      } else if (response.data?.output?.optimizedCode) {
+        optimized = response.data.output.optimizedCode;
+      } else if (response.data?.optimizedCode) {
+        optimized = response.data.optimizedCode;
+      }
+      
+      console.log("Código optimizado encontrado:", optimized);
+      
+      if (optimized && typeof optimized === "string" && optimized.trim() !== "") {
+        setOptimizedCode(optimized);
+        setShowOptimizedModal(true);
+      } else {
+        console.log("No se encontró código optimizado válido");
+      }
+    } catch (error) {
+      console.error("Error corrigiendo con n8n:", error);
+    } finally {
+      setAnalyzingWithN8n(false);
       setShowAnalysisModal(false);
       setAnalysisType(null);
     }
@@ -1155,54 +1207,33 @@ module.exports = {
                         </div>
                       )}
                     </div>
-                    <div className="flex space-x-2">
+                    <div className="flex flex-row gap-1 items-center flex-wrap">
                       <Button
                         onClick={analyzeWithN8n}
-                        disabled={
-                          analyzingWithN8n ||
-                          analyzingMetrics ||
-                          !selectedProject ||
-                          !selectedFile ||
-                          !codeContent
-                        }
+                        disabled={analyzingWithN8n || analyzingMetrics || !selectedProject || !selectedFile || !codeContent}
                         size="sm"
-                        className="bg-blue-500 hover:bg-blue-600 text-white"
+                        className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded font-medium h-7 min-w-fit text-xs"
                       >
-                        {analyzingWithN8n ? (
-                          <div className="flex items-center">
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                            Analizando...
-                          </div>
-                        ) : (
-                          <div className="flex items-center">
-                            <MagnifyingGlassIcon className="w-4 h-4 mr-2" />
-                            Análisis IA
-                          </div>
-                        )}
+                        <MagnifyingGlassIcon className="w-3.5 h-3.5 mr-1" />
+                        IA
                       </Button>
                       <Button
                         onClick={analyzeMetricsWithN8n}
-                        disabled={
-                          analyzingWithN8n ||
-                          analyzingMetrics ||
-                          !selectedProject ||
-                          !selectedFile ||
-                          !codeContent
-                        }
+                        disabled={analyzingWithN8n || analyzingMetrics || !selectedProject || !selectedFile || !codeContent}
                         size="sm"
-                        className="bg-purple-500 hover:bg-purple-600 text-white"
+                        className="bg-purple-500 hover:bg-purple-600 text-white px-2 py-1 rounded font-medium h-7 min-w-fit text-xs"
                       >
-                        {analyzingMetrics ? (
-                          <div className="flex items-center">
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                            Analizando...
-                          </div>
-                        ) : (
-                          <div className="flex items-center">
-                            <LightBulbIcon className="w-4 h-4 mr-2" />
-                            Métricas
-                          </div>
-                        )}
+                        <LightBulbIcon className="w-3.5 h-3.5 mr-1" />
+                        Métricas
+                      </Button>
+                      <Button
+                        onClick={optimizeWithN8n}
+                        disabled={analyzingWithN8n || analyzingMetrics || !selectedProject || !selectedFile || !codeContent}
+                        size="sm"
+                        className="bg-cyan-600 hover:bg-cyan-700 text-white px-2 py-1 rounded font-medium h-7 min-w-fit text-xs"
+                      >
+                        <CodeBracketIcon className="w-3.5 h-3.5 mr-1" />
+                        Corregir
                       </Button>
                     </div>
                   </div>
@@ -1528,6 +1559,36 @@ module.exports = {
       </div>
 
       <Footer />
+      {/* Modal para mostrar código corregido */}
+      <Dialog
+        isOpen={showOptimizedModal}
+        onClose={() => setShowOptimizedModal(false)}
+        title="Código corregido sugerido"
+        size="lg"
+      >
+        <div className="flex flex-col">
+          <pre className="bg-gray-100 rounded p-4 text-xs max-h-96 overflow-auto border border-gray-200 mb-6 whitespace-pre-wrap">
+            {optimizedCode}
+          </pre>
+          <div className="flex justify-end gap-2">
+            <button
+              className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold"
+              onClick={() => setShowOptimizedModal(false)}
+            >
+              Cancelar
+            </button>
+            <button
+              className="px-4 py-2 rounded bg-cyan-600 hover:bg-cyan-700 text-white font-semibold"
+              onClick={() => {
+                setCodeContent(optimizedCode || "");
+                setShowOptimizedModal(false);
+              }}
+            >
+              Aplicar
+            </button>
+          </div>
+        </div>
+      </Dialog>
     </div>
   );
 }

@@ -1722,15 +1722,7 @@ print(f"Suma de números: {sum(numeros)}")`;
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm"
-                    >
-                      <PlusIcon className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                      <span className="hidden sm:inline">Agregar archivo</span>
-                      <span className="sm:hidden">+Archivo</span>
-                    </Button>
+                    
                     <Button
                       size="sm"
                       variant="outline"
@@ -1977,7 +1969,7 @@ print(f"Suma de números: {sum(numeros)}")`;
                               className="bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs px-2 sm:px-3 py-1 sm:py-1.5"
                             >
                               <CodeBracketIcon className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                              <span className="hidden sm:inline">Crear Ejecutable</span>
+                              <span className="hidden sm:inline">Agregar Archivo</span>
                               <span className="sm:hidden">Ejec</span>
                             </Button>
                             <Button
